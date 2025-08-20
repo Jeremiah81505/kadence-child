@@ -1,0 +1,11 @@
+/*
+ Theme Name: Kadence Child
+ Template: kadence
+ Version: 0.0.1
+ Description: Minimal child theme for custom blocks, patterns, and styles.
+*/
+
+/* --- Smoke test: change footer bg so we can confirm deploys --- */
+.site-footer { background: #f5f5f5; }
+
+/* Your custom CSS below */
