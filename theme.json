@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "settings": {
+    "spacing": {
+      "units": ["px", "em", "rem", "%", "vh", "vw"],
+      "blockGap": "1.2rem"
+    },
+    "color": {
+      "duotone": [],
+      "gradients": [],
+      "palette": []
+    },
+    "custom": {
+      "elevatedSurfaces": true
+    }
+  },
+  "styles": {
+    "elements": {
+      "heading": {
+        "spacing": { "margin": { "bottom": "0.6em" } }
+      }
+    }
+  }
+}
