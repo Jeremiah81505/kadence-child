@@ -10,16 +10,24 @@
 <div class="wp-block-group alignfull kc-ring-wrap">
   <!-- wp:html -->
   <div class="kc-ring-stage">
-    <div class="kc-ring" data-radius="360" data-speed="22">
-      <!-- Replace with your actual logo images -->
-      <div class="kc-tile"><img src="/wp-content/uploads/brand-1.png" alt="Brand 1"></div>
-      <div class="kc-tile"><img src="/wp-content/uploads/brand-2.png" alt="Brand 2"></div>
-      <div class="kc-tile"><img src="/wp-content/uploads/brand-3.png" alt="Brand 3"></div>
-      <div class="kc-tile"><img src="/wp-content/uploads/brand-4.png" alt="Brand 4"></div>
-      <div class="kc-tile"><img src="/wp-content/uploads/brand-5.png" alt="Brand 5"></div>
-      <div class="kc-tile"><img src="/wp-content/uploads/brand-6.png" alt="Brand 6"></div>
-      <div class="kc-tile"><img src="/wp-content/uploads/brand-7.png" alt="Brand 7"></div>
-      <div class="kc-tile"><img src="/wp-content/uploads/brand-8.png" alt="Brand 8"></div>
+    <div class="kc-ring" data-radius="380" data-speed="24">
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Wilsonart-01.png" alt="Wilsonart"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vicostone-01.png" alt="Vicostone"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Viatera-01.png" alt="Viatera"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vadara-Capture-the-world-in-quartz-01.png" alt="Vadara"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/UGM-Surfaces-01.png" alt="UGM Surfaces"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Trends-01.png" alt="Trends"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Teracanto-01.png" alt="Teracanto"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Silestone-01.png" alt="Silestone"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Q-Quartz-01.png" alt="Q Quartz"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Pionite-01.png" alt="Pionite"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Nevamar-01.png" alt="Nevamar"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Hi-Macs-01.png" alt="HI-MACS"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Formica-01.png" alt="Formica"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Dekton-01.png" alt="Dekton"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Corian-01.png" alt="Corian"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Cambria-01.png" alt="Cambria"></div>
+      <div class="kc-tile"><img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Caesarstone-01-scaled.png" alt="Caesarstone"></div>
     </div>
   </div>
   <!-- /wp:html -->
