@@ -33,3 +33,21 @@ add_action('wp_enqueue_scripts', function () {
     );
   }
 });
+
+/** ---------- BEGIN: Kadence Child Pattern Category ---------- */
+add_action( 'init', function () {
+  if ( function_exists( 'register_block_pattern_category' ) ) {
+    register_block_pattern_category(
+      'kadence-child',
+      [ 'label' => __( 'Kadence Child', 'kadence-child' ) ]
+    );
+  }
+});
+
+// (Editor-only sanity ping in browser console so we know this loaded)
+add_action( 'enqueue_block_editor_assets', function () {
+  if ( function_exists( 'wp_add_inline_script' ) ) {
+    wp_add_inline_script( 'wp-blocks', 'console.log("Kadence Child: pattern category registered");' );
+  }
+});
+/** ---------- END: Kadence Child Pattern Category ---------- */
