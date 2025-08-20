@@ -9,3 +9,34 @@
 .site-footer { background: #f5f5f5; }
 
 /* Your custom CSS below */
+/* ==== HERO ULTIMATE ==== */
+.kc-hero-ultimate { position:relative; }
+.kc-hero-wrap { position:relative; color:#fff; text-align:left; }
+.kc-eyebrow { color:#fff; opacity:.85; letter-spacing:.15em; text-transform:uppercase; font-size:.9rem; margin:0 0 12px; }
+.kc-hero-title { color:#fff; font-weight:800; line-height:1.05; font-size:clamp(36px,6vw,68px); margin:0 0 12px; }
+.kc-hero-sub { color:#fff; opacity:.95; font-size:clamp(16px,2.2vw,22px); max-width:60ch; margin:8px 0 28px; }
+
+/* Headline reveal */
+.kc-reveal { display:inline-block; transform:translateY(18px); opacity:0; }
+.kc-hero-title.kc-revealed .kc-reveal { transition:.7s ease; transform:none; opacity:1; }
+.kc-hero-title.kc-revealed .kc-reveal:nth-child(2){ transition-delay:.12s; }
+
+/* CTAs */
+.kc-hero-ctas .wp-element-button{ padding:.9rem 1.25rem; border-radius:12px; font-weight:600; }
+.kc-cta-primary .wp-element-button{ background:#111; border:0; box-shadow:0 8px 24px rgba(0,0,0,.35); }
+.kc-cta-primary .wp-element-button:hover{ transform:translateY(-2px); }
+.kc-cta-secondary .wp-element-button{ border:2px solid rgba(255,255,255,.7); color:#fff; background:transparent; }
+.kc-cta-secondary .wp-element-button:hover{ background:rgba(255,255,255,.08); }
+
+/* Floating chips (decor) */
+.kc-float{ position:absolute; width:18vmin; height:18vmin; border-radius:24px; filter:blur(10px); opacity:.25; pointer-events:none; }
+.kc-float.a{ background:#fff; top:-6vmin; left:-6vmin; animation:kc-drift 18s ease-in-out infinite; }
+.kc-float.b{ background:#d1e4ff; bottom:-8vmin; right:-6vmin; animation:kc-drift 22s ease-in-out infinite reverse; }
+@keyframes kc-drift {
+  0%,100%{ transform:translate(0,0) rotate(0deg); }
+  50%{ transform:translate(10px,-14px) rotate(6deg); }
+}
+
+/* Scroll cue */
+.kc-scroll-cue{ position:absolute; left:50%; bottom:10px; transform:translateX(-50%); font-size:.8rem; letter-spacing:.2em; opacity:.7 }
+@media (max-width: 782px){ .kc-hero-sub{ max-width:100%; } }
