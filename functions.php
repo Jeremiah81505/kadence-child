@@ -1,9 +1,10 @@
 <?php
 /**
- * Kadence Child – core setup
+ * Kadence Child – enqueue styles & JS
  */
+
 add_action('wp_enqueue_scripts', function () {
-  // Parent CSS
+  // Parent theme CSS
   wp_enqueue_style(
     'kadence-parent',
     get_template_directory_uri() . '/style.css',
@@ -11,7 +12,7 @@ add_action('wp_enqueue_scripts', function () {
     null
   );
 
-  // Child CSS (cache-bust via theme version)
+  // Child theme CSS (cache-bust via theme version)
   wp_enqueue_style(
     'kadence-child',
     get_stylesheet_uri(),
@@ -19,25 +20,15 @@ add_action('wp_enqueue_scripts', function () {
     wp_get_theme()->get('Version')
   );
 
-  // Optional child JS (enqueued only if the file exists)
-  $child_js_path = get_stylesheet_directory() . '/assets/child.js';
-  if (file_exists($child_js_path)) {
+  // ---- Child JS (loads only if the file exists) ----
+  $child_js_file = get_stylesheet_directory() . '/assets/child.js';
+  if ( file_exists( $child_js_file ) ) {
     wp_enqueue_script(
-      'kadence-child',
+      'kadence-child-js',
       get_stylesheet_directory_uri() . '/assets/child.js',
-      [],
-      filemtime($child_js_path),
-      true
-    );
-  }
-});
-
-// (Optional) Add a patterns category so your patterns group nicely in the editor
-add_action('init', function () {
-  if ( function_exists('register_block_pattern_category') ) {
-    register_block_pattern_category(
-      'kadence-child',
-      ['label' => __('Kadence Child', 'kadence-child')]
+      [],                                   // Add deps here if you ever need (e.g., ['jquery'])
+      filemtime( $child_js_file ),          // Cache-bust when file changes
+      true                                  // Load in footer
     );
   }
 });
