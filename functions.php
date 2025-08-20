@@ -51,3 +51,16 @@ add_action( 'enqueue_block_editor_assets', function () {
   }
 });
 /** ---------- END: Kadence Child Pattern Category ---------- */
+
+// Enqueue editor-only styles so the 3D ring carousel previews nicely in the editor
+add_action('enqueue_block_editor_assets', function () {
+  $path = get_stylesheet_directory() . '/assets/css/editor.css';
+  if ( file_exists( $path ) ) {
+    wp_enqueue_style(
+      'kadence-child-editor',
+      get_stylesheet_directory_uri() . '/assets/css/editor.css',
+      [],
+      filemtime( $path )
+    );
+  }
+});
