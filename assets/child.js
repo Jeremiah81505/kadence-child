@@ -57,7 +57,11 @@ console.log("Kadence Child JS loaded");
       tile.style.transform = `translate(-50%,-50%) rotateY(${theta}deg) translateZ(${radius}px)`;
     });
 
-    if (stage) stage.style.height = Math.max(420, Math.min(600, Math.round(radius*0.95))) + 'px';
+    const sw = ring.parentElement?.offsetWidth || 0;
+    if (stage) {
+      const h = Math.round(Math.max(320, Math.min(sw * 0.8, 560)));
+      stage.style.height = h + 'px';
+    }
 
     // JS rotation + face-camera cards
     let running = true, angle = 0, last = performance.now();

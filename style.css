@@ -12,38 +12,38 @@
 /* ==== HERO ULTIMATE ==== */
 .kc-hero-ultimate { position:relative; }
 .kc-hero-wrap { position:relative; color:#fff; text-align:left; }
-.kc-eyebrow { color:#fff; opacity:.85; letter-spacing:.15em; text-transform:uppercase; font-size:.9rem; margin:0 0 12px; }
-.kc-hero-title { color:#fff; font-weight:800; line-height:1.05; font-size:clamp(36px,6vw,68px); margin:0 0 12px; }
-.kc-hero-sub { color:#fff; opacity:.95; font-size:clamp(16px,2.2vw,22px); max-width:60ch; margin:8px 0 28px; }
+.kc-eyebrow { color:#fff; opacity:.85; letter-spacing:.15em; text-transform:uppercase; font-size:.9rem; margin:0 0 clamp(8px,1vw,12px); }
+.kc-hero-title { color:#fff; font-weight:800; line-height:1.05; font-size:clamp(36px,6vw,68px); margin:0 0 clamp(8px,1.5vw,12px); }
+.kc-hero-sub { color:#fff; opacity:.95; font-size:clamp(16px,2.2vw,22px); max-width:60ch; margin:clamp(4px,0.8vw,8px) 0 clamp(16px,3vw,28px); }
 
 /* Headline reveal */
-.kc-reveal { display:inline-block; transform:translateY(18px); opacity:0; }
+.kc-reveal { display:inline-block; transform:translateY(clamp(12px,2vw,18px)); opacity:0; }
 .kc-hero-title.kc-revealed .kc-reveal { transition:.7s ease; transform:none; opacity:1; }
 .kc-hero-title.kc-revealed .kc-reveal:nth-child(2){ transition-delay:.12s; }
 
 /* CTAs */
-.kc-hero-ctas .wp-element-button{ padding:.9rem 1.25rem; border-radius:12px; font-weight:600; }
-.kc-cta-primary .wp-element-button{ background:#111; border:0; box-shadow:0 8px 24px rgba(0,0,0,.35); }
-.kc-cta-primary .wp-element-button:hover{ transform:translateY(-2px); }
-.kc-cta-secondary .wp-element-button{ border:2px solid rgba(255,255,255,.7); color:#fff; background:transparent; }
+.kc-hero-ctas .wp-element-button{ padding:.9rem 1.25rem; border-radius:clamp(8px,1.5vw,12px); font-weight:600; }
+.kc-cta-primary .wp-element-button{ background:#111; border:0; box-shadow:0 clamp(4px,1vw,8px) clamp(16px,4vw,24px) rgba(0,0,0,.35); }
+.kc-cta-primary .wp-element-button:hover{ transform:translateY(calc(-1 * clamp(1px,0.5vw,2px))); }
+.kc-cta-secondary .wp-element-button{ border:clamp(1px,0.3vw,2px) solid rgba(255,255,255,.7); color:#fff; background:transparent; }
 .kc-cta-secondary .wp-element-button:hover{ background:rgba(255,255,255,.08); }
 
 /* Floating chips (decor) */
-.kc-float{ position:absolute; width:18vmin; height:18vmin; border-radius:24px; filter:blur(10px); opacity:.25; pointer-events:none; }
+.kc-float{ position:absolute; width:18vmin; height:18vmin; border-radius:clamp(16px,3vw,24px); filter:blur(clamp(6px,1.2vw,10px)); opacity:.25; pointer-events:none; }
 .kc-float.a{ background:#fff; top:-6vmin; left:-6vmin; animation:kc-drift 18s ease-in-out infinite; }
 .kc-float.b{ background:#d1e4ff; bottom:-8vmin; right:-6vmin; animation:kc-drift 22s ease-in-out infinite reverse; }
 @keyframes kc-drift {
   0%,100%{ transform:translate(0,0) rotate(0deg); }
-  50%{ transform:translate(10px,-14px) rotate(6deg); }
+  50%{ transform:translate(clamp(6px,1vw,10px), calc(-1*clamp(10px,1.8vw,14px))) rotate(6deg); }
 }
 
 /* Scroll cue */
-.kc-scroll-cue{ position:absolute; left:50%; bottom:10px; transform:translateX(-50%); font-size:.8rem; letter-spacing:.2em; opacity:.7 }
+.kc-scroll-cue{ position:absolute; left:50%; bottom:clamp(6px,1vw,10px); transform:translateX(-50%); font-size:.8rem; letter-spacing:.2em; opacity:.7 }
 @media (max-width: 782px){ .kc-hero-sub{ max-width:100%; } }
 /* ===== ES CAROUSEL (namespaced, clean) ===== */
 .es-stage{
   position:relative; width:100%;
-  height:560px; perspective:1600px; perspective-origin:50% 42%;
+  height:clamp(320px,80vw,560px); perspective:clamp(1000px,180vw,1600px); perspective-origin:50% 42%;
   overflow:visible;
 }
 .es-ring{
@@ -59,15 +59,11 @@
   transform:translate(-50%,-50%); /* JS adds rotateY(theta) translateZ(r) */
 }
 .es-card{
-  width:160px; height:110px; display:grid; place-items:center;
-  background:#fff; border-radius:16px;
-  box-shadow:0 18px 40px rgba(0,0,0,.10), 0 6px 16px rgba(0,0,0,.06);
+  width:clamp(100px,20vw,160px); height:clamp(68px,13vw,110px); display:grid; place-items:center;
+  background:#fff; border-radius:clamp(12px,2vw,16px);
+  box-shadow:0 clamp(12px,3vw,18px) clamp(24px,6vw,40px) rgba(0,0,0,.10), 0 clamp(4px,1.5vw,6px) clamp(12px,3vw,16px) rgba(0,0,0,.06);
   backface-visibility:hidden;
   /* JS sets rotateY(-currentAngle - theta) so faces viewer */
 }
 .es-card img{ display:block; max-width:85%; max-height:75%; height:auto; object-fit:contain; }
 
-@media (max-width:640px){
-  .es-stage{ height:500px; }
-  .es-card{ width:140px; height:96px; }
-}
