@@ -40,3 +40,23 @@
 /* Scroll cue */
 .kc-scroll-cue{ position:absolute; left:50%; bottom:10px; transform:translateX(-50%); font-size:.8rem; letter-spacing:.2em; opacity:.7 }
 @media (max-width: 782px){ .kc-hero-sub{ max-width:100%; } }
+
+.kc-tile{
+  position:absolute; top:50%; left:50%;
+  /* center with classic transform (not the newer translate: property) */
+  /* JS will append additional rotate/translateZ; this base stays compatible */
+  transform: translate(-50%, -50%);
+  transform-style: preserve-3d;
+  width: clamp(120px, 10vw, 160px);
+  height: clamp(70px, 7vw, 110px);
+  display: grid; place-items: center;
+  background:#fff; border-radius:14px;
+  box-shadow:0 10px 24px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.8);
+  backface-visibility: hidden;
+}
+.kc-tile img{
+  max-width:85%; max-height:75%;
+  filter:grayscale(100%); opacity:.9; transition:.2s;
+  backface-visibility: hidden;
+}
+.kc-tile:hover img{ filter:none; opacity:1; }
