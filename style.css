@@ -45,7 +45,7 @@
 .kc-ring-stage{
   position: relative;
   width: 100%;
-  height: 520px;
+  height: 560px;
   perspective: 1600px;
   perspective-origin: 50% 42%;
   overflow: visible;
@@ -54,13 +54,13 @@
   position: absolute;
   top: 50%; left: 50%;
   transform-style: preserve-3d;
-  transform: translate(-50%,-50%) rotateX(10deg) rotateY(0deg);
+  transform: translate(-50%,-50%) rotateX(8deg) rotateY(0deg);
   animation: kc-spin var(--kc-speed, 24s) linear infinite;
   will-change: transform;
 }
 @keyframes kc-spin{
-  from { transform: translate(-50%,-50%) rotateX(10deg) rotateY(0deg); }
-  to   { transform: translate(-50%,-50%) rotateX(10deg) rotateY(-360deg); }
+  from { transform: translate(-50%,-50%) rotateX(8deg) rotateY(0deg); }
+  to   { transform: translate(-50%,-50%) rotateX(8deg) rotateY(-360deg); }
 }
 .kc-tile{
   position:absolute; top:50%; left:50%;
@@ -87,19 +87,19 @@
 /* === ENFORCE KC RING BASE === */
 .kc-ring-stage{
   position:relative; width:100%;
-  height: 520px; perspective:1600px; perspective-origin:50% 42%;
+  height: 560px; perspective:1600px; perspective-origin:50% 42%;
   overflow: visible;
 }
 .kc-ring{
   position:absolute; top:50%; left:50%;
   transform-style:preserve-3d;
-  transform: translate(-50%,-50%) rotateX(10deg) rotateY(0deg) !important;
+  transform: translate(-50%,-50%) rotateX(8deg) rotateY(0deg) !important;
   animation: kc-spin var(--kc-speed, 24s) linear infinite !important;
   will-change: transform;
 }
 @keyframes kc-spin{
-  from { transform: translate(-50%,-50%) rotateX(10deg) rotateY(0deg); }
-  to   { transform: translate(-50%,-50%) rotateX(10deg) rotateY(-360deg); }
+  from { transform: translate(-50%,-50%) rotateX(8deg) rotateY(0deg); }
+  to   { transform: translate(-50%,-50%) rotateX(8deg) rotateY(-360deg); }
 }
 .kc-tile{
   position:absolute; top:50%; left:50%;
