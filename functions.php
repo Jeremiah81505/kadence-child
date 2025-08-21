@@ -64,3 +64,14 @@ add_action('enqueue_block_editor_assets', function () {
     );
   }
 });
+// Ensure child styles load after parent, with cache-busting
+add_action('wp_enqueue_scripts', function () {
+  wp_enqueue_style('kadence-parent', get_template_directory_uri() . '/style.css', [], null);
+  $child_css_path = get_stylesheet_directory() . '/style.css';
+  wp_enqueue_style(
+    'kadence-child',
+    get_stylesheet_uri(),
+    ['kadence-parent'],
+    file_exists($child_css_path) ? filemtime($child_css_path) : null
+  );
+}, 5);

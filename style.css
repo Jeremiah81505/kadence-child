@@ -116,3 +116,8 @@
 .kc-tile img { display:block; max-width:120px; max-height:90px; height:auto; object-fit:contain; }
 @keyframes kc-spin { from { transform: translate(-50%,-50%) rotateY(0deg);} to { transform: translate(-50%,-50%) rotateY(-360deg);} }
 /* === END: KC 3D Ring Base (v1) === */
+
+/* === KC override (prove CSS is loading) === */
+.kc-ring-stage{ height:520px !important; perspective:1600px !important; }
+.kc-tile img{ max-width:110px !important; max-height:80px !important; }
+.kc-ring{ animation: kc-spin var(--kc-speed, 28s) linear infinite !important; } 
