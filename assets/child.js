@@ -69,6 +69,7 @@ console.log("Kadence Child JS loaded");
 
     // JS rotation + face-camera cards
     let running = true, angle = 0, last = performance.now();
+    let autoPaused = false, manualPause = false;
     const cards = tiles.map(t => t.querySelector('.es-card'));
     const step = (t) => {
       const dt = (t - last) / 1000; last = t;
@@ -87,14 +88,31 @@ console.log("Kadence Child JS loaded");
     };
     requestAnimationFrame(step);
 
+    // auto pause when stage out of view
+    if (stage) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            autoPaused = false;
+            if (!manualPause) { running = true; last = performance.now(); }
+          } else {
+            autoPaused = true;
+            running = false;
+          }
+        });
+      }, { threshold: 0.15 });
+      io.observe(stage);
+      window.addEventListener('pagehide', () => io.disconnect(), { once: true });
+    }
+
     // interactions
-    stage?.addEventListener('mouseenter', ()=> running=false);
-    stage?.addEventListener('mouseleave', ()=> { running=true; last=performance.now(); });
+    stage?.addEventListener('mouseenter', ()=> { manualPause=true; running=false; });
+    stage?.addEventListener('mouseleave', ()=> { manualPause=false; if (!autoPaused) { running=true; last=performance.now(); } });
 
     let dragging=false, sx=0, start=0;
-    const down = x => { dragging=true; sx=x; start=angle; running=false; };
+    const down = x => { dragging=true; sx=x; start=angle; manualPause=true; running=false; };
     const move = x => { if (!dragging) return; angle = start - (x - sx)*0.35; };
-    const up   = () => { if (!dragging) return; dragging=false; running=true; last=performance.now(); };
+    const up   = () => { if (!dragging) return; dragging=false; manualPause=false; if (!autoPaused) { running=true; last=performance.now(); } };
 
     stage?.addEventListener('mousedown', e=>down(e.clientX));
     window.addEventListener('mousemove', e=>move(e.clientX));
