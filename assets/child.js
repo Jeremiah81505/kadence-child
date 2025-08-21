@@ -1,75 +1,82 @@
+// Smoke test
 console.log("Kadence Child JS loaded");
 
 // HERO reveal (unchanged)
 (function () {
   const title = document.querySelector('.kc-hero-title');
   if (!title) return;
-  const obs = new IntersectionObserver((es)=>es.forEach(e=>{ if(e.isIntersecting){ title.classList.add('kc-revealed'); obs.disconnect(); }}), {threshold:.4});
+  const obs = new IntersectionObserver((es)=>es.forEach(e=>{
+    if(e.isIntersecting){ title.classList.add('kc-revealed'); obs.disconnect(); }
+  }), {threshold:.4});
   obs.observe(title);
 })();
 
-// ===== 3D RING — JS-driven rotation with “face camera” cards =====
+// ===== 3D RING — true circle, per-tile face-camera, auto radius =====
 (function () {
-  const GAP = 28;               // spacing between tiles (px)
-  const MIN_R = 360, MAX_R = 720;
-  const TILT = 10;              // degrees around X axis
+  const GAP   = 28;               // px spacing between cards
+  const TILT  = 12;               // deg X-tilt for depth
+  const MIN_R = 300, MAX_R = 640; // clamp radius
 
+  // Ensure each .kc-tile contains a .kc-card wrapper (for shadows/sizing)
   const wrapAsCard = (tile) => {
-    // ensure we have .kc-card wrapper (so we can counter-rotate logos)
-    if (tile.querySelector('.kc-card')) return tile.querySelector('.kc-card');
-    const card = document.createElement('div');
-    card.className = 'kc-card';
-    while (tile.firstChild) card.appendChild(tile.firstChild);
-    tile.appendChild(card);
+    let card = tile.querySelector('.kc-card');
+    if (!card) {
+      card = document.createElement('div');
+      card.className = 'kc-card';
+      while (tile.firstChild) card.appendChild(tile.firstChild);
+      tile.appendChild(card);
+    }
     return card;
   };
 
+  // Compute a radius from real rendered widths, then tighten it a bit
   const calcRadius = (ring) => {
-    // Use the card widths so spacing matches what the user sees
     const cards = [...ring.querySelectorAll('.kc-card')];
     const widths = cards.map(c => c.getBoundingClientRect().width || 140);
-    const total = widths.reduce((a,b)=>a+b,0) + GAP * widths.length;
-    return Math.max(MIN_R, Math.min(Math.ceil(total / (2*Math.PI) * 1.05), MAX_R));
+    const total  = widths.reduce((a,b)=>a+b,0) + GAP * widths.length;
+    const rawR   = total / (2 * Math.PI);  // circumference = 2πr
+    const tightR = rawR * 0.8;             // tighten so we see a fuller circle
+    return Math.max(MIN_R, Math.min(Math.ceil(tightR), MAX_R));
   };
 
   const initRing = (ring, idx) => {
     const stage = ring.closest('.kc-ring-stage');
     if (!stage) return;
 
-    // Prepare tiles + cards
+    // Prepare tiles/cards
     const tiles = [...ring.querySelectorAll('.kc-tile')];
     const cards = tiles.map(wrapAsCard);
-    const N = tiles.length || 1;
+    const N     = tiles.length || 1;
 
     // Timing
     const speed = Number(ring.dataset.speed) || 24; // seconds per revolution
     let running = true;
-    let angle = 0;              // current Y rotation in deg
-    let offset = 0;             // user drag offset (deg)
-    let last = performance.now();
+    let angle   = 0;   // global Y angle
+    let offset  = 0;   // user drag offset
+    let last    = performance.now();
 
-    // Compute a safe radius from real sizes
+    // Radius + stage height
     const radius = calcRadius(ring);
-    // Stage height scaled to radius
     stage.style.height = Math.max(380, Math.min(560, Math.round(radius * 0.9))) + 'px';
 
-    // Place tiles around ring (Y), translateZ(radius)
+    // Place tiles evenly around the ring and store theta on each tile
     tiles.forEach((tile, i) => {
       const theta = (360 / N) * i;
-      tile.dataset.theta = theta;  // keep for later
-      tile.style.transform = `translate(-50%,-50%) rotateY(${theta}deg) translateZ(${radius}px)`;
+      tile.dataset.theta = theta;
       tile.style.transformStyle = 'preserve-3d';
+      // true circular layout (no extra tilts here): each tile sits on the ring
+      tile.style.transform = `translate(-50%,-50%) rotateY(${theta}deg) translateZ(${radius}px)`;
     });
 
-    // Controls: pause on hover
+    // Interaction: pause on hover
     stage.addEventListener('mouseenter', () => { running = false; });
     stage.addEventListener('mouseleave', () => { running = true; last = performance.now(); });
 
-    // Controls: drag to scrub
+    // Interaction: drag to scrub (mouse + touch)
     let dragging=false, sx=0, start=0;
     const onDown = x => { dragging=true; sx=x; start=offset; running=false; };
     const onMove = x => { if(!dragging) return; offset = start - (x - sx) * 0.4; };
-    const onUp   = () => { if(!dragging) return; dragging=false; running=true; last = performance.now(); };
+    const onUp   = () => { if(!dragging) return; dragging=false; running=true; last=performance.now(); };
     stage.addEventListener('mousedown', e=>onDown(e.clientX));
     window.addEventListener('mousemove', e=>onMove(e.clientX));
     window.addEventListener('mouseup', onUp);
@@ -77,16 +84,19 @@ console.log("Kadence Child JS loaded");
     stage.addEventListener('touchmove',  e=>onMove(e.touches[0].clientX),  {passive:true});
     stage.addEventListener('touchend', onUp);
 
-    // RAF loop — rotate ring and counter-rotate cards so logos always face camera
+    // Render: rotate the ring, counter-rotate each CARD by (angle + theta)
     const apply = () => {
       ring.style.transform = `translate(-50%,-50%) rotateX(${TILT}deg) rotateY(${angle + offset}deg)`;
-      // counter-rotate each card by the ring angle so it faces camera
-      cards.forEach(card => { card.style.transform = `rotateY(${-(angle + offset)}deg)`; });
+      cards.forEach(card => {
+        const theta = Number(card.parentNode.dataset.theta || 0);
+        // Counter the ring rotation + tile's own theta so faces camera
+        card.style.transform = `rotateY(${-(angle + offset + theta)}deg)`;
+      });
     };
 
     const tick = (t) => {
       if (running) {
-        const dt = (t - last) / 1000;  // seconds
+        const dt = (t - last) / 1000;           // seconds since last frame
         angle = (angle + (360 / speed) * dt) % 360;
       }
       last = t;
@@ -94,12 +104,12 @@ console.log("Kadence Child JS loaded");
       requestAnimationFrame(tick);
     };
 
-    // Start
     apply();
     requestAnimationFrame(tick);
     console.log('[kc-ring] initialized', { index: idx, tiles: N, radius, speed });
   };
 
+  // Wait for images so sizes are real before layout
   const ready = (root, cb) => {
     const imgs = [...root.querySelectorAll('img')];
     if (!imgs.length) return cb();
@@ -118,4 +128,3 @@ console.log("Kadence Child JS loaded");
     document.addEventListener('DOMContentLoaded', () => { initAll(); setTimeout(initAll, 200); });
   } else { initAll(); setTimeout(initAll, 200); }
 })();
-
