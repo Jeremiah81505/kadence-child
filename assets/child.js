@@ -46,10 +46,14 @@ console.log("Kadence Child JS loaded");
     const tiles = $$('.es-tile', ring);
     if (!tiles.length) return;
 
+    // dataset overrides
+    const speed = Number(ring.dataset.speed) || SPEED;
+    const tilt = ring.dataset.tilt ? Number(ring.dataset.tilt) : TILT;
+    const radius = ring.dataset.radius ? Number(ring.dataset.radius) : radiusFrom(ring);
+
     // set up cards and distribute around ring
     tiles.forEach(ensureCard);
     const N = tiles.length;
-    const radius = radiusFrom(ring);
 
     tiles.forEach((tile,i)=>{
       const theta = (360/N)*i;
@@ -64,9 +68,9 @@ console.log("Kadence Child JS loaded");
     const cards = tiles.map(t => t.querySelector('.es-card'));
     const step = (t) => {
       const dt = (t - last) / 1000; last = t;
-      if (running) angle = (angle + (360/SPEED)*dt) % 360;
+      if (running) angle = (angle + (360/speed)*dt) % 360;
 
-      ring.style.transform = `translate(-50%,-50%) rotateX(${TILT}deg) rotateY(${angle}deg)`;
+      ring.style.transform = `translate(-50%,-50%) rotateX(${tilt}deg) rotateY(${angle}deg)`;
 
       // face the camera: rotate card opposite of ring+its tile angle
       tiles.forEach((tile, idx) => {
