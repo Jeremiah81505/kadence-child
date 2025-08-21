@@ -10,7 +10,7 @@
 <div class="wp-block-group alignfull kc-ring-wrap">
   <!-- wp:html -->
   <div class="kc-ring-stage">
-    <div class="kc-ring" data-radius="380" data-speed="24">
+    <div class="kc-ring" data-radius="560" data-speed="30">
       <div class="kc-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Wilsonart-01.png" alt="Wilsonart"></div>
       <div class="kc-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vicostone-01.png" alt="Vicostone"></div>
       <div class="kc-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Viatera-01.png" alt="Viatera"></div>
