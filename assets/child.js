@@ -100,7 +100,7 @@ console.log("Kadence Child JS loaded");
 
 // === KC RING LAYOUT (CSS-driven spin) ===
 (function () {
-  const GAP = 28, TIGHT = 0.85; // from your D4: r_raw≈334 → r≈284 when ×0.85
+  const GAP = 28, TIGHT = 0.72; // tighter ring → more of the circle in view
   const MIN_R = 260, MAX_R = 640;
 
   const ensureCard = (tile) => {
