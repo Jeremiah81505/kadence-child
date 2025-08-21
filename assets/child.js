@@ -60,7 +60,8 @@ console.log("Kadence Child JS loaded");
     if (stage) stage.style.height = Math.max(420, Math.min(600, Math.round(radius*0.95))) + 'px';
 
     // JS rotation + face-camera cards
-    let running = true, angle = 0, last = performance.now();
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let running = !reduced, angle = 0, last = performance.now();
     const cards = tiles.map(t => t.querySelector('.es-card'));
     const step = (t) => {
       const dt = (t - last) / 1000; last = t;
@@ -82,6 +83,8 @@ console.log("Kadence Child JS loaded");
     // interactions
     stage?.addEventListener('mouseenter', ()=> running=false);
     stage?.addEventListener('mouseleave', ()=> { running=true; last=performance.now(); });
+    stage?.addEventListener('focusin', ()=> running=false);
+    stage?.addEventListener('focusout', ()=> { running=true; last=performance.now(); });
 
     let dragging=false, sx=0, start=0;
     const down = x => { dragging=true; sx=x; start=angle; running=false; };
@@ -95,6 +98,19 @@ console.log("Kadence Child JS loaded");
     stage?.addEventListener('touchstart', e=>down(e.touches[0].clientX), {passive:true});
     stage?.addEventListener('touchmove',  e=>move(e.touches[0].clientX),  {passive:true});
     stage?.addEventListener('touchend', up);
+
+    const stepDeg = 360 / N;
+    stage?.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') {
+        running = false;
+        angle -= stepDeg;
+        e.preventDefault();
+      } else if (e.key === 'ArrowRight') {
+        running = false;
+        angle += stepDeg;
+        e.preventDefault();
+      }
+    });
 
     console.log('[es-carousel] ready', {tiles:N, radius});
   };

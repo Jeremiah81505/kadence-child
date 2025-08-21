@@ -9,7 +9,7 @@
 <!-- wp:group {"align":"full","className":"kc-ring-wrap","style":{"spacing":{"padding":{"top":"36px","bottom":"36px"}}},"layout":{"type":"constrained","contentSize":"1200px"}} -->
 <div class="wp-block-group alignfull kc-ring-wrap">
   <!-- wp:html -->
-  <div class="es-stage">
+    <div class="es-stage" tabindex="0" role="region" aria-label="Logo carousel">
     <div class="es-ring" data-radius="560" data-speed="30">
       <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Wilsonart-01.png" alt="Wilsonart"></div>
       <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vicostone-01.png" alt="Vicostone"></div>
