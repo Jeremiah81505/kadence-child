@@ -60,3 +60,38 @@
   backface-visibility: hidden;
 }
 .kc-tile:hover img{ filter:none; opacity:1; }
+
+/* ===== 3D Ring Carousel Base Styles (theme) ===== */
+.kc-ring-stage {
+  position: relative;
+  width: 100%;
+  height: 460px;             /* taller stage */
+  perspective: 1600px;       /* depth */
+  overflow: visible;
+}
+.kc-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-style: preserve-3d;
+  transform: translate(-50%, -50%) rotateY(0deg);
+  animation: kc-spin var(--kc-speed, 28s) linear infinite; /* default slower */
+}
+.kc-tile {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+.kc-tile img {
+  display: block;
+  max-width: 120px;          /* smaller logos to prevent crowding */
+  max-height: 90px;
+  height: auto;
+  object-fit: contain;
+}
+@keyframes kc-spin {
+  from { transform: translate(-50%, -50%) rotateY(0deg); }
+  to   { transform: translate(-50%, -50%) rotateY(-360deg); }
+}
