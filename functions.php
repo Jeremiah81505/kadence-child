@@ -75,3 +75,9 @@ add_action('wp_enqueue_scripts', function () {
     file_exists($child_css_path) ? filemtime($child_css_path) : null
   );
 }, 5);
+
+// Add a no-js class so we can style JS fallbacks
+add_filter( 'body_class', function ( $classes ) {
+  $classes[] = 'no-js';
+  return $classes;
+} );

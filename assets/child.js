@@ -1,5 +1,15 @@
 console.log("Kadence Child JS loaded");
 
+// Remove the no-js class once JS is running
+(function(){
+  const remove = () => document.body.classList.remove('no-js');
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', remove);
+  } else {
+    remove();
+  }
+})();
+
 // HERO reveal (unchanged)
 (function () {
   const title = document.querySelector('.kc-hero-title');

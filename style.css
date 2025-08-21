@@ -71,3 +71,21 @@
   .es-stage{ height:500px; }
   .es-card{ width:140px; height:96px; }
 }
+
+/* No-JS fallback for ES carousel */
+.no-js .es-stage{
+  height:auto;
+  perspective:none;
+}
+.no-js .es-ring{
+  position:static;
+  transform:none;
+  display:flex;
+  flex-wrap:wrap;
+  gap:24px;
+  justify-content:center;
+}
+.no-js .es-tile{
+  position:static;
+  transform:none;
+}
