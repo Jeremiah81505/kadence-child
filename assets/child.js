@@ -91,12 +91,13 @@ console.log("Kadence Child JS loaded");
   };
 })();
 
-// ===== 3D RING — FINAL BUNDLE (JS) =====
+// ===== 3D RING — FINAL BUNDLE (JS, face-camera) =====
 (function () {
   const GAP   = 24;     // spacing between cards
-  const TIGHT = 0.72;   // tighter ring → more circle visible
+  const TIGHT = 0.72;   // tighter ring → more circle visible (0.68 tighter, 0.80 looser)
   const MIN_R = 260, MAX_R = 620;
-  const TILT  = 8;      // matches CSS rotateX
+  const TILT  = 8;      // must match CSS rotateX
+  const SPEED = 28;     // seconds per revolution (fallback)
 
   const ensureCard = (tile) => {
     let card = tile.querySelector('.kc-card');
@@ -124,27 +125,58 @@ console.log("Kadence Child JS loaded");
     const N = tiles.length;
     const radius = calcRadius(ring);
 
+    // Distribute evenly + store theta on each tile
     tiles.forEach((tile, i) => {
       const theta = (360 / N) * i;
-      tile.style.transform = `translate(-50%,-50%) rotateY(${theta}deg) translateZ(${radius}px)`;
+      tile.dataset.theta = theta;
+      tile.style.transform =
+        `translate(-50%,-50%) rotateY(${theta}deg) translateZ(${radius}px)`;
     });
 
-    if (stage) {
-      stage.style.height = Math.max(420, Math.min(600, Math.round(radius * 0.95))) + 'px';
-    }
+    // Stage height based on radius
+    if (stage) stage.style.height = Math.max(420, Math.min(600, Math.round(radius*0.95))) + 'px';
 
-    // Hover pause/resume (CSS animation)
-    ring.style.animationPlayState = 'running';
-    stage?.addEventListener('mouseenter', ()=> ring.style.animationPlayState = 'paused');
-    stage?.addEventListener('mouseleave', ()=> ring.style.animationPlayState = 'running');
+    // --- JS ANIMATION (face camera) ---
+    // Kill CSS animation so we control the angle
+    ring.style.animation = 'none';
 
-    // Drag scrub: pause CSS animation while dragging, rotate inline
-    let dragging=false, sx=0, startDeg=0;
-    const apply = (deg) => ring.style.transform =
-      `translate(-50%,-50%) rotateX(${TILT}deg) rotateY(${deg}deg)`;
-    const down = x => { dragging=true; sx=x; startDeg=0; ring.style.animation='none'; };
-    const move = x => { if(!dragging) return; const delta=(x - sx)*-0.35; apply(startDeg + delta); };
-    const up   = () => { if(!dragging) return; dragging=false; ring.style.animation=''; };
+    let running = true;
+    let angle   = 0; // current Y angle
+    let last    = performance.now();
+    const speed = Number(ring.dataset.speed) || SPEED; // seconds per revolution
+
+    const cards = tiles.map(t => t.querySelector('.kc-card'));
+
+    const render = (t) => {
+      if (running) {
+        const dt = (t - last) / 1000;
+        angle = (angle + (360/speed) * dt) % 360;
+      }
+      last = t;
+
+      ring.style.transform =
+        `translate(-50%,-50%) rotateX(${TILT}deg) rotateY(${angle}deg)`;
+
+      // Counter-rotate each card so logos always face the viewer
+      tiles.forEach((tile, i) => {
+        const theta = Number(tile.dataset.theta) || 0;
+        const card  = cards[i];
+        if (card) card.style.transform = `rotateY(${-(angle + theta)}deg)`;
+      });
+
+      requestAnimationFrame(render);
+    };
+    requestAnimationFrame(render);
+
+    // Hover pause/resume
+   stage?.addEventListener('mouseenter', ()=> running = false);
+    stage?.addEventListener('mouseleave', ()=> { running = true; last = performance.now(); });
+
+    // Drag scrub (pause while dragging, set angle directly)
+    let dragging=false, sx=0, start=0;
+    const down = (x)=>{ dragging=true; sx=x; start=angle; running=false; };
+    const move = (x)=>{ if(!dragging) return; angle = start - (x - sx)*0.35; };
+    const up   = ()=>{ if(!dragging) return; dragging=false; running=true; last = performance.now(); };
     stage?.addEventListener('mousedown', e=>down(e.clientX));
     window.addEventListener('mousemove', e=>move(e.clientX));
     window.addEventListener('mouseup', up);
@@ -152,7 +184,7 @@ console.log("Kadence Child JS loaded");
     stage?.addEventListener('touchmove',  e=>move(e.touches[0].clientX),  {passive:true});
     stage?.addEventListener('touchend', up);
 
-    console.log('[kc-ring] final layout', { tiles: N, radius });
+    console.log('[kc-ring] js-spin face-camera on', { tiles: N, radius, speed });
   };
 
   const imagesReady = (root, cb) => {
