@@ -72,7 +72,7 @@
   .es-card{ width:140px; height:96px; }
 }
 
-/* No-JS fallback for ES carousel */
+/* No-JS fallback for ES carousel: remove 3D transforms and absolute positioning */
 .no-js .es-stage{
   height:auto;
   perspective:none;
