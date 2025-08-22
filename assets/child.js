@@ -60,7 +60,9 @@ console.log("Kadence Child JS loaded");
     if (stage) stage.style.height = Math.max(420, Math.min(600, Math.round(radius*0.95))) + 'px';
 
     // JS rotation + face-camera cards
-    let running = true, angle = 0, last = performance.now();
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let running = !reduced, interacted = !reduced, angle = 0, last = performance.now();
+    let autoPaused = false, manualPause = false;
     const cards = tiles.map(t => t.querySelector('.es-card'));
     const step = (t) => {
       const dt = (t - last) / 1000; last = t;
@@ -80,13 +82,24 @@ console.log("Kadence Child JS loaded");
     requestAnimationFrame(step);
 
     // interactions
-    stage?.addEventListener('mouseenter', ()=> running=false);
-    stage?.addEventListener('mouseleave', ()=> { running=true; last=performance.now(); });
+    document.addEventListener('visibilitychange', ()=>{
+      autoPaused = document.hidden;
+      if (autoPaused) {
+        running = false;
+      } else if (!manualPause && interacted) {
+        running = true; last = performance.now();
+      }
+    });
+
+    stage?.addEventListener('mouseenter', ()=> { manualPause=true; running=false; });
+    stage?.addEventListener('mouseleave', ()=> { manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } });
+    stage?.addEventListener('focusin', ()=> { manualPause=true; running=false; interacted=true; });
+    stage?.addEventListener('focusout', ()=> { manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } });
 
     let dragging=false, sx=0, start=0;
-    const down = x => { dragging=true; sx=x; start=angle; running=false; };
+    const down = x => { dragging=true; sx=x; start=angle; manualPause=true; running=false; interacted=true; };
     const move = x => { if (!dragging) return; angle = start - (x - sx)*0.35; };
-    const up   = () => { if (!dragging) return; dragging=false; running=true; last=performance.now(); };
+    const up   = () => { if (!dragging) return; dragging=false; manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } };
 
     stage?.addEventListener('mousedown', e=>down(e.clientX));
     window.addEventListener('mousemove', e=>move(e.clientX));
@@ -95,6 +108,21 @@ console.log("Kadence Child JS loaded");
     stage?.addEventListener('touchstart', e=>down(e.touches[0].clientX), {passive:true});
     stage?.addEventListener('touchmove',  e=>move(e.touches[0].clientX),  {passive:true});
     stage?.addEventListener('touchend', up);
+
+    const stepDeg = 360 / N;
+    stage?.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') {
+        running = false;
+        interacted = true;
+        angle -= stepDeg;
+        e.preventDefault();
+      } else if (e.key === 'ArrowRight') {
+        running = false;
+        interacted = true;
+        angle += stepDeg;
+        e.preventDefault();
+      }
+    });
 
     console.log('[es-carousel] ready', {tiles:N, radius});
   };
