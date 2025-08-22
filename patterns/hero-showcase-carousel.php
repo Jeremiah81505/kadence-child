@@ -62,7 +62,7 @@ add_action( 'init', function () {
 
     <!-- Reuse the existing, working carousel pattern -->
     <!-- IMPORTANT: This slug must match the existing pattern. -->
-    <!-- wp:pattern {"slug":"kadence-child/3d-carousel-ring"} /-->
+    <!-- wp:pattern {"slug":"kadence-child/carousel-3d-ring"} /-->
 
   </div>
 </section>
