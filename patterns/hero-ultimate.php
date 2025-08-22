@@ -6,13 +6,12 @@
  * Description: Full-bleed hero with layered parallax, animated headline, and dual CTAs.
  */
 ?>
-<!-- wp:cover {"dimRatio":0,"isUserOverlayColor":true,"customGradient":"linear-gradient(90deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0) 100%)","minHeight":80,"minHeightUnit":"vh","align":"full","className":"kc-hero-ultimate","style":{"spacing":{"padding":{"top":"80px","bottom":"80px"}}}} -->
-<div class="wp-block-cover alignfull kc-hero-ultimate" style="padding-top:80px;padding-bottom:80px;min-height:80vh">
+<!-- wp:cover {"dimRatio":0,"isUserOverlayColor":true,"customGradient":"linear-gradient(90deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0) 100%)","minHeight":50,"minHeightUnit":"vh","align":"full","className":"kc-hero-ultimate","style":{"spacing":{"padding":{"top":"60px","bottom":"60px"}}}} -->
+<div class="wp-block-cover alignfull kc-hero-ultimate" style="padding-top:60px;padding-bottom:60px;min-height:50vh">
   <span aria-hidden="true" class="wp-block-cover__background has-background-dim-0 has-background-dim" style="background:linear-gradient(90deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0) 100%)"></span>
-  <!-- Set your background image in block settings after inserting the pattern -->
-  <img class="wp-block-cover__image-background" alt="" data-object-fit="cover"/>
+  <img class="wp-block-cover__image-background" alt="" data-object-fit="cover" src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/AdobeStock_884069741-scaled.jpeg"/>
   <div class="wp-block-cover__inner-container">
-    <!-- wp:group {"layout":{"type":"constrained","contentSize":"1200px"}} -->
+    <!-- wp:group {"layout":{"type":"constrained","contentSize":"1900px"}} -->
     <div class="wp-block-group kc-hero-wrap">
       <!-- Decorative floating chips -->
       <div class="kc-float a"></div>
@@ -46,7 +45,12 @@
             <!-- /wp:button -->
           </div>
           <!-- /wp:buttons -->
+        </div>
+        <!-- /wp:group -->
 
+        <!-- Right column -->
+        <!-- wp:group {"className":"kc-hero-right","layout":{"type":"flex","orientation":"vertical"}} -->
+        <div class="wp-block-group kc-hero-right">
           <!-- wp:group {"className":"kc-hero-badges","layout":{"type":"flex","flexWrap":"wrap"}} -->
           <div class="wp-block-group kc-hero-badges">
             <!-- wp:paragraph {"className":"kc-info-badge"} -->
@@ -58,41 +62,40 @@
             <!-- /wp:paragraph -->
           </div>
           <!-- /wp:group -->
+
+          <!-- wp:group {"className":"kc-hero-chips","layout":{"type":"constrained"}} -->
+          <div class="wp-block-group kc-hero-chips">
+            <!-- wp:html -->
+            <a class="kc-chip" href="/quartz">Quartz</a>
+            <!-- /wp:html -->
+
+            <!-- wp:html -->
+            <a class="kc-chip" href="/natural-stone">Natural Stone</a>
+            <!-- /wp:html -->
+
+            <!-- wp:html -->
+            <a class="kc-chip" href="/solid-surface">Solid Surface</a>
+            <!-- /wp:html -->
+
+            <!-- wp:html -->
+            <a class="kc-chip" href="/ultra-compact">Ultra Compact</a>
+            <!-- /wp:html -->
+
+            <!-- wp:html -->
+            <a class="kc-chip kc-chip-wide" href="/laminate">Laminate</a>
+            <!-- /wp:html -->
+          </div>
+          <!-- /wp:group -->
+        </div>
+        <!-- /wp:group -->
         </div>
         <!-- /wp:group -->
 
-        <!-- Right column -->
-        <!-- wp:group {"className":"kc-hero-chips","layout":{"type":"flex","orientation":"vertical"}} -->
-        <div class="wp-block-group kc-hero-chips">
-          <!-- wp:paragraph {"className":"kc-chip"} -->
-          <p class="kc-chip">Quartz</p>
-          <!-- /wp:paragraph -->
-
-          <!-- wp:paragraph {"className":"kc-chip"} -->
-          <p class="kc-chip">Natural Stone</p>
-          <!-- /wp:paragraph -->
-
-          <!-- wp:paragraph {"className":"kc-chip"} -->
-          <p class="kc-chip">Solid Surface</p>
-          <!-- /wp:paragraph -->
-
-          <!-- wp:paragraph {"className":"kc-chip"} -->
-          <p class="kc-chip">Laminate</p>
-          <!-- /wp:paragraph -->
-
-          <!-- wp:paragraph {"className":"kc-chip"} -->
-          <p class="kc-chip">Ultra Compact</p>
-          <!-- /wp:paragraph -->
-        </div>
-        <!-- /wp:group -->
-        </div>
-        <!-- /wp:group -->
-
-        <!-- wp:group {"className":"kc-ring-wrap","layout":{"type":"constrained","contentSize":"1200px"}} -->
+        <!-- wp:group {"className":"kc-ring-wrap","layout":{"type":"constrained","contentSize":"1900px"}} -->
         <div class="wp-block-group kc-ring-wrap">
           <!-- wp:html -->
           <div class="es-stage">
-            <div class="es-ring" data-radius="560" data-speed="30" data-tilt="8">
+            <div class="es-ring" data-radius="560" data-speed="30" data-tilt="0">
               <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Wilsonart-01.png" alt="Wilsonart"></div>
               <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vicostone-01.png" alt="Vicostone"></div>
               <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Viatera-01.png" alt="Viatera"></div>

@@ -14,7 +14,7 @@ const DEBUG = false;
 })();
 // ===== ES CAROUSEL (clean reset) =====
 (function(){
-  const GAP=24, TIGHT=0.72, MIN_R=260, MAX_R=620, TILT=8, SPEED=28; // sec/rev
+  const GAP=24, TIGHT=0.72, MIN_R=200, MAX_R=620, TILT=0, SPEED=28; // sec/rev
   const $ = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => [...r.querySelectorAll(s)];
   const CLEANUPS = new WeakMap();
@@ -70,7 +70,7 @@ const DEBUG = false;
 
     const sw = ring.parentElement?.offsetWidth || 0;
     if (stage) {
-      const h = Math.round(Math.max(320, Math.min(sw * 0.8, 560)));
+      const h = Math.round(Math.max(240, Math.min(sw * 0.6, 420)));
       stage.style.height = h + 'px';
     }
 

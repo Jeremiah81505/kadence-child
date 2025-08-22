@@ -11,21 +11,25 @@
 
 /* Your custom CSS below */
 /* ==== HERO ULTIMATE ==== */
-.kc-hero-ultimate { position:relative; }
+.kc-hero-ultimate { position:relative; min-height:50vh; }
 .kc-hero-ultimate .wp-block-cover__background{ background:linear-gradient(90deg, rgba(0,0,0,0.65), transparent); opacity:1!important; }
-.kc-hero-wrap { position:relative; color:#fff; text-align:left; }
-.kc-hero-chips{ position:absolute; top:24px; right:24px; display:flex; flex-direction:column; gap:clamp(6px,1vw,10px); }
+.kc-hero-wrap { position:relative; color:#fff; text-align:left; max-width:1900px; margin-inline:auto; }
+.kc-hero-right{ display:flex; flex-direction:column; align-items:flex-start; gap:clamp(16px,2vw,24px); }
+.kc-hero-chips{ display:grid; grid-template-columns:repeat(2,1fr); gap:clamp(12px,1.5vw,20px); }
 .kc-eyebrow { color:#fff; opacity:.85; letter-spacing:.15em; text-transform:uppercase; font-size:.9rem; margin:0 0 clamp(8px,1vw,12px); }
 .kc-hero-title { color:#fff; font-weight:800; line-height:1.05; font-size:clamp(36px,6vw,68px); margin:0 0 clamp(8px,1.5vw,12px); }
 .kc-hero-sub { color:#fff; opacity:.95; font-size:clamp(16px,2.2vw,22px); max-width:60ch; margin:clamp(4px,0.8vw,8px) 0 clamp(16px,3vw,28px); }
 
-.kc-info-badge{ display:inline-block; background:rgba(255,255,255,.15); padding:.25em .6em; border-radius:4px; font-size:.75rem; line-height:1; }
+.kc-info-badge{ display:inline-flex; align-items:center; margin:0; background:rgba(255,255,255,.15); padding:.25em .6em; border-radius:4px; font-size:.75rem; line-height:1; }
 
-.kc-chip-stack{ position:absolute; right:0; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:clamp(6px,1vw,10px); z-index:1; }
-.kc-chip{ display:flex; align-items:center; background:rgba(0,0,0,.35); color:#fff; padding:.45rem .8rem; border-radius:clamp(8px,1.5vw,12px); transition:background .2s ease; }
-.kc-chip:hover{ background:rgba(0,0,0,.5); }
+.kc-hero-badges{ display:flex; align-items:center; gap:1rem; }
 
-@media (max-width: 782px){ .kc-chip-stack{ position:static; transform:none; flex-direction:row; flex-wrap:wrap; margin-top:clamp(16px,3vw,24px); } }
+.kc-chip{ display:flex; justify-content:center; align-items:center; text-align:center; background:linear-gradient(145deg,#0d1117,#1b2433); color:#fff; padding:1rem; border-radius:12px; border:1px solid rgba(255,255,255,.1); text-decoration:none; font-weight:700; box-shadow:0 6px 12px rgba(0,0,0,.25); transition:transform .25s ease, box-shadow .25s ease, background .25s ease; }
+.kc-chip:hover,
+.kc-chip:focus{ background:linear-gradient(145deg,#1b2433,#0d1117); transform:translateY(-4px); box-shadow:0 10px 20px rgba(0,0,0,.35); }
+.kc-chip-wide{ grid-column:span 2; }
+
+@media (max-width: 782px){ .kc-hero-chips{ grid-template-columns:1fr; } }
 
 /* Headline reveal */
 .kc-reveal { display:inline-block; transform:translateY(clamp(12px,2vw,18px)); opacity:0; }
@@ -51,18 +55,18 @@
 /* Scroll cue */
 .kc-scroll-cue{ position:absolute; left:50%; bottom:clamp(6px,1vw,10px); transform:translateX(-50%); font-size:.8rem; letter-spacing:.2em; opacity:.7 }
 @media (max-width: 782px){ .kc-hero-sub{ max-width:100%; } }
-.kc-ring-wrap{ display:flex; justify-content:center; margin-top:64px; }
+.kc-ring-wrap{ display:flex; justify-content:center; margin-top:16px; max-width:1900px; margin-inline:auto; }
 /* ===== ES CAROUSEL (namespaced, clean) ===== */
 .es-stage{
   position:relative; width:100%;
-  height:clamp(320px,80vw,560px); perspective:clamp(1000px,180vw,1600px); perspective-origin:50% 42%;
+  height:clamp(160px,32vw,300px); perspective:clamp(900px,160vw,1400px); perspective-origin:50% 42%;
   overflow:visible;
 }
 .es-ring{
   position:absolute; top:50%; left:50%;
   transform-style:preserve-3d;
   /* JS sets rotateY each frame; keep a stable base tilt only */
-  transform:translate(-50%,-50%) rotateX(8deg) rotateY(0deg);
+  transform:translate(-50%,-50%) rotateX(0deg) rotateY(0deg);
   will-change:transform;
 }
 .es-tile{
