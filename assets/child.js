@@ -14,6 +14,7 @@ document.body.classList.remove('no-js');
   const GAP=24, TIGHT=0.72, MIN_R=260, MAX_R=620, TILT=8, SPEED=28; // sec/rev
   const $ = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+  const CLEANUPS = new WeakMap();
 
   const ensureCard = (tile) => {
     let card = tile.querySelector('.es-card');
@@ -42,6 +43,9 @@ document.body.classList.remove('no-js');
   };
 
   const initOne = (ring) => {
+    // clean up prior init if present
+    CLEANUPS.get(ring)?.();
+
     const stage = ring.closest('.es-stage');
     const tiles = $$('.es-tile', ring);
     if (!tiles.length) return;
@@ -72,7 +76,9 @@ document.body.classList.remove('no-js');
     let running = !reduced, interacted = !reduced, angle = 0, last = performance.now();
     let autoPaused = false, manualPause = false;
     const cards = tiles.map(t => t.querySelector('.es-card'));
+    let active = true, raf;
     const step = (t) => {
+      if (!active) return;
       const dt = (t - last) / 1000; last = t;
       if (running) angle = (angle + (360/speed)*dt) % 360;
 
@@ -85,13 +91,14 @@ document.body.classList.remove('no-js');
         if (card) card.style.transform = `rotateY(${-(angle + theta)}deg)`;
       });
 
-      requestAnimationFrame(step);
+      raf = requestAnimationFrame(step);
     };
-    requestAnimationFrame(step);
+    raf = requestAnimationFrame(step);
 
     // auto pause when stage out of view
+    let io, onPageHide;
     if (stage) {
-      const io = new IntersectionObserver((entries) => {
+      io = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             autoPaused = false;
@@ -103,37 +110,74 @@ document.body.classList.remove('no-js');
         });
       }, { threshold: 0.15 });
       io.observe(stage);
-      window.addEventListener('pagehide', () => io.disconnect(), { once: true });
+      onPageHide = () => io.disconnect();
+      window.addEventListener('pagehide', onPageHide, { once: true });
     }
 
     // interactions
-    document.addEventListener('visibilitychange', () => {
+    const onVisibility = () => {
       autoPaused = document.hidden;
       if (autoPaused) {
         running = false;
       } else if (!manualPause && interacted) {
         running = true; last = performance.now();
       }
-    });
+    };
+    document.addEventListener('visibilitychange', onVisibility);
 
-    stage?.addEventListener('mouseenter', ()=> { manualPause=true; running=false; });
-    stage?.addEventListener('mouseleave', ()=> { manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } });
-    stage?.addEventListener('focusin', ()=> { interacted=true; manualPause=true; running=false; });
-    stage?.addEventListener('focusout', ()=> { manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } });
+    const onEnter = () => { manualPause=true; running=false; };
+    const onLeave = () => { manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } };
+    const onFocusIn = () => { interacted=true; manualPause=true; running=false; };
+    const onFocusOut = () => { manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } };
+    stage?.addEventListener('mouseenter', onEnter);
+    stage?.addEventListener('mouseleave', onLeave);
+    stage?.addEventListener('focusin', onFocusIn);
+    stage?.addEventListener('focusout', onFocusOut);
 
     let dragging=false, sx=0, start=0;
     const down = x => { dragging=true; sx=x; start=angle; manualPause=true; running=false; };
     const move = x => { if (!dragging) return; angle = start - (x - sx)*0.35; };
     const up   = () => { if (!dragging) return; dragging=false; manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } };
 
-    stage?.addEventListener('mousedown', e=>{ interacted=true; down(e.clientX); });
-    window.addEventListener('mousemove', e=>move(e.clientX));
-    window.addEventListener('mouseup', up);
+    const onMouseDown = e => { interacted=true; down(e.clientX); };
+    const onMouseMove = e => move(e.clientX);
+    const onMouseUp = () => up();
+    const onTouchStart = e => { interacted=true; down(e.touches[0].clientX); };
+    const onTouchMove = e => move(e.touches[0].clientX);
+    const onTouchEnd = () => up();
 
-    stage?.addEventListener('touchstart', e=>{ interacted=true; down(e.touches[0].clientX); }, {passive:true});
-    stage?.addEventListener('touchmove',  e=>move(e.touches[0].clientX),  {passive:true});
-    stage?.addEventListener('touchend', up);
+    stage?.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
 
+    stage?.addEventListener('touchstart', onTouchStart, {passive:true});
+    stage?.addEventListener('touchmove',  onTouchMove,  {passive:true});
+    stage?.addEventListener('touchend', onTouchEnd);
+
+    codex/track-and-clean-up-initialized-rings
+    console.log('[es-carousel] ready', {tiles:N, radius});
+
+    const cleanup = () => {
+      active = false;
+      cancelAnimationFrame(raf);
+      document.removeEventListener('visibilitychange', onVisibility);
+      stage?.removeEventListener('mouseenter', onEnter);
+      stage?.removeEventListener('mouseleave', onLeave);
+      stage?.removeEventListener('focusin', onFocusIn);
+      stage?.removeEventListener('focusout', onFocusOut);
+      stage?.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      stage?.removeEventListener('touchstart', onTouchStart);
+      stage?.removeEventListener('touchmove', onTouchMove);
+      stage?.removeEventListener('touchend', onTouchEnd);
+      if (io) io.disconnect();
+      if (onPageHide) window.removeEventListener('pagehide', onPageHide);
+    };
+
+    CLEANUPS.set(ring, cleanup);
+
+main
   };
 
   const initAll = () => {
