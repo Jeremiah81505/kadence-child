@@ -1,5 +1,9 @@
 <?php
 require_once __DIR__ . '/utils.php';
+
+add_action( 'after_setup_theme', function () {
+  load_child_theme_textdomain( 'kadence-child', get_stylesheet_directory() . '/languages' );
+} );
 /**
  * Kadence Child – enqueue styles & JS
  */
