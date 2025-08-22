@@ -68,7 +68,7 @@ console.log("Kadence Child JS loaded");
     }
 
     // JS rotation + face-camera cards
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
     let running = !reduced, interacted = !reduced, angle = 0, last = performance.now();
     let autoPaused = false, manualPause = false;
     const cards = tiles.map(t => t.querySelector('.es-card'));
