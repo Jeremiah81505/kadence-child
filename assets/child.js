@@ -154,7 +154,7 @@ document.body.classList.remove('no-js');
     stage?.addEventListener('touchmove',  onTouchMove,  {passive:true});
     stage?.addEventListener('touchend', onTouchEnd);
 
-    codex/track-and-clean-up-initialized-rings
+    // codex/track-and-clean-up-initialized-rings
     console.log('[es-carousel] ready', {tiles:N, radius});
 
     const cleanup = () => {
@@ -176,8 +176,6 @@ document.body.classList.remove('no-js');
     };
 
     CLEANUPS.set(ring, cleanup);
-
-main
   };
 
   const initAll = () => {
