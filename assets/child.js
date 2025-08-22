@@ -14,6 +14,9 @@ console.log("Kadence Child JS loaded");
   const GAP=24, TIGHT=0.72, MIN_R=260, MAX_R=620, TILT=8, SPEED=28; // sec/rev
   const $ = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+  const states = new Map();
+  let resizeAttached = false;
+  let debouncedLayout;
 
   const ensureCard = (tile) => {
     let card = tile.querySelector('.es-card');
@@ -41,110 +44,169 @@ console.log("Kadence Child JS loaded");
     setTimeout(()=>{ if(left>0) cb(); }, 1200);
   };
 
-  const initOne = (ring) => {
+  const layoutOne = (ring) => {
     const stage = ring.closest('.es-stage');
     const tiles = $$('.es-tile', ring);
     if (!tiles.length) return;
-
-    // dataset overrides
     const speed = Number(ring.dataset.speed) || SPEED;
     const tilt = ring.dataset.tilt ? Number(ring.dataset.tilt) : TILT;
     const radius = ring.dataset.radius ? Number(ring.dataset.radius) : radiusFrom(ring);
-
-    // set up cards and distribute around ring
     tiles.forEach(ensureCard);
     const N = tiles.length;
-
     tiles.forEach((tile,i)=>{
       const theta = (360/N)*i;
       tile.dataset.theta = theta;
       tile.style.transform = `translate(-50%,-50%) rotateY(${theta}deg) translateZ(${radius}px)`;
     });
-
     const sw = ring.parentElement?.offsetWidth || 0;
     if (stage) {
       const h = Math.round(Math.max(320, Math.min(sw * 0.8, 560)));
       stage.style.height = h + 'px';
     }
+    return { stage, tiles, speed, tilt, radius };
+  };
 
-    // JS rotation + face-camera cards
+  const destroyOne = (ring) => {
+    const state = states.get(ring);
+    if (!state) return;
+    cancelAnimationFrame(state.frame);
+    state.io?.disconnect();
+    document.removeEventListener('visibilitychange', state.onVisibility);
+    state.stage?.removeEventListener('mouseenter', state.onEnter);
+    state.stage?.removeEventListener('mouseleave', state.onLeave);
+    state.stage?.removeEventListener('focusin', state.onFocusIn);
+    state.stage?.removeEventListener('focusout', state.onFocusOut);
+    state.stage?.removeEventListener('mousedown', state.onMouseDown);
+    window.removeEventListener('mousemove', state.onMouseMove);
+    window.removeEventListener('mouseup', state.onMouseUp);
+    state.stage?.removeEventListener('touchstart', state.onTouchStart);
+    state.stage?.removeEventListener('touchmove', state.onTouchMove);
+    state.stage?.removeEventListener('touchend', state.onTouchEnd);
+    state.observer?.disconnect();
+    states.delete(ring);
+    if (!states.size && resizeAttached) {
+      window.removeEventListener('resize', debouncedLayout);
+      resizeAttached = false;
+    }
+  };
+
+  const initOne = (ring) => {
+    if (states.has(ring)) return;
+    const data = layoutOne(ring);
+    if (!data) return;
+    const { stage } = data;
+
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let running = !reduced, interacted = !reduced, angle = 0, last = performance.now();
-    let autoPaused = false, manualPause = false;
-    const cards = tiles.map(t => t.querySelector('.es-card'));
+    const state = { ...data, running: !reduced, interacted: !reduced, angle: 0, last: performance.now(), autoPaused: false, manualPause: false };
+    state.cards = state.tiles.map(t => t.querySelector('.es-card'));
+
     const step = (t) => {
-      const dt = (t - last) / 1000; last = t;
-      if (running) angle = (angle + (360/speed)*dt) % 360;
-
-      ring.style.transform = `translate(-50%,-50%) rotateX(${tilt}deg) rotateY(${angle}deg)`;
-
-      // face the camera: rotate card opposite of ring+its tile angle
-      tiles.forEach((tile, idx) => {
+      const dt = (t - state.last) / 1000; state.last = t;
+      if (state.running) state.angle = (state.angle + (360/state.speed)*dt) % 360;
+      ring.style.transform = `translate(-50%,-50%) rotateX(${state.tilt}deg) rotateY(${state.angle}deg)`;
+      state.tiles.forEach((tile, idx) => {
         const theta = Number(tile.dataset.theta) || 0;
-        const card = cards[idx];
-        if (card) card.style.transform = `rotateY(${-(angle + theta)}deg)`;
+        const card = state.cards[idx];
+        if (card) card.style.transform = `rotateY(${-(state.angle + theta)}deg)`;
       });
-
-      requestAnimationFrame(step);
+      state.frame = requestAnimationFrame(step);
     };
-    requestAnimationFrame(step);
+    state.frame = requestAnimationFrame(step);
 
-    // auto pause when stage out of view
     if (stage) {
       const io = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
-            autoPaused = false;
-            if (!manualPause) { running = true; last = performance.now(); }
+            state.autoPaused = false;
+            if (!state.manualPause) { state.running = true; state.last = performance.now(); }
           } else {
-            autoPaused = true;
-            running = false;
+            state.autoPaused = true;
+            state.running = false;
           }
         });
       }, { threshold: 0.15 });
       io.observe(stage);
+      state.io = io;
       window.addEventListener('pagehide', () => io.disconnect(), { once: true });
     }
 
-    // interactions
-    document.addEventListener('visibilitychange', () => {
-      autoPaused = document.hidden;
-      if (autoPaused) {
-        running = false;
-      } else if (!manualPause && interacted) {
-        running = true; last = performance.now();
+    state.onVisibility = () => {
+      state.autoPaused = document.hidden;
+      if (state.autoPaused) {
+        state.running = false;
+      } else if (!state.manualPause && state.interacted) {
+        state.running = true; state.last = performance.now();
+      }
+    };
+    document.addEventListener('visibilitychange', state.onVisibility);
+
+    state.onEnter = ()=> { state.manualPause=true; state.running=false; };
+    state.onLeave = ()=> { state.manualPause=false; if (!state.autoPaused && state.interacted) { state.running=true; state.last=performance.now(); } };
+    state.onFocusIn = ()=> { state.interacted=true; state.manualPause=true; state.running=false; };
+    state.onFocusOut = ()=> { state.manualPause=false; if (!state.autoPaused && state.interacted) { state.running=true; state.last=performance.now(); } };
+    let dragging=false, sx=0, start=0;
+    const down = x => { dragging=true; sx=x; start=state.angle; state.manualPause=true; state.running=false; };
+    const move = x => { if (!dragging) return; state.angle = start - (x - sx)*0.35; };
+    const up   = () => { if (!dragging) return; dragging=false; state.manualPause=false; if (!state.autoPaused && state.interacted) { state.running=true; state.last=performance.now(); } };
+    state.onMouseDown = e=>{ state.interacted=true; down(e.clientX); };
+    state.onMouseMove = e=>move(e.clientX);
+    state.onMouseUp = up;
+    state.onTouchStart = e=>{ state.interacted=true; down(e.touches[0].clientX); };
+    state.onTouchMove  = e=>move(e.touches[0].clientX);
+    state.onTouchEnd   = up;
+
+    stage?.addEventListener('mouseenter', state.onEnter);
+    stage?.addEventListener('mouseleave', state.onLeave);
+    stage?.addEventListener('focusin', state.onFocusIn);
+    stage?.addEventListener('focusout', state.onFocusOut);
+    stage?.addEventListener('mousedown', state.onMouseDown);
+    window.addEventListener('mousemove', state.onMouseMove);
+    window.addEventListener('mouseup', state.onMouseUp);
+    stage?.addEventListener('touchstart', state.onTouchStart, {passive:true});
+    stage?.addEventListener('touchmove', state.onTouchMove, {passive:true});
+    stage?.addEventListener('touchend', state.onTouchEnd);
+
+    const observer = new MutationObserver(()=> {
+      if (!document.body.contains(ring)) {
+        destroyOne(ring);
+        observer.disconnect();
       }
     });
+    observer.observe(document.body, {childList:true, subtree:true});
+    state.observer = observer;
 
-    stage?.addEventListener('mouseenter', ()=> { manualPause=true; running=false; });
-    stage?.addEventListener('mouseleave', ()=> { manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } });
-    stage?.addEventListener('focusin', ()=> { interacted=true; manualPause=true; running=false; });
-    stage?.addEventListener('focusout', ()=> { manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } });
+    states.set(ring, state);
+    console.log('[es-carousel] ready', {tiles:state.tiles.length, radius:state.radius});
+  };
 
-    let dragging=false, sx=0, start=0;
-    const down = x => { dragging=true; sx=x; start=angle; manualPause=true; running=false; };
-    const move = x => { if (!dragging) return; angle = start - (x - sx)*0.35; };
-    const up   = () => { if (!dragging) return; dragging=false; manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } };
-
-    stage?.addEventListener('mousedown', e=>{ interacted=true; down(e.clientX); });
-    window.addEventListener('mousemove', e=>move(e.clientX));
-    window.addEventListener('mouseup', up);
-
-    stage?.addEventListener('touchstart', e=>{ interacted=true; down(e.touches[0].clientX); }, {passive:true});
-    stage?.addEventListener('touchmove',  e=>move(e.touches[0].clientX),  {passive:true});
-    stage?.addEventListener('touchend', up);
-
-    console.log('[es-carousel] ready', {tiles:N, radius});
+  const layoutAll = () => {
+    states.forEach((state, ring) => {
+      if (!document.body.contains(ring)) { destroyOne(ring); return; }
+      const data = layoutOne(ring);
+      if (data) {
+        Object.assign(state, data);
+        state.cards = state.tiles.map(t => t.querySelector('.es-card'));
+      }
+    });
   };
 
   const initAll = () => {
-    $$('.es-ring').forEach(ring => imagesReady(ring, ()=>initOne(ring)));
+    const rings = $$('.es-ring');
+    rings.forEach(ring => { if (!states.has(ring)) imagesReady(ring, ()=>initOne(ring)); });
+    if (rings.length && !resizeAttached) {
+      debouncedLayout = debounce(layoutAll, 250);
+      window.addEventListener('resize', debouncedLayout);
+      resizeAttached = true;
+    } else if (!rings.length && resizeAttached) {
+      window.removeEventListener('resize', debouncedLayout);
+      resizeAttached = false;
+    }
   };
+
   const debounce=(fn,ms)=>{let t;return()=>{clearTimeout(t);t=setTimeout(fn,ms)}};
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initAll);
   } else { initAll(); }
-
-  window.addEventListener('resize', debounce(initAll, 250));
 })();
+
