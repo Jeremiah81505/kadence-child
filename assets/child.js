@@ -70,7 +70,7 @@ const DEBUG = false;
 
     const sw = ring.parentElement?.offsetWidth || 0;
     if (stage) {
-      const h = Math.round(Math.max(240, Math.min(sw * 0.6, 420)));
+      const h = Math.round(Math.max(180, Math.min(sw * 0.5, 320)));
       stage.style.height = h + 'px';
     }
 
