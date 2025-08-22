@@ -55,7 +55,9 @@
 /* Scroll cue */
 .kc-scroll-cue{ position:absolute; left:50%; bottom:clamp(6px,1vw,10px); transform:translateX(-50%); font-size:.8rem; letter-spacing:.2em; opacity:.7 }
 @media (max-width: 782px){ .kc-hero-sub{ max-width:100%; } }
+
 .kc-ring-wrap{ display:flex; justify-content:center; margin-top:8px; max-width:1900px; margin-inline:auto; }
+
 /* ===== ES CAROUSEL (namespaced, clean) ===== */
 .es-stage{
   position:relative; width:100%;
@@ -87,4 +89,3 @@
 .es-fallback{ display:none; }
 .no-js .es-stage{ display:none; }
 .no-js .es-fallback{ display:block; }
-

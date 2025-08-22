@@ -12,6 +12,7 @@ const DEBUG = false;
   }), {threshold:.4});
   obs.observe(title);
 })();
+
 // ===== ES CAROUSEL (clean reset) =====
 (function(){
   // MIN_R lowered to keep carousel compact within shortened hero
