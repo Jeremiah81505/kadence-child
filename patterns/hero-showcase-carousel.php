@@ -4,7 +4,9 @@
  * Location: Patterns → Kadence Child
  */
 
-if ( ! function_exists( 'register_block_pattern' ) ) { return; }
+if ( ! function_exists( 'register_block_pattern' ) ) {
+  return;
+}
 
 add_action( 'init', function () {
 
