@@ -1,3 +1,4 @@
+document.body.classList.remove('no-js');
 console.log("Kadence Child JS loaded");
 
 // HERO reveal (unchanged)

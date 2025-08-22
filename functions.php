@@ -4,6 +4,13 @@ require_once __DIR__ . '/utils.php';
  * Kadence Child – enqueue styles & JS
  */
 
+add_filter( 'body_class', function ( $classes ) {
+  if ( ! in_array( 'no-js', $classes, true ) ) {
+    $classes[] = 'no-js';
+  }
+  return $classes;
+} );
+
 add_action('wp_enqueue_scripts', function () {
   // Parent theme CSS
   wp_enqueue_style(
