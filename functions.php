@@ -6,19 +6,21 @@ require_once __DIR__ . '/utils.php';
 
 add_action('wp_enqueue_scripts', function () {
   // Parent theme CSS
+  $parent_css_path = get_template_directory() . '/style.css';
   wp_enqueue_style(
     'kadence-parent',
     get_template_directory_uri() . '/style.css',
     [],
-    null
+    file_exists( $parent_css_path ) ? filemtime( $parent_css_path ) : null
   );
 
-  // Child theme CSS (cache-bust via theme version)
+  // Child theme CSS (cache-bust via file modification time)
+  $child_css_path = get_stylesheet_directory() . '/style.css';
   wp_enqueue_style(
     'kadence-child',
     get_stylesheet_uri(),
     ['kadence-parent'],
-    wp_get_theme()->get('Version')
+    file_exists( $child_css_path ) ? filemtime( $child_css_path ) : null
   );
 
   // ---- Child JS (loads only if the file exists) ----
@@ -64,14 +66,3 @@ add_action('enqueue_block_editor_assets', function () {
     );
   }
 });
-// Ensure child styles load after parent, with cache-busting
-add_action('wp_enqueue_scripts', function () {
-  wp_enqueue_style('kadence-parent', get_template_directory_uri() . '/style.css', [], null);
-  $child_css_path = get_stylesheet_directory() . '/style.css';
-  wp_enqueue_style(
-    'kadence-child',
-    get_stylesheet_uri(),
-    ['kadence-parent'],
-    file_exists($child_css_path) ? filemtime($child_css_path) : null
-  );
-}, 5);
