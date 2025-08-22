@@ -68,7 +68,8 @@ console.log("Kadence Child JS loaded");
     }
 
     // JS rotation + face-camera cards
-    let running = true, angle = 0, last = performance.now();
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let running = !reduced, interacted = !reduced, angle = 0, last = performance.now();
     let autoPaused = false, manualPause = false;
     const cards = tiles.map(t => t.querySelector('.es-card'));
     const step = (t) => {
@@ -106,19 +107,30 @@ console.log("Kadence Child JS loaded");
     }
 
     // interactions
+    document.addEventListener('visibilitychange', () => {
+      autoPaused = document.hidden;
+      if (autoPaused) {
+        running = false;
+      } else if (!manualPause && interacted) {
+        running = true; last = performance.now();
+      }
+    });
+
     stage?.addEventListener('mouseenter', ()=> { manualPause=true; running=false; });
-    stage?.addEventListener('mouseleave', ()=> { manualPause=false; if (!autoPaused) { running=true; last=performance.now(); } });
+    stage?.addEventListener('mouseleave', ()=> { manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } });
+    stage?.addEventListener('focusin', ()=> { interacted=true; manualPause=true; running=false; });
+    stage?.addEventListener('focusout', ()=> { manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } });
 
     let dragging=false, sx=0, start=0;
     const down = x => { dragging=true; sx=x; start=angle; manualPause=true; running=false; };
     const move = x => { if (!dragging) return; angle = start - (x - sx)*0.35; };
-    const up   = () => { if (!dragging) return; dragging=false; manualPause=false; if (!autoPaused) { running=true; last=performance.now(); } };
+    const up   = () => { if (!dragging) return; dragging=false; manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } };
 
-    stage?.addEventListener('mousedown', e=>down(e.clientX));
+    stage?.addEventListener('mousedown', e=>{ interacted=true; down(e.clientX); });
     window.addEventListener('mousemove', e=>move(e.clientX));
     window.addEventListener('mouseup', up);
 
-    stage?.addEventListener('touchstart', e=>down(e.touches[0].clientX), {passive:true});
+    stage?.addEventListener('touchstart', e=>{ interacted=true; down(e.touches[0].clientX); }, {passive:true});
     stage?.addEventListener('touchmove',  e=>move(e.touches[0].clientX),  {passive:true});
     stage?.addEventListener('touchend', up);
 
