@@ -18,30 +18,6 @@
       <div class="kc-float a"></div>
       <div class="kc-float b"></div>
 
-        <!-- wp:paragraph {"className":"kc-eyebrow"} -->
-        <p class="kc-eyebrow">Countertops for every space • Wisconsin.</p>
-        <!-- /wp:paragraph -->
-
-        <!-- wp:heading {"level":1,"className":"kc-hero-title"} -->
-        <h1 class="kc-hero-title"><span class="kc-reveal">Premium Countertops</span> <span class="kc-reveal">without the Premium Headache.</span></h1>
-        <!-- /wp:heading -->
-
-        <!-- wp:paragraph {"className":"kc-hero-sub"} -->
-        <p class="kc-hero-sub">Shop quartz, natural stone, solid surface, laminate, and ultra compact—installed by local pros, free in-home measures.</p>
-        <!-- /wp:paragraph -->
-
-        <!-- wp:buttons {"className":"kc-hero-ctas"} -->
-        <div class="wp-block-buttons kc-hero-ctas">
-          <!-- wp:button {"className":"is-style-fill kc-cta-primary"} -->
-          <div class="wp-block-button is-style-fill kc-cta-primary"><a class="wp-block-button__link wp-element-button" href="/contact">Get a Free Quote</a></div>
-          <!-- /wp:button -->
-
-          <!-- wp:button {"className":"is-style-outline kc-cta-secondary"} -->
-          <div class="wp-block-button is-style-outline kc-cta-secondary"><a class="wp-block-button__link wp-element-button" href="/gallery">Browse Colors</a></div>
-          <!-- /wp:button -->
-        </div>
-        <!-- /wp:buttons -->
-
       <!-- wp:group {"className":"kc-hero-flex","layout":{"type":"flex","justifyContent":"space-between","flexWrap":"nowrap"}} -->
       <div class="wp-block-group kc-hero-flex">
         <!-- Left column -->
@@ -103,12 +79,44 @@
           <!-- wp:paragraph {"className":"kc-chip"} -->
           <p class="kc-chip">Laminate</p>
           <!-- /wp:paragraph -->
+
+          <!-- wp:paragraph {"className":"kc-chip"} -->
+          <p class="kc-chip">Ultra Compact</p>
+          <!-- /wp:paragraph -->
         </div>
         <!-- /wp:group -->
-      </div>
-      <!-- /wp:group -->
+        </div>
+        <!-- /wp:group -->
 
-      <div class="kc-scroll-cue" aria-hidden="true">Scroll</div>
+        <!-- wp:group {"className":"kc-ring-wrap","layout":{"type":"constrained","contentSize":"1200px"}} -->
+        <div class="wp-block-group kc-ring-wrap">
+          <!-- wp:html -->
+          <div class="es-stage">
+            <div class="es-ring" data-radius="560" data-speed="30" data-tilt="8">
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Wilsonart-01.png" alt="Wilsonart"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vicostone-01.png" alt="Vicostone"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Viatera-01.png" alt="Viatera"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vadara-Capture-the-world-in-quartz-01.png" alt="Vadara"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/UGM-Surfaces-01.png" alt="UGM Surfaces"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Trends-01.png" alt="Trends"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Teracanto-01.png" alt="Teracanto"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Silestone-01.png" alt="Silestone"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Q-Quartz-01.png" alt="Q Quartz"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Pionite-01.png" alt="Pionite"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Nevamar-01.png" alt="Nevamar"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Hi-Macs-01.png" alt="HI-MACS"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Formica-01.png" alt="Formica"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Dekton-01.png" alt="Dekton"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Corian-01.png" alt="Corian"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Cambria-01.png" alt="Cambria"></div>
+              <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Caesarstone-01-scaled.png" alt="Caesarstone"></div>
+            </div>
+          </div>
+          <!-- /wp:html -->
+        </div>
+        <!-- /wp:group -->
+
+        <div class="kc-scroll-cue" aria-hidden="true">Scroll</div>
     </div>
     <!-- /wp:group -->
   </div>
