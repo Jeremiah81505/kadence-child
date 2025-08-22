@@ -1,5 +1,4 @@
 document.body.classList.remove('no-js');
-console.log("Kadence Child JS loaded");
 
 // HERO reveal (unchanged)
 (function () {
@@ -135,7 +134,6 @@ console.log("Kadence Child JS loaded");
     stage?.addEventListener('touchmove',  e=>move(e.touches[0].clientX),  {passive:true});
     stage?.addEventListener('touchend', up);
 
-    console.log('[es-carousel] ready', {tiles:N, radius});
   };
 
   const initAll = () => {

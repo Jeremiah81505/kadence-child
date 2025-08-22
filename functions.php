@@ -53,12 +53,6 @@ add_action( 'init', function () {
   }
 });
 
-// (Editor-only sanity ping in browser console so we know this loaded)
-add_action( 'enqueue_block_editor_assets', function () {
-  if ( function_exists( 'wp_add_inline_script' ) ) {
-    wp_add_inline_script( 'wp-blocks', 'console.log("Kadence Child: pattern category registered");' );
-  }
-});
 /** ---------- END: Kadence Child Pattern Category ---------- */
 
 // Enqueue editor-only styles so the 3D ring carousel previews nicely in the editor
