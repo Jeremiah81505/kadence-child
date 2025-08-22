@@ -1,5 +1,8 @@
 document.body.classList.remove('no-js');
 
+// toggle verbose logging
+const DEBUG = false;
+
 // HERO reveal (unchanged)
 (function () {
   const title = document.querySelector('.kc-hero-title');
@@ -155,7 +158,7 @@ document.body.classList.remove('no-js');
     stage?.addEventListener('touchend', onTouchEnd);
 
     // codex/track-and-clean-up-initialized-rings
-    console.log('[es-carousel] ready', {tiles:N, radius});
+    DEBUG && console.log('[es-carousel] ready', { tiles: N, radius });
 
     const cleanup = () => {
       active = false;
