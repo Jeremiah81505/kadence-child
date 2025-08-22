@@ -18,7 +18,6 @@
       <div class="kc-float a"></div>
       <div class="kc-float b"></div>
 
-codex/update-hero-ultimate.php-copy
         <!-- wp:paragraph {"className":"kc-eyebrow"} -->
         <p class="kc-eyebrow">Countertops for every space • Wisconsin.</p>
         <!-- /wp:paragraph -->
@@ -108,7 +107,6 @@ codex/update-hero-ultimate.php-copy
         <!-- /wp:group -->
       </div>
       <!-- /wp:group -->
- main
 
       <div class="kc-scroll-cue" aria-hidden="true">Scroll</div>
     </div>
