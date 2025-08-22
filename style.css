@@ -11,7 +11,7 @@
 
 /* Your custom CSS below */
 /* ==== HERO ULTIMATE ==== */
-.kc-hero-ultimate { position:relative; }
+.kc-hero-ultimate { position:relative; min-height:60vh; }
 .kc-hero-ultimate .wp-block-cover__background{ background:linear-gradient(90deg, rgba(0,0,0,0.65), transparent); opacity:1!important; }
 .kc-hero-wrap { position:relative; color:#fff; text-align:left; }
 .kc-hero-chips{ position:absolute; top:24px; right:24px; display:flex; flex-direction:column; gap:clamp(6px,1vw,10px); }
@@ -21,9 +21,12 @@
 
 .kc-info-badge{ display:inline-block; background:rgba(255,255,255,.15); padding:.25em .6em; border-radius:4px; font-size:.75rem; line-height:1; }
 
+.kc-hero-badges{ display:flex; gap:1rem; margin-bottom:1rem; }
+
 .kc-chip-stack{ position:absolute; right:0; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:clamp(6px,1vw,10px); z-index:1; }
-.kc-chip{ display:flex; align-items:center; background:rgba(0,0,0,.35); color:#fff; padding:.45rem .8rem; border-radius:clamp(8px,1.5vw,12px); transition:background .2s ease; }
-.kc-chip:hover{ background:rgba(0,0,0,.5); }
+.kc-chip{ display:block; text-align:center; background:rgba(0,0,0,.35); color:#fff; padding:.45rem .8rem; border-radius:clamp(8px,1.5vw,12px); text-decoration:none; font-weight:600; box-shadow:0 2px 4px rgba(0,0,0,.1); transition:background .2s ease, transform .25s ease, box-shadow .25s ease; }
+.kc-chip:hover,
+.kc-chip:focus{ background:rgba(0,0,0,.5); transform:translateX(6px) scale(1.03); box-shadow:0 4px 8px rgba(0,0,0,.15); }
 
 @media (max-width: 782px){ .kc-chip-stack{ position:static; transform:none; flex-direction:row; flex-wrap:wrap; margin-top:clamp(16px,3vw,24px); } }
 
@@ -51,18 +54,18 @@
 /* Scroll cue */
 .kc-scroll-cue{ position:absolute; left:50%; bottom:clamp(6px,1vw,10px); transform:translateX(-50%); font-size:.8rem; letter-spacing:.2em; opacity:.7 }
 @media (max-width: 782px){ .kc-hero-sub{ max-width:100%; } }
-.kc-ring-wrap{ display:flex; justify-content:center; margin-top:64px; }
+.kc-ring-wrap{ display:flex; justify-content:center; margin-top:32px; }
 /* ===== ES CAROUSEL (namespaced, clean) ===== */
 .es-stage{
   position:relative; width:100%;
-  height:clamp(320px,80vw,560px); perspective:clamp(1000px,180vw,1600px); perspective-origin:50% 42%;
+  height:clamp(260px,60vw,480px); perspective:clamp(900px,160vw,1400px); perspective-origin:50% 42%;
   overflow:visible;
 }
 .es-ring{
   position:absolute; top:50%; left:50%;
   transform-style:preserve-3d;
   /* JS sets rotateY each frame; keep a stable base tilt only */
-  transform:translate(-50%,-50%) rotateX(8deg) rotateY(0deg);
+  transform:translate(-50%,-50%) rotateX(0deg) rotateY(0deg);
   will-change:transform;
 }
 .es-tile{

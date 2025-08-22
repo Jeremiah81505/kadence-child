@@ -14,7 +14,7 @@ const DEBUG = false;
 })();
 // ===== ES CAROUSEL (clean reset) =====
 (function(){
-  const GAP=24, TIGHT=0.72, MIN_R=260, MAX_R=620, TILT=8, SPEED=28; // sec/rev
+  const GAP=24, TIGHT=0.72, MIN_R=260, MAX_R=620, TILT=0, SPEED=28; // sec/rev
   const $ = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => [...r.querySelectorAll(s)];
   const CLEANUPS = new WeakMap();
