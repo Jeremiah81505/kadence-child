@@ -12,10 +12,19 @@
 /* Your custom CSS below */
 /* ==== HERO ULTIMATE ==== */
 .kc-hero-ultimate { position:relative; }
+.kc-hero-ultimate .wp-block-cover__background{ background:linear-gradient(90deg, rgba(0,0,0,0.65), transparent); opacity:1!important; }
 .kc-hero-wrap { position:relative; color:#fff; text-align:left; }
 .kc-eyebrow { color:#fff; opacity:.85; letter-spacing:.15em; text-transform:uppercase; font-size:.9rem; margin:0 0 clamp(8px,1vw,12px); }
 .kc-hero-title { color:#fff; font-weight:800; line-height:1.05; font-size:clamp(36px,6vw,68px); margin:0 0 clamp(8px,1.5vw,12px); }
 .kc-hero-sub { color:#fff; opacity:.95; font-size:clamp(16px,2.2vw,22px); max-width:60ch; margin:clamp(4px,0.8vw,8px) 0 clamp(16px,3vw,28px); }
+
+.kc-info-badge{ display:inline-block; background:rgba(255,255,255,.15); padding:.25em .6em; border-radius:4px; font-size:.75rem; line-height:1; }
+
+.kc-chip-stack{ position:absolute; right:0; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:clamp(6px,1vw,10px); z-index:1; }
+.kc-chip{ display:flex; align-items:center; background:rgba(0,0,0,.35); color:#fff; padding:.45rem .8rem; border-radius:clamp(8px,1.5vw,12px); transition:background .2s ease; }
+.kc-chip:hover{ background:rgba(0,0,0,.5); }
+
+@media (max-width: 782px){ .kc-chip-stack{ position:static; transform:none; flex-direction:row; flex-wrap:wrap; margin-top:clamp(16px,3vw,24px); } }
 
 /* Headline reveal */
 .kc-reveal { display:inline-block; transform:translateY(clamp(12px,2vw,18px)); opacity:0; }
