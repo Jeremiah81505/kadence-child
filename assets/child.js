@@ -62,6 +62,7 @@ console.log("Kadence Child JS loaded");
     // JS rotation + face-camera cards
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let running = !reduced, interacted = !reduced, angle = 0, last = performance.now();
+    let autoPaused = false, manualPause = false;
     const cards = tiles.map(t => t.querySelector('.es-card'));
     const step = (t) => {
       const dt = (t - last) / 1000; last = t;
@@ -81,15 +82,24 @@ console.log("Kadence Child JS loaded");
     requestAnimationFrame(step);
 
     // interactions
-    stage?.addEventListener('mouseenter', ()=> running=false);
-    stage?.addEventListener('mouseleave', ()=> { if (interacted) { running=true; last=performance.now(); } });
-    stage?.addEventListener('focusin', ()=> { running=false; interacted=true; });
-    stage?.addEventListener('focusout', ()=> { if (interacted) { running=true; last=performance.now(); } });
+    document.addEventListener('visibilitychange', ()=>{
+      autoPaused = document.hidden;
+      if (autoPaused) {
+        running = false;
+      } else if (!manualPause && interacted) {
+        running = true; last = performance.now();
+      }
+    });
+
+    stage?.addEventListener('mouseenter', ()=> { manualPause=true; running=false; });
+    stage?.addEventListener('mouseleave', ()=> { manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } });
+    stage?.addEventListener('focusin', ()=> { manualPause=true; running=false; interacted=true; });
+    stage?.addEventListener('focusout', ()=> { manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } });
 
     let dragging=false, sx=0, start=0;
-    const down = x => { dragging=true; sx=x; start=angle; running=false; interacted=true; };
+    const down = x => { dragging=true; sx=x; start=angle; manualPause=true; running=false; interacted=true; };
     const move = x => { if (!dragging) return; angle = start - (x - sx)*0.35; };
-    const up   = () => { if (!dragging) return; dragging=false; running=interacted; if (running) last=performance.now(); };
+    const up   = () => { if (!dragging) return; dragging=false; manualPause=false; if (!autoPaused && interacted) { running=true; last=performance.now(); } };
 
     stage?.addEventListener('mousedown', e=>down(e.clientX));
     window.addEventListener('mousemove', e=>move(e.clientX));
