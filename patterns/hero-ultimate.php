@@ -1,9 +1,9 @@
 <?php
 /**
- * Title: Hero – Ultimate (Motion)
+ * Title: <?php esc_html_e( 'Hero – Ultimate (Motion)', 'kadence-child' ); ?>
  * Slug: kadence-child/hero-ultimate
  * Categories: kadence-child, featured
- * Description: Full-bleed hero with layered parallax, animated headline, and dual CTAs.
+ * Description: <?php esc_html_e( 'Full-bleed hero with layered parallax, animated headline, and dual CTAs.', 'kadence-child' ); ?>
  */
 ?>
 <!-- wp:cover {"dimRatio":0,"isUserOverlayColor":true,"customGradient":"linear-gradient(90deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0) 100%)","minHeight":45,"minHeightUnit":"vh","align":"full","className":"kc-hero-ultimate","style":{"spacing":{"padding":{"top":"40px","bottom":"40px"}}}} -->
@@ -28,30 +28,37 @@
 
             <!-- Eyebrow -->
             <!-- wp:paragraph {"className":"kc-eyebrow"} -->
-            <p class="kc-eyebrow">Countertops • Fabrication • Installation</p>
+            <p class="kc-eyebrow"><?php esc_html_e( 'Countertops • Fabrication • Installation', 'kadence-child' ); ?></p>
             <!-- /wp:paragraph -->
 
             <!-- Small badges -->
             <!-- wp:html -->
             <div class="kc-badges">
-              <span class="kc-badge kc-badge--blue">Statewide — Wisconsin</span>
-              <span class="kc-badge kc-badge--blue">5-Star Rated</span>
+              <span class="kc-badge kc-badge--blue"><?php esc_html_e( 'Statewide — Wisconsin', 'kadence-child' ); ?></span>
+              <span class="kc-badge kc-badge--blue"><?php esc_html_e( '5-Star Rated', 'kadence-child' ); ?></span>
             </div>
             <!-- /wp:html -->
 
             <!-- Title -->
             <!-- wp:heading {"level":1,"className":"kc-title"} -->
             <h1 class="kc-title">
-              Premium <span class="kc-gradient">Countertops</span><br class="kc-break" />
-              Across <span class="kc-underline">Wisconsin</span>.
+              <?php
+              printf(
+                /* translators: 1: opening span for gradient text, 2: closing span for gradient text, 3: line break element, 4: opening span for underlined text, 5: closing span for underlined text */
+                esc_html__( 'Premium %1$sCountertops%2$s%3$sAcross %4$sWisconsin%5$s.', 'kadence-child' ),
+                '<span class="kc-gradient">',
+                '</span>',
+                '<br class="kc-break" />',
+                '<span class="kc-underline">',
+                '</span>'
+              );
+              ?>
             </h1>
             <!-- /wp:heading -->
 
             <!-- Subcopy -->
             <!-- wp:paragraph {"className":"kc-sub"} -->
-            <p class="kc-sub">
-              Quartz, natural stone, solid surface, and laminate—crafted, delivered, and installed statewide with 5-star care.
-            </p>
+            <p class="kc-sub"><?php esc_html_e( 'Quartz, natural stone, solid surface, and laminate—crafted, delivered, and installed statewide with 5-star care.', 'kadence-child' ); ?></p>
             <!-- /wp:paragraph -->
 
             <!-- CTAs -->
@@ -59,13 +66,13 @@
             <div class="wp-block-buttons kc-hero-ctas">
               <!-- wp:button {"className":"is-style-fill kc-cta-primary"} -->
               <div class="wp-block-button kc-cta-primary">
-                <a class="wp-block-button__link wp-element-button" href="/get-a-quote/">Get a Quote</a>
+                <a class="wp-block-button__link wp-element-button" href="/get-a-quote/"><?php esc_html_e( 'Get a Quote', 'kadence-child' ); ?></a>
               </div>
               <!-- /wp:button -->
 
               <!-- wp:button {"className":"is-style-outline kc-cta-secondary"} -->
               <div class="wp-block-button kc-cta-secondary">
-                <a class="wp-block-button__link wp-element-button kc-btn-blue" href="/color-samples/">View Colors</a>
+                <a class="wp-block-button__link wp-element-button kc-btn-blue" href="/color-samples/"><?php esc_html_e( 'View Colors', 'kadence-child' ); ?></a>
               </div>
               <!-- /wp:button -->
             </div>
@@ -81,19 +88,19 @@
         <div class="wp-block-group kc-hero-right">
           <!-- Materials Menu -->
           <!-- wp:group {"className":"kc-materials-card"} -->
-          <div class="wp-block-group kc-materials-card" role="region" aria-label="Browse materials">
+          <div class="wp-block-group kc-materials-card" role="region" aria-label="<?php esc_attr_e( 'Browse materials', 'kadence-child' ); ?>">
             <!-- wp:heading {"level":3,"className":"kc-materials-heading"} -->
-            <h3 class="kc-materials-heading">Explore by Material</h3>
+            <h3 class="kc-materials-heading"><?php esc_html_e( 'Explore by Material', 'kadence-child' ); ?></h3>
             <!-- /wp:heading -->
 
             <!-- wp:html -->
-            <nav class="kc-material-grid" aria-label="Material categories">
-              <a class="kc-chip kc-quartz" href="/quartz/"><span class="kc-txt">Quartz</span></a>
-              <a class="kc-chip kc-stone" href="/natural-stone/"><span class="kc-txt">Natural<wbr>Stone</span></a>
-              <a class="kc-chip kc-solid" href="/solid-surface/"><span class="kc-txt">Solid<wbr>Surface</span></a>
-              <a class="kc-chip kc-ultra" href="/ultra-compact/"><span class="kc-txt">Ultra<wbr>Compact</span></a>
-              <a class="kc-chip kc-lam" href="/laminate/"><span class="kc-txt">Laminate</span></a>
-              <a class="kc-chip kc-sinks" href="/sinks/"><span class="kc-txt">Sinks</span></a>
+            <nav class="kc-material-grid" aria-label="<?php esc_attr_e( 'Material categories', 'kadence-child' ); ?>">
+              <a class="kc-chip kc-quartz" href="/quartz/"><span class="kc-txt"><?php esc_html_e( 'Quartz', 'kadence-child' ); ?></span></a>
+              <a class="kc-chip kc-stone" href="/natural-stone/"><span class="kc-txt"><?php printf( esc_html__( 'Natural%1$sStone', 'kadence-child' ), '<wbr>' ); ?></span></a>
+              <a class="kc-chip kc-solid" href="/solid-surface/"><span class="kc-txt"><?php printf( esc_html__( 'Solid%1$sSurface', 'kadence-child' ), '<wbr>' ); ?></span></a>
+              <a class="kc-chip kc-ultra" href="/ultra-compact/"><span class="kc-txt"><?php printf( esc_html__( 'Ultra%1$sCompact', 'kadence-child' ), '<wbr>' ); ?></span></a>
+              <a class="kc-chip kc-lam" href="/laminate/"><span class="kc-txt"><?php esc_html_e( 'Laminate', 'kadence-child' ); ?></span></a>
+              <a class="kc-chip kc-sinks" href="/sinks/"><span class="kc-txt"><?php esc_html_e( 'Sinks', 'kadence-child' ); ?></span></a>
             </nav>
             <!-- /wp:html -->
           </div>
@@ -131,7 +138,7 @@
       </div>
       <!-- /wp:group -->
 
-      <div class="kc-scroll-cue" aria-hidden="true">Scroll</div>
+      <div class="kc-scroll-cue" aria-hidden="true"><?php esc_html_e( 'Scroll', 'kadence-child' ); ?></div>
     </div>
     <!-- /wp:group -->
   </div>
