@@ -280,3 +280,99 @@
   .kc-hero-showcase .kc-btn,
   .kc-hero-showcase .kc-pill{ transition: none !important; }
 }
+
+/* === HERO MATERIALS CARD === */
+.kc-materials-card {
+  background: rgba(10,10,20,0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 24px;
+  max-width: 620px;
+  margin-inline:auto;
+  box-shadow: 0 12px 45px rgba(0,0,0,0.45);
+  color: #fff;
+  animation: fadeInUp 0.9s ease forwards;
+  opacity: 0;
+}
+
+.kc-materials-heading {
+  margin: 0 0 16px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  color: #fff;
+  letter-spacing: .5px;
+  animation: slideDown 1s ease .2s both;
+}
+
+/* Grid Layout */
+.kc-material-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  animation: fadeIn 1s ease .4s both;
+}
+
+/* Base Chip */
+.kc-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(40,40,50,0.85), rgba(20,20,28,0.8));
+  border: 1px solid rgba(255,255,255,0.1);
+  position: relative;
+  overflow: hidden;
+  transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
+}
+
+.kc-chip::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+  transform: rotate(25deg);
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+
+.kc-chip:hover::before {
+  opacity: 1;
+}
+
+.kc-chip:hover,
+.kc-chip:focus-visible {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  border-color: rgba(255,255,255,0.25);
+}
+
+/* Per-Material Accent Colors */
+.kc-chip-quartz:hover    { background: linear-gradient(135deg, #7a5cff, #563acc); }
+.kc-chip-stone:hover     { background: linear-gradient(135deg, #3cb371, #246d4f); }
+.kc-chip-solid:hover     { background: linear-gradient(135deg, #1abc9c, #107a68); }
+.kc-chip-ultra:hover     { background: linear-gradient(135deg, #3498db, #1b4f72); }
+.kc-chip-laminate:hover  { background: linear-gradient(135deg, #e67e22, #b34700); }
+.kc-chip-sinks:hover     { background: linear-gradient(135deg, #f39c12, #9c640c); }
+
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity:0; transform: translateY(20px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+@keyframes slideDown {
+  from { opacity:0; transform: translateY(-10px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity:0; }
+  to   { opacity:1; }
+}
