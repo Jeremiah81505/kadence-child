@@ -673,3 +673,146 @@
 @media (prefers-reduced-motion: reduce){
   .kc-materials-card::before{ animation:none !important; }
 }
+/* ===============================
+   HERO TYPOGRAPHY — PREMIUM LOOK
+   =============================== */
+
+.kc-hero-head{ color:#fff; }
+
+/* Eyebrow */
+.kc-eyebrow{
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: .18em;
+  font-weight: 700;
+  font-size: .78rem;
+  opacity: .8;
+  text-align: left;
+}
+
+/* Badges (small pills) */
+.kc-badges{ display:flex; gap:8px; margin: 0 0 10px; flex-wrap:wrap; }
+.kc-badge{
+  display:inline-flex; align-items:center; gap:6px;
+  padding: 6px 10px;
+  font-size:.74rem; font-weight:700; line-height:1;
+  color:#e9eef8;
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.14);
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Title */
+.kc-title{
+  margin: 6px 0 10px;
+  font-size: clamp(36px, 6vw, 76px);
+  line-height: 1.05;
+  letter-spacing: .2px;
+  text-wrap: balance;
+  position: relative;
+  /* gentle readability pop */
+  text-shadow: 0 1px 0 rgba(0,0,0,.14);
+}
+
+/* Gradient word */
+.kc-title .kc-gradient{
+  background: linear-gradient(180deg, #ffffff 0%, #dfe7ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Animated underline on Wisconsin */
+.kc-title .kc-underline{
+  position: relative; display:inline-block;
+}
+.kc-title .kc-underline::after{
+  content:"";
+  position:absolute; left:0; right:0; bottom:-0.16em; height:.14em;
+  background: linear-gradient(90deg, #b99cff, #7de2d1, #ffd479, #b99cff);
+  background-size: 300% 100%;
+  border-radius:999px;
+  animation: kcHue 9s linear infinite;
+  opacity:.9;
+}
+
+/* Subcopy */
+.kc-sub{
+  max-width: 58ch;
+  font-size: clamp(16px, 1.35vw, 19px);
+  line-height: 1.55;
+  opacity: .92;
+  margin: 0 0 18px;
+}
+
+/* CTAs */
+.kc-hero-ctas .wp-block-button__link{
+  font-weight: 800;
+  border-radius: 14px;
+  padding: 12px 18px;
+  box-shadow: 0 8px 26px rgba(0,0,0,.28);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+}
+
+/* Primary */
+.kc-cta-primary .wp-block-button__link{
+  background: linear-gradient(180deg, #1e2533, #0f131b);
+  border: 1px solid rgba(255,255,255,.18);
+}
+.kc-cta-primary .wp-block-button__link:hover,
+.kc-cta-primary .wp-block-button__link:focus-visible{
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,.28);
+  box-shadow: 0 12px 30px rgba(0,0,0,.34);
+  outline: none;
+}
+
+/* Secondary */
+.kc-cta-secondary .wp-block-button__link{
+  color:#cfe2ff;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.24);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.kc-cta-secondary .wp-block-button__link:hover,
+.kc-cta-secondary .wp-block-button__link:focus-visible{
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,.32);
+  box-shadow: 0 12px 30px rgba(0,0,0,.34);
+  outline: none;
+}
+
+/* Controlled line break: show on desktop only */
+.kc-break{ display:none; }
+@media(min-width: 840px){ .kc-break{ display:inline; } }
+
+/* Heading sheen (very subtle) */
+.kc-title::after{
+  content:"";
+  position:absolute; inset:0; pointer-events:none;
+  background: linear-gradient(75deg,
+    transparent 0%,
+    rgba(255,255,255,.12) 20%,
+    transparent 40%);
+  transform: translateX(-120%);
+  animation: kcSheen 6s ease-in-out 1s infinite;
+  mix-blend-mode: screen;
+  opacity:.4;
+}
+
+/* Keyframes */
+@keyframes kcHue{ 0%{background-position:0% 50%} 100%{background-position:300% 50%} }
+@keyframes kcSheen{
+  0%, 70% { transform: translateX(-120%); }
+  85%     { transform: translateX(120%); }
+  100%    { transform: translateX(120%); }
+}
+
+/* Reduced motion: static accent, no sheen */
+@media (prefers-reduced-motion: reduce){
+  .kc-title::after,
+  .kc-title .kc-underline::after{ animation: none !important; }
+}
