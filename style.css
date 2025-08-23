@@ -94,9 +94,14 @@
 .es-card img{ display:block; max-width:85%; max-height:75%; height:auto; object-fit:contain; }
 
 /* ===== No-JS fallbacks ===== */
-.es-fallback{ display:none; }
+.es-fallback{
+  display:none;
+  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  gap:clamp(16px,3vw,24px);
+  justify-items:center;
+}
 .no-js .es-stage{ display:none; }
-.no-js .es-fallback{ display:block; }
+.no-js .es-fallback{ display:grid; }
 
 /* ================================
    Hero — Showcase (with Carousel) styles
