@@ -121,8 +121,16 @@ add_action('init', function () {
       ['label' => __('Elevated Surfaces', 'kadence-child')]
     );
   }
-  $pattern_file = get_stylesheet_directory() . '/inc/patterns/es-mats-grid.php';
-  if ( file_exists($pattern_file) ) {
-    require_once $pattern_file;
+  $patterns = [
+    'es-mats-grid.php',
+    'hero-intro.php',
+    'hero-ultimate.php',
+  ];
+
+  foreach ( $patterns as $pattern ) {
+    $pattern_file = get_stylesheet_directory() . '/inc/patterns/' . $pattern;
+    if ( file_exists( $pattern_file ) ) {
+      require_once $pattern_file;
+    }
   }
 });

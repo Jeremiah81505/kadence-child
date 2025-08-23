@@ -1,9 +1,9 @@
 <?php
 /**
- * Title: <?php esc_html_e( 'Hero Intro', 'kadence-child' ); ?>
+ * Title: Hero Intro
  * Slug: kadence-child/hero-intro
  * Categories: kadence-child, text, featured
- * Description: <?php esc_html_e( 'Simple hero intro section with heading and paragraph.', 'kadence-child' ); ?>
+ * Description: Simple hero intro section with heading and paragraph.
  */
 ?>
 <!-- wp:group {"align":"full","style":{"spacing":{"padding":{"top":"60px","bottom":"60px","left":"20px","right":"20px"}}},"layout":{"type":"constrained"}} -->

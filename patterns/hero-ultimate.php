@@ -1,9 +1,9 @@
 <?php
 /**
- * Title: <?php esc_html_e( 'Hero – Ultimate (Motion)', 'kadence-child' ); ?>
+ * Title: Hero – Ultimate (Motion)
  * Slug: kadence-child/hero-ultimate
  * Categories: kadence-child, featured
- * Description: <?php esc_html_e( 'Full-bleed hero with layered parallax, animated headline, and dual CTAs.', 'kadence-child' ); ?>
+ * Description: Full-bleed hero with layered parallax, animated headline, and dual CTAs.
  */
 ?>
 <!-- wp:cover {"dimRatio":0,"isUserOverlayColor":true,"customGradient":"linear-gradient(90deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0) 100%)","minHeight":45,"minHeightUnit":"vh","align":"full","className":"kc-hero-ultimate","style":{"spacing":{"padding":{"top":"40px","bottom":"40px"}}}} -->
