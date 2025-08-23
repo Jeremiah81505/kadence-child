@@ -35,17 +35,27 @@ add_action('wp_enqueue_scripts', function () {
   );
 
   // ---- Child JS (loads only if the file exists) ----
-  $child_js_file = get_stylesheet_directory() . '/assets/child.js';
-  if ( file_exists( $child_js_file ) ) {
-    wp_enqueue_script(
-      'kadence-child-js',
-      get_stylesheet_directory_uri() . '/assets/child.js',
-      [],                                   // Add deps here if you ever need (e.g., ['jquery'])
-      filemtime( $child_js_file ),          // Cache-bust when file changes
-      true                                  // Load in footer
-    );
-  }
-});
+    $child_js_file = get_stylesheet_directory() . '/assets/child.js';
+    if ( file_exists( $child_js_file ) ) {
+      wp_enqueue_script(
+        'kadence-child-js',
+        get_stylesheet_directory_uri() . '/assets/child.js',
+        [],                                   // Add deps here if you ever need (e.g., ['jquery'])
+        filemtime( $child_js_file ),          // Cache-bust when file changes
+        true                                  // Load in footer
+      );
+    }
+  });
+
+add_action( 'wp_enqueue_scripts', function () {
+  wp_enqueue_script(
+    'kc-hero-ultimate-motion',
+    get_stylesheet_directory_uri() . '/assets/js/hero-ultimate-motion.js',
+    [],
+    '1.0.0',
+    true
+  );
+}, 20 );
 
 /** ---------- BEGIN: Kadence Child Pattern Category ---------- */
 add_action( 'init', function () {
