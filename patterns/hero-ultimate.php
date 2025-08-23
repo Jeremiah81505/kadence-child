@@ -34,8 +34,8 @@
             <!-- Small badges -->
             <!-- wp:html -->
             <div class="kc-badges">
-              <span class="kc-badge">Statewide — Wisconsin</span>
-              <span class="kc-badge">5-Star Rated</span>
+              <span class="kc-badge kc-badge--blue">Statewide — Wisconsin</span>
+              <span class="kc-badge kc-badge--blue">5-Star Rated</span>
             </div>
             <!-- /wp:html -->
 
@@ -65,7 +65,7 @@
 
               <!-- wp:button {"className":"is-style-outline kc-cta-secondary"} -->
               <div class="wp-block-button kc-cta-secondary">
-                <a class="wp-block-button__link wp-element-button" href="/color-samples/">View Colors</a>
+                <a class="wp-block-button__link wp-element-button kc-btn-blue" href="/color-samples/">View Colors</a>
               </div>
               <!-- /wp:button -->
             </div>
