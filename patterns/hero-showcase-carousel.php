@@ -1,24 +1,11 @@
 <?php
 /**
- * Pattern: Hero — Showcase (with Carousel)
- * Location: Patterns → Kadence Child
+ * Title: Hero — Showcase (with Carousel)
+ * Slug: kadence-child/hero-showcase-carousel
+ * Categories: kadence-child
  */
+?>
 
-if ( ! function_exists( 'register_block_pattern' ) ) {
-  return;
-}
-
-add_action( 'init', function () {
-
-  // Ensure our pattern category exists (safe to re-run).
-  if ( function_exists( 'register_block_pattern_category' ) ) {
-    register_block_pattern_category(
-      'kadence-child',
-      array( 'label' => __( 'Kadence Child', 'kadence-child' ) )
-    );
-  }
-
-  $content = <<<'HTML'
 <!-- wp:group {"tagName":"section","className":"kc-hero-showcase","layout":{"type":"constrained"}} -->
 <section class="kc-hero-showcase" aria-label="Premium Countertops Hero">
   <div class="kc-hero-bg" style="--hero-bg:url('BACKGROUND_IMAGE_URL');"></div>
@@ -69,14 +56,4 @@ add_action( 'init', function () {
   </div>
 </section>
 <!-- /wp:group -->
-HTML;
 
-  register_block_pattern(
-    'kadence-child/hero-showcase-carousel',
-    array(
-      'title'       => __( 'Hero — Showcase (with Carousel)', 'kadence-child' ),
-      'categories'  => array( 'kadence-child' ),
-      'content'     => $content,
-    )
-  );
-});
