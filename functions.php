@@ -125,6 +125,7 @@ add_action('init', function () {
     'es-mats-grid.php',
     'hero-intro.php',
     'hero-ultimate.php',
+    'hero-showcase-carousel.php',
   ];
 
   foreach ( $patterns as $pattern ) {
