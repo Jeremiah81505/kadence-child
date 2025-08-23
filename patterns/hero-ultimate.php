@@ -69,31 +69,31 @@
             <ul class="kc-material-list">
               <li>
                 <a class="kc-chip kc-material-quartz" href="/quartz" aria-label="Shop quartz countertops">
-                  <img src="https://via.placeholder.com/80?text=Quartz" alt="" />
+                  <img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/AdobeStock_884069741-scaled.jpeg" alt="Quartz countertop icon" />
                   <span>Quartz</span>
                 </a>
               </li>
               <li>
                 <a class="kc-chip kc-material-stone" href="/natural-stone" aria-label="Shop natural stone countertops">
-                  <img src="https://via.placeholder.com/80?text=Stone" alt="" />
+                  <img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vertical-Application-of-Natural-Stone-Kitchen-Lakewood-CO-1-1.jpeg" alt="Natural stone countertop icon" />
                   <span>Natural Stone</span>
                 </a>
               </li>
               <li>
                 <a class="kc-chip kc-material-solid" href="/solid-surface" aria-label="Shop solid surface countertops">
-                  <img src="https://via.placeholder.com/80?text=Solid" alt="" />
+                  <img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Solid-Surface.jpg" alt="Solid surface countertop icon" />
                   <span>Solid Surface</span>
                 </a>
               </li>
               <li>
                 <a class="kc-chip kc-material-ultra" href="/ultra-compact" aria-label="Shop ultra compact countertops">
-                  <img src="https://via.placeholder.com/80?text=Ultra" alt="" />
+                  <img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Dekton-Countertops.avif" alt="Ultra compact countertop icon" />
                   <span>Ultra Compact</span>
                 </a>
               </li>
               <li>
                 <a class="kc-chip kc-material-laminate" href="/laminate" aria-label="Shop laminate countertops">
-                  <img src="https://via.placeholder.com/80?text=Lam" alt="" />
+                  <img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Formica-7404-Neapolitan-Stone-3-scaled_4aaa1f1a-c749-4986-97ce-57f9ddcdcf1b_1080x.webp" alt="Laminate countertop icon" />
                   <span>Laminate</span>
                 </a>
               </li>
