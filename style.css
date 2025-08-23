@@ -395,6 +395,11 @@
   border-radius:20px;
 }
 
+/* Optional: tuck the card to the right inside the hero */
+.kc-hero-fore .kc-materials-card{
+  margin-left:auto;
+}
+
 /* Chip readability and tidy wrapping */
 .kc-chip{
   min-height:52px;                 /* a bit taller for two-line labels */
