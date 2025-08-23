@@ -81,3 +81,35 @@ add_action('enqueue_block_editor_assets', function () {
     );
   }
 });
+
+add_action('wp_enqueue_scripts', function () {
+  $ver = wp_get_theme()->get('Version');
+
+  wp_enqueue_style(
+    'es-mats',
+    get_stylesheet_directory_uri() . '/assets/css/es-mats.css',
+    [],
+    $ver
+  );
+
+  wp_enqueue_script(
+    'es-mats',
+    get_stylesheet_directory_uri() . '/assets/js/es-mats.js',
+    [],
+    $ver,
+    true
+  );
+});
+
+add_action('init', function () {
+  if ( function_exists('register_block_pattern_category') ) {
+    register_block_pattern_category(
+      'elevated',
+      ['label' => __('Elevated Surfaces', 'kadence-child')]
+    );
+  }
+  $pattern_file = get_stylesheet_directory() . '/inc/patterns/es-mats-grid.php';
+  if ( file_exists($pattern_file) ) {
+    require_once $pattern_file;
+  }
+});
