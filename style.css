@@ -376,3 +376,43 @@
   from { opacity:0; }
   to   { opacity:1; }
 }
+/* Card glow halo + stronger glass */
+.kc-materials-card{
+  position:relative;
+  background: linear-gradient(180deg, rgba(12,17,26,.68), rgba(6,8,15,.52));
+  border:1px solid rgba(255,255,255,.14);
+}
+.kc-materials-card:before{
+  content:"";
+  position:absolute; inset:-1px; border-radius:21px; pointer-events:none;
+  padding:1px;
+  background: linear-gradient(120deg, rgba(185,156,255,.45), rgba(125,226,209,.35), rgba(255,212,121,.35));
+  background-size:300% 100%;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+  animation: kcHue 12s linear infinite;
+  border-radius:20px;
+}
+
+/* Chip readability and tidy wrapping */
+.kc-chip{
+  min-height:52px;                 /* a bit taller for two-line labels */
+  line-height:1.05;
+  text-align:center;
+  word-break: normal;
+  hyphens: none;
+  padding: 14px 18px;
+}
+
+/* Slightly larger grid gap on big screens */
+@media (min-width: 1024px){ .kc-material-grid{ gap:16px; } }
+
+/* Accent on hover (keeps your existing colors if present) */
+.kc-chip:hover,
+.kc-chip:focus-visible{
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* Anim keyframes */
+@keyframes kcHue{0%{background-position:0% 50%}100%{background-position:300% 50%}}
