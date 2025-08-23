@@ -72,12 +72,12 @@
 
             <!-- wp:html -->
             <nav class="kc-material-grid" aria-label="Material categories">
-              <a class="kc-chip kc-quartz"  href="/quartz/"><span class="kc-txt">Quartz</span></a>
-              <a class="kc-chip kc-stone"   href="/natural-stone/"><span class="kc-txt">Natural<wbr>Stone</span></a>
-              <a class="kc-chip kc-solid"   href="/solid-surface/"><span class="kc-txt">Solid<wbr>Surface</span></a>
-              <a class="kc-chip kc-ultra"   href="/ultra-compact/"><span class="kc-txt">Ultra<wbr>Compact</span></a>
-              <a class="kc-chip kc-lam"     href="/laminate/"><span class="kc-txt">Laminate</span></a>
-              <a class="kc-chip kc-sinks"   href="/sinks/"><span class="kc-txt">Sinks</span></a>
+              <a class="kc-chip kc-quartz" href="/quartz/"><span class="kc-txt">Quartz</span></a>
+              <a class="kc-chip kc-stone" href="/natural-stone/"><span class="kc-txt">Natural<wbr>Stone</span></a>
+              <a class="kc-chip kc-solid" href="/solid-surface/"><span class="kc-txt">Solid<wbr>Surface</span></a>
+              <a class="kc-chip kc-ultra" href="/ultra-compact/"><span class="kc-txt">Ultra<wbr>Compact</span></a>
+              <a class="kc-chip kc-lam" href="/laminate/"><span class="kc-txt">Laminate</span></a>
+              <a class="kc-chip kc-sinks" href="/sinks/"><span class="kc-txt">Sinks</span></a>
             </nav>
             <!-- /wp:html -->
           </div>
