@@ -22,41 +22,57 @@
         <!-- Left column -->
         <!-- wp:group {"className":"kc-hero-left","layout":{"type":"flex","orientation":"vertical"}} -->
         <div class="wp-block-group kc-hero-left">
-          <!-- wp:paragraph {"className":"kc-eyebrow"} -->
-          <p class="kc-eyebrow">Countertops • Fabrication • Installation</p>
-          <!-- /wp:paragraph -->
+          <!-- HERO HEADLINE CLUSTER -->
+          <!-- wp:group {"className":"kc-hero-head"} -->
+          <div class="wp-block-group kc-hero-head">
 
-          <!-- wp:group {"className":"kc-hero-badges","layout":{"type":"flex","flexWrap":"wrap"}} -->
-          <div class="wp-block-group kc-hero-badges">
-            <!-- wp:paragraph {"className":"kc-info-badge"} -->
-            <p class="kc-info-badge">Statewide – Wisconsin</p>
+            <!-- Eyebrow -->
+            <!-- wp:paragraph {"className":"kc-eyebrow"} -->
+            <p class="kc-eyebrow">Countertops • Fabrication • Installation</p>
             <!-- /wp:paragraph -->
 
-            <!-- wp:paragraph {"className":"kc-info-badge"} -->
-            <p class="kc-info-badge">5 Star Rated</p>
+            <!-- Small badges -->
+            <!-- wp:html -->
+            <div class="kc-badges">
+              <span class="kc-badge">Statewide — Wisconsin</span>
+              <span class="kc-badge">5-Star Rated</span>
+            </div>
+            <!-- /wp:html -->
+
+            <!-- Title -->
+            <!-- wp:heading {"level":1,"className":"kc-title"} -->
+            <h1 class="kc-title">
+              Premium <span class="kc-gradient">Countertops</span><br class="kc-break" />
+              Across <span class="kc-underline">Wisconsin</span>.
+            </h1>
+            <!-- /wp:heading -->
+
+            <!-- Subcopy -->
+            <!-- wp:paragraph {"className":"kc-sub"} -->
+            <p class="kc-sub">
+              Quartz, natural stone, solid surface, and laminate—crafted, delivered, and installed statewide with 5-star care.
+            </p>
             <!-- /wp:paragraph -->
+
+            <!-- CTAs -->
+            <!-- wp:buttons {"className":"kc-hero-ctas","layout":{"type":"flex","justifyContent":"left"}} -->
+            <div class="wp-block-buttons kc-hero-ctas">
+              <!-- wp:button {"className":"is-style-fill kc-cta-primary"} -->
+              <div class="wp-block-button kc-cta-primary">
+                <a class="wp-block-button__link wp-element-button" href="/get-a-quote/">Get a Quote</a>
+              </div>
+              <!-- /wp:button -->
+
+              <!-- wp:button {"className":"is-style-outline kc-cta-secondary"} -->
+              <div class="wp-block-button kc-cta-secondary">
+                <a class="wp-block-button__link wp-element-button" href="/color-samples/">View Colors</a>
+              </div>
+              <!-- /wp:button -->
+            </div>
+            <!-- /wp:buttons -->
+
           </div>
           <!-- /wp:group -->
-
-          <!-- wp:heading {"level":1,"className":"kc-hero-title"} -->
-          <h1 class="kc-hero-title"><span class="kc-reveal">Premium Countertops</span> <span class="kc-reveal">Across Wisconsin.</span></h1>
-          <!-- /wp:heading -->
-
-          <!-- wp:paragraph {"className":"kc-hero-sub"} -->
-          <p class="kc-hero-sub">Quartz, natural stone, solid surface, and laminate—crafted, delivered, and installed statewide with 5-star care.</p>
-          <!-- /wp:paragraph -->
-
-          <!-- wp:buttons {"className":"kc-hero-ctas"} -->
-          <div class="wp-block-buttons kc-hero-ctas">
-            <!-- wp:button {"className":"is-style-fill kc-cta-primary"} -->
-            <div class="wp-block-button is-style-fill kc-cta-primary"><a class="wp-block-button__link wp-element-button" href="/contact">Get a Quote</a></div>
-            <!-- /wp:button -->
-
-            <!-- wp:button {"className":"is-style-outline kc-cta-secondary"} -->
-            <div class="wp-block-button is-style-outline kc-cta-secondary"><a class="wp-block-button__link wp-element-button" href="/gallery">View Colors</a></div>
-            <!-- /wp:button -->
-          </div>
-          <!-- /wp:buttons -->
         </div>
         <!-- /wp:group -->
 
