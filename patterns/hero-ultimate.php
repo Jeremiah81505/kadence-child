@@ -63,41 +63,22 @@
         <!-- Right column -->
         <!-- wp:group {"className":"kc-hero-right","layout":{"type":"flex","orientation":"vertical"}} -->
         <div class="wp-block-group kc-hero-right">
-          <!-- wp:group {"className":"kc-hero-chips","layout":{"type":"constrained"}} -->
-          <div class="wp-block-group kc-hero-chips">
+          <!-- Materials Menu -->
+          <!-- wp:group {"className":"kc-materials-card"} -->
+          <div class="wp-block-group kc-materials-card" role="region" aria-label="Browse materials">
+            <!-- wp:heading {"level":3,"className":"kc-materials-heading"} -->
+            <h3 class="kc-materials-heading">Explore by Material</h3>
+            <!-- /wp:heading -->
+
             <!-- wp:html -->
-            <ul class="kc-material-list">
-              <li>
-                <a class="kc-chip kc-material-quartz" href="/quartz" aria-label="Shop quartz countertops">
-                  <img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/AdobeStock_884069741-scaled.jpeg" alt="Quartz countertop icon" />
-                  <span>Quartz</span>
-                </a>
-              </li>
-              <li>
-                <a class="kc-chip kc-material-stone" href="/natural-stone" aria-label="Shop natural stone countertops">
-                  <img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vertical-Application-of-Natural-Stone-Kitchen-Lakewood-CO-1-1.jpeg" alt="Natural stone countertop icon" />
-                  <span>Natural Stone</span>
-                </a>
-              </li>
-              <li>
-                <a class="kc-chip kc-material-solid" href="/solid-surface" aria-label="Shop solid surface countertops">
-                  <img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Solid-Surface.jpg" alt="Solid surface countertop icon" />
-                  <span>Solid Surface</span>
-                </a>
-              </li>
-              <li>
-                <a class="kc-chip kc-material-ultra" href="/ultra-compact" aria-label="Shop ultra compact countertops">
-                  <img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Dekton-Countertops.avif" alt="Ultra compact countertop icon" />
-                  <span>Ultra Compact</span>
-                </a>
-              </li>
-              <li>
-                <a class="kc-chip kc-material-laminate" href="/laminate" aria-label="Shop laminate countertops">
-                  <img src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Formica-7404-Neapolitan-Stone-3-scaled_4aaa1f1a-c749-4986-97ce-57f9ddcdcf1b_1080x.webp" alt="Laminate countertop icon" />
-                  <span>Laminate</span>
-                </a>
-              </li>
-            </ul>
+            <nav class="kc-material-grid" aria-label="Material categories">
+              <a class="kc-chip kc-chip-quartz" href="/quartz/">Quartz</a>
+              <a class="kc-chip kc-chip-stone" href="/natural-stone/">Natural Stone</a>
+              <a class="kc-chip kc-chip-solid" href="/solid-surface/">Solid Surface</a>
+              <a class="kc-chip kc-chip-ultra" href="/ultra-compact/">Ultra Compact</a>
+              <a class="kc-chip kc-chip-laminate" href="/laminate/">Laminate</a>
+              <a class="kc-chip kc-chip-sinks" href="/sinks/">Sinks</a>
+            </nav>
             <!-- /wp:html -->
           </div>
           <!-- /wp:group -->
