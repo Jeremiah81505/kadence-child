@@ -550,3 +550,126 @@
 @media (prefers-reduced-motion: reduce){
   .kc-materials-card::before{ animation:none !important; }
 }
+/* ===== Premium Materials Card (subtle, not flashy) ===== */
+.kc-materials-card{
+  position:relative;
+  max-width: 560px;
+  margin-inline:auto;
+  padding: clamp(16px, 2vw, 20px);
+  color:#fff;
+
+  /* lighter glass */
+  background: linear-gradient(180deg, rgba(16,22,32,.66), rgba(10,14,22,.50));
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.30);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.kc-materials-card::before{
+  /* gentle animated border (very subtle) */
+  content:"";
+  position:absolute; inset:-1px; padding:1px; border-radius:20px; pointer-events:none;
+  background: linear-gradient(120deg,
+    rgba(185,156,255,.30),
+    rgba(125,226,209,.25),
+    rgba(255,212,121,.25));
+  background-size:300% 100%;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: kcHue 14s linear infinite;
+  opacity:.8;
+}
+.kc-materials-heading{
+  margin:0 0 10px;
+  text-align:center;
+  font-size: clamp(1.1rem, 2.1vw, 1.4rem);
+  font-weight:800;
+  letter-spacing:.2px;
+}
+
+/* Grid: 2 cols by default, 3 cols on xl for less height */
+.kc-material-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+  gap: 12px;
+}
+@media (min-width: 1200px){
+  .kc-material-grid{ grid-template-columns: repeat(3, minmax(160px, 1fr)); }
+}
+
+/* Chip: tidy, high-contrast, minimal motion */
+.kc-chip{
+  position:relative;
+  display:flex; align-items:center; justify-content:center;
+  min-height: 50px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  text-decoration:none;
+  color:#fff;
+  font-weight:700;
+  letter-spacing:.2px;
+
+  background: linear-gradient(180deg, rgba(24,28,38,.88), rgba(14,18,26,.78));
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 8px 20px rgba(0,0,0,.26);
+
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.kc-txt{
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  line-height:1.06;
+  text-align:center;
+}
+
+/* subtle sheen */
+.kc-chip::before{
+  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  background: radial-gradient(120% 90% at 10% 0%, rgba(255,255,255,.10), transparent 60%);
+  opacity:.75;
+}
+
+/* small arrow on hover (no icon files used) */
+.kc-chip::after{
+  content: "→";
+  position:absolute; right:12px; opacity:0; transform: translateX(-4px);
+  transition: transform .16s ease, opacity .16s ease;
+  font-weight:900;
+}
+.kc-chip:hover::after,
+.kc-chip:focus-visible::after{ opacity:.85; transform: translateX(2px); }
+
+.kc-chip:hover,
+.kc-chip:focus-visible{
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,.22);
+  box-shadow: 0 12px 26px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.10);
+  outline: none;
+}
+
+/* Accessible keyboard ring */
+.kc-chip:focus-visible{
+  box-shadow:
+    0 0 0 3px rgba(255,255,255,.20),
+    0 12px 26px rgba(0,0,0,.30),
+    inset 0 1px 0 rgba(255,255,255,.10);
+}
+
+/* subtle per-chip accent on hover (kept minimal) */
+.kc-quartz:hover{ box-shadow: 0 12px 26px rgba(111,125,255,.28), inset 0 1px 0 rgba(255,255,255,.10); }
+.kc-stone:hover { box-shadow: 0 12px 26px rgba(125,226,209,.25), inset 0 1px 0 rgba(255,255,255,.10); }
+.kc-solid:hover { box-shadow: 0 12px 26px rgba(255,212,121,.24), inset 0 1px 0 rgba(255,255,255,.10); }
+.kc-ultra:hover { box-shadow: 0 12px 26px rgba(217,153,255,.24), inset 0 1px 0 rgba(255,255,255,.10); }
+.kc-lam:hover   { box-shadow: 0 12px 26px rgba(255,138,128,.24), inset 0 1px 0 rgba(255,255,255,.10); }
+.kc-sinks:hover { box-shadow: 0 12px 26px rgba(128,223,255,.24), inset 0 1px 0 rgba(255,255,255,.10); }
+
+/* Animations */
+@keyframes kcHue{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+
+/* Reduced motion: disable border animation */
+@media (prefers-reduced-motion: reduce){
+  .kc-materials-card::before{ animation:none !important; }
+}
