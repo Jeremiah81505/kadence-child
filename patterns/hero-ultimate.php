@@ -66,38 +66,38 @@
           <!-- wp:group {"className":"kc-hero-chips","layout":{"type":"constrained"}} -->
           <div class="wp-block-group kc-hero-chips">
             <!-- wp:html -->
-            <div class="kc-material-grid">
-              <a href="/quartz">
-                <figure class="kc-material-card kc-material-quartz">
-                  <img src="https://via.placeholder.com/80?text=Quartz" alt="Quartz" />
-                  <figcaption>Quartz</figcaption>
-                </figure>
-              </a>
-              <a href="/natural-stone">
-                <figure class="kc-material-card kc-material-stone">
-                  <img src="https://via.placeholder.com/80?text=Stone" alt="Natural Stone" />
-                  <figcaption>Natural Stone</figcaption>
-                </figure>
-              </a>
-              <a href="/solid-surface">
-                <figure class="kc-material-card kc-material-solid">
-                  <img src="https://via.placeholder.com/80?text=Solid" alt="Solid Surface" />
-                  <figcaption>Solid Surface</figcaption>
-                </figure>
-              </a>
-              <a href="/ultra-compact">
-                <figure class="kc-material-card kc-material-ultra">
-                  <img src="https://via.placeholder.com/80?text=Ultra" alt="Ultra Compact" />
-                  <figcaption>Ultra Compact</figcaption>
-                </figure>
-              </a>
-              <a href="/laminate">
-                <figure class="kc-material-card kc-material-laminate">
-                  <img src="https://via.placeholder.com/80?text=Lam" alt="Laminate" />
-                  <figcaption>Laminate</figcaption>
-                </figure>
-              </a>
-            </div>
+            <ul class="kc-material-list">
+              <li>
+                <a class="kc-chip kc-material-quartz" href="/quartz" aria-label="Shop quartz countertops">
+                  <img src="https://via.placeholder.com/80?text=Quartz" alt="" />
+                  <span>Quartz</span>
+                </a>
+              </li>
+              <li>
+                <a class="kc-chip kc-material-stone" href="/natural-stone" aria-label="Shop natural stone countertops">
+                  <img src="https://via.placeholder.com/80?text=Stone" alt="" />
+                  <span>Natural Stone</span>
+                </a>
+              </li>
+              <li>
+                <a class="kc-chip kc-material-solid" href="/solid-surface" aria-label="Shop solid surface countertops">
+                  <img src="https://via.placeholder.com/80?text=Solid" alt="" />
+                  <span>Solid Surface</span>
+                </a>
+              </li>
+              <li>
+                <a class="kc-chip kc-material-ultra" href="/ultra-compact" aria-label="Shop ultra compact countertops">
+                  <img src="https://via.placeholder.com/80?text=Ultra" alt="" />
+                  <span>Ultra Compact</span>
+                </a>
+              </li>
+              <li>
+                <a class="kc-chip kc-material-laminate" href="/laminate" aria-label="Shop laminate countertops">
+                  <img src="https://via.placeholder.com/80?text=Lam" alt="" />
+                  <span>Laminate</span>
+                </a>
+              </li>
+            </ul>
             <!-- /wp:html -->
           </div>
           <!-- /wp:group -->

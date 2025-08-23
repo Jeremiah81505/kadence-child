@@ -23,13 +23,13 @@
 
 .kc-hero-ultimate .kc-hero-badges{ display:flex; align-items:center; gap:1rem; margin-bottom:1rem; }
 
-.kc-hero-ultimate .kc-material-grid{ display:grid; gap:clamp(12px,1.5vw,20px); grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); }
-.kc-hero-ultimate .kc-material-grid a{ text-decoration:none; color:inherit; }
-.kc-hero-ultimate .kc-material-card{ display:flex; flex-direction:column; align-items:center; text-align:center; padding:1rem; background:linear-gradient(145deg,var(--kc-mat-bg1,#0d1117),var(--kc-mat-bg2,#1b2433)); color:#fff; border-radius:12px; border:1px solid var(--kc-mat-stroke,rgba(255,255,255,.1)); box-shadow:0 6px 12px rgba(0,0,0,.25); transition:transform .25s ease, box-shadow .25s ease, background .25s ease; }
-.kc-hero-ultimate .kc-material-card:hover{ background:linear-gradient(145deg,var(--kc-mat-bg2,#1b2433),var(--kc-mat-bg1,#0d1117)); transform:translateY(-4px); box-shadow:0 10px 20px rgba(0,0,0,.35); }
-.kc-hero-ultimate .kc-material-card img{ width:64px; height:64px; object-fit:contain; margin-bottom:.5rem; }
-.kc-hero-ultimate .kc-material-card figcaption{ font-weight:700; }
-@media (max-width: 782px){ .kc-hero-ultimate .kc-material-grid{ grid-template-columns:1fr; } }
+.kc-hero-ultimate .kc-material-list{ display:grid; gap:clamp(12px,1.5vw,20px); grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); list-style:none; margin:0; padding:0; }
+.kc-hero-ultimate .kc-material-list .kc-chip{ text-decoration:none; color:inherit; display:flex; flex-direction:column; align-items:center; text-align:center; padding:1rem; background:linear-gradient(145deg,var(--kc-mat-bg1,#0d1117),var(--kc-mat-bg2,#1b2433)); color:#fff; border-radius:12px; border:1px solid var(--kc-mat-stroke,rgba(255,255,255,.1)); box-shadow:0 6px 12px rgba(0,0,0,.25); transition:transform .25s ease, box-shadow .25s ease, background .25s ease; }
+.kc-hero-ultimate .kc-material-list .kc-chip:hover{ background:linear-gradient(145deg,var(--kc-mat-bg2,#1b2433),var(--kc-mat-bg1,#0d1117)); transform:translateY(-4px); box-shadow:0 10px 20px rgba(0,0,0,.35); }
+.kc-hero-ultimate .kc-material-list .kc-chip img{ width:64px; height:64px; object-fit:contain; margin-bottom:.5rem; }
+.kc-hero-ultimate .kc-material-list .kc-chip span{ font-weight:700; }
+.kc-hero-ultimate .kc-material-list .kc-chip:focus-visible{ outline:2px solid #fff; outline-offset:2px; }
+@media (max-width: 782px){ .kc-hero-ultimate .kc-material-list{ grid-template-columns:1fr; } }
 
 /* Material modifiers */
 .kc-material-quartz{ --kc-mat-bg1:#3e3052; --kc-mat-bg2:#1d1a2d; --kc-mat-stroke:rgba(255,255,255,.2); }
