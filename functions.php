@@ -104,6 +104,7 @@ add_action('init', function () {
     'hero-ultimate.php',
     'hero-showcase-carousel.php',
     'material-section.php',
+    'es-mats-grid.php',
   ];
 
   foreach ( $patterns as $pattern ) {
