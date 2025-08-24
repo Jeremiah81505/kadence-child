@@ -8,30 +8,25 @@
 ?>
 <!-- wp:cover {"dimRatio":0,"isUserOverlayColor":true,"customGradient":"linear-gradient(90deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0) 100%)","minHeight":45,"minHeightUnit":"vh","align":"full","className":"kc-hero-ultimate","style":{"spacing":{"padding":{"top":"40px","bottom":"40px"}}}} -->
 <div class="wp-block-cover alignfull kc-hero-ultimate" style="padding-top:40px;padding-bottom:40px;min-height:45vh">
-  <span aria-hidden="true" class="wp-block-cover__background has-background-dim-0 has-background-dim" style="background:linear-gradient(90deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0) 100%)"></span>
-  <img class="wp-block-cover__image-background" alt="" data-object-fit="cover" src="http://elevatedcountertopexperts.com/wp-content/uploads/2025/08/AdobeStock_884069741-scaled.jpeg"/>
+  <span aria-hidden="true" class="wp-block-cover__background has-background-dim-0 has-background-dim has-background-gradient" style="background:linear-gradient(90deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0) 100%)"></span>
+  <img class="wp-block-cover__image-background" alt="" data-object-fit="cover" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/AdobeStock_884069741-scaled.jpeg"/>
   <div class="wp-block-cover__inner-container">
     <!-- wp:group {"layout":{"type":"constrained","contentSize":"1900px"}} -->
     <div class="wp-block-group kc-hero-wrap">
-      <!-- Decorative floating chips -->
       <div class="kc-float a"></div>
       <div class="kc-float b"></div>
 
       <!-- wp:group {"className":"kc-hero-flex","layout":{"type":"flex","justifyContent":"space-between","flexWrap":"nowrap"}} -->
       <div class="wp-block-group kc-hero-flex">
-        <!-- Left column -->
         <!-- wp:group {"className":"kc-hero-left","layout":{"type":"flex","orientation":"vertical"}} -->
         <div class="wp-block-group kc-hero-left">
-          <!-- HERO HEADLINE CLUSTER -->
           <!-- wp:group {"className":"kc-hero-head"} -->
           <div class="wp-block-group kc-hero-head">
 
-            <!-- Eyebrow -->
             <!-- wp:paragraph {"className":"kc-eyebrow"} -->
             <p class="kc-eyebrow"><?php esc_html_e( 'Countertops • Fabrication • Installation', 'kadence-child' ); ?></p>
             <!-- /wp:paragraph -->
 
-            <!-- Small badges -->
             <!-- wp:html -->
             <div class="kc-badges">
               <span class="kc-badge kc-badge--blue"><?php esc_html_e( 'Statewide — Wisconsin', 'kadence-child' ); ?></span>
@@ -39,7 +34,6 @@
             </div>
             <!-- /wp:html -->
 
-            <!-- Title -->
             <!-- wp:heading {"level":1,"className":"kc-title"} -->
             <h1 class="kc-title">
               <?php
@@ -56,12 +50,10 @@
             </h1>
             <!-- /wp:heading -->
 
-            <!-- Subcopy -->
             <!-- wp:paragraph {"className":"kc-sub"} -->
             <p class="kc-sub"><?php esc_html_e( 'Quartz, natural stone, solid surface, and laminate—crafted, delivered, and installed statewide with 5-star care.', 'kadence-child' ); ?></p>
             <!-- /wp:paragraph -->
 
-            <!-- CTAs -->
             <!-- wp:buttons {"className":"kc-hero-ctas","layout":{"type":"flex","justifyContent":"left"}} -->
             <div class="wp-block-buttons kc-hero-ctas">
               <!-- wp:button {"className":"is-style-fill kc-cta-primary"} -->
@@ -70,9 +62,9 @@
               </div>
               <!-- /wp:button -->
 
-              <!-- wp:button {"className":"is-style-outline kc-cta-secondary"} -->
-              <div class="wp-block-button kc-cta-secondary">
-                <a class="wp-block-button__link wp-element-button kc-btn-blue" href="/color-samples/"><?php esc_html_e( 'View Colors', 'kadence-child' ); ?></a>
+              <!-- wp:button {"className":"is-style-outline kc-cta-secondary kc-btn-blue"} -->
+              <div class="wp-block-button kc-cta-secondary kc-btn-blue">
+                <a class="wp-block-button__link wp-element-button" href="/color-samples/"><?php esc_html_e( 'View Colors', 'kadence-child' ); ?></a>
               </div>
               <!-- /wp:button -->
             </div>
@@ -83,10 +75,8 @@
         </div>
         <!-- /wp:group -->
 
-        <!-- Right column -->
         <!-- wp:group {"className":"kc-hero-right","layout":{"type":"flex","orientation":"vertical"}} -->
         <div class="wp-block-group kc-hero-right">
-          <!-- Materials Menu -->
           <!-- wp:group {"className":"kc-materials-card"} -->
           <div class="wp-block-group kc-materials-card" role="region" aria-label="<?php esc_attr_e( 'Browse materials', 'kadence-child' ); ?>">
             <!-- wp:heading {"level":3,"className":"kc-materials-heading"} -->
