@@ -97,4 +97,8 @@
 @media (prefers-reduced-motion:reduce){
   #es-mats.es-animate .es-card{ opacity:1!important; transform:none!important; transition:none!important; }
   #es-mats .es-card._in::after{ animation:none; }
+  #es-mats .es-card:hover img,
+  #es-mats .es-card:focus-visible img{ transform:none!important; transition:none!important; }
+  #es-mats .es-card:hover .card-label,
+  #es-mats .es-card:focus-visible .card-label{ background:rgba(0,0,0,.55)!important; transform:none!important; transition:none!important; }
 }
