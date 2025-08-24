@@ -1,5 +1,3 @@
-FILE: wp-content/themes/kadence-child/inc/patterns-es-mats-grid.php
-```php
 <?php
 /**
  * Pattern: Materials Grid (6 Cards, Hero + Mix)
