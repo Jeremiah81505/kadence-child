@@ -115,12 +115,17 @@ add_action('wp_enqueue_scripts', function () {
 });
 
 add_action('init', function () {
+  if ( ! function_exists( 'register_block_pattern' ) ) {
+    return;
+  }
+
   if ( function_exists('register_block_pattern_category') ) {
     register_block_pattern_category(
       'elevated',
       ['label' => __('Elevated Surfaces', 'kadence-child')]
     );
   }
+
   $patterns = [
     'es-mats-grid.php',
     'hero-intro.php',
