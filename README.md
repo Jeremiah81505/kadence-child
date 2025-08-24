@@ -25,6 +25,7 @@ The theme registers a `Kadence Child` pattern category and provides:
     - `data-tilt` – tilt angle in degrees (default `8`).
 - **Hero Intro** (`patterns/hero-intro.php`): simple headline and paragraph section.
 - **Hero – Ultimate (Motion)** (`patterns/hero-ultimate.php`): full‑bleed hero with parallax elements and dual CTAs.
+- **Material Section** (`patterns/material-section.php`): heading with three material columns.
 
 ## Development Workflow
 
