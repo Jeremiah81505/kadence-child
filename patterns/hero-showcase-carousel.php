@@ -33,13 +33,13 @@
       </header>
 
       <!-- RIGHT -->
-      <aside class="kc-hero-right" aria-label="Browse categories">
-        <a class="kc-card" href="/quartz"><span class="kc-card-title">Quartz</span></a>
-        <a class="kc-card" href="/natural-stone"><span class="kc-card-title">Natural Stone</span></a>
-        <a class="kc-card" href="/solid-surface"><span class="kc-card-title">Solid Surface</span></a>
-        <a class="kc-card" href="/ultra-compact"><span class="kc-card-title">Ultra Compact</span></a>
-        <a class="kc-card kc-card--wide" href="/laminate"><span class="kc-card-title">Laminate</span></a>
-        <a class="kc-card kc-card--wide" href="/sinks"><span class="kc-card-title">Sinks</span></a>
+      <aside class="kc-hero-right" aria-label="<?php esc_attr_e( 'Browse categories', 'kadence-child' ); ?>">
+        <a class="kc-card" href="/quartz"><span class="kc-card-title"><?php esc_html_e( 'Quartz', 'kadence-child' ); ?></span></a>
+        <a class="kc-card" href="/natural-stone"><span class="kc-card-title"><?php esc_html_e( 'Natural Stone', 'kadence-child' ); ?></span></a>
+        <a class="kc-card" href="/solid-surface"><span class="kc-card-title"><?php esc_html_e( 'Solid Surface', 'kadence-child' ); ?></span></a>
+        <a class="kc-card" href="/ultra-compact"><span class="kc-card-title"><?php esc_html_e( 'Ultra Compact', 'kadence-child' ); ?></span></a>
+        <a class="kc-card kc-card--wide" href="/laminate"><span class="kc-card-title"><?php esc_html_e( 'Laminate', 'kadence-child' ); ?></span></a>
+        <a class="kc-card kc-card--wide" href="/sinks"><span class="kc-card-title"><?php esc_html_e( 'Sinks', 'kadence-child' ); ?></span></a>
       </aside>
     </div>
 
