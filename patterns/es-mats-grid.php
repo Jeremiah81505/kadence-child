@@ -1,24 +1,11 @@
 <?php
 /**
- * Pattern: Materials Grid (6 Cards, Hero + Mix)
- *
- * Registers a block pattern for a 6-card materials grid.
- * If patterns/es-mats-grid.php exists, its output is used.
- * Otherwise, a safe inline HTML fallback is registered.
+ * Title: Materials Grid (6 Cards, Hero + Mix)
+ * Slug: kadence-child/es-mats-grid
+ * Categories: kadence-child, elevated
+ * Description: Six-card materials navigation grid with scroll-reveal animation and vertical tags.
  */
-
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
-
-$include_path = get_theme_file_path( 'patterns/es-mats-grid.php' );
-
-if ( file_exists( $include_path ) ) {
-	ob_start();
-	include $include_path;
-	$pattern_content = ob_get_clean();
-} else {
-	$pattern_content = <<<HTML
+?>
 <!-- wp:group {"tagName":"section","layout":{"type":"constrained"}} -->
 <section class="wp-block-group">
 <!-- wp:html -->
@@ -66,18 +53,3 @@ if ( file_exists( $include_path ) ) {
 <!-- /wp:html -->
 </section>
 <!-- /wp:group -->
-HTML;
-}
-
-if ( function_exists( 'register_block_pattern' ) ) {
-	register_block_pattern(
-		'kadence-child/es-mats-grid',
-		[
-			'title'       => __( 'Materials Grid (6 Cards, Hero + Mix)', 'kadence-child' ),
-			'description' => __( 'Six-card materials navigation grid with scroll-reveal animation and vertical tags.', 'kadence-child' ),
-			'categories'  => [ 'kadence-child', 'elevated' ],
-			'content'     => $pattern_content,
-			'inserter'    => true,
-		]
-	);
-}
