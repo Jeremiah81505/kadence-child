@@ -3,10 +3,6 @@
  * Pattern: Materials Grid (6 Cards, Hero + Mix)
  */
 
-if ( ! function_exists('register_block_pattern') ) {
-    return;
-}
-
 $pattern_content = <<<HTML
 <!-- wp:group {"tagName":"section","layout":{"type":"constrained"}} -->
 <section class="wp-block-group">
