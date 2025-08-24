@@ -3,10 +3,6 @@
  * Pattern: Hero Intro
  */
 
-if ( ! function_exists( 'register_block_pattern' ) ) {
-    return;
-}
-
 ob_start();
 include get_theme_file_path( 'patterns/hero-intro.php' );
 $pattern_content = ob_get_clean();
