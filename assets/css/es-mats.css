@@ -14,7 +14,7 @@
   border-radius:18px; overflow:hidden; text-decoration:none; color:#fff; background:#000;
   box-shadow:0 8px 28px rgba(0,0,0,.35); isolation:isolate;
 }
-#es-mats .es-card img{ display:block; width:100%; height:100%; object-fit:cover; filter:saturate(1.02) contrast(1.02); }
+#es-mats .es-card img{ display:block; width:100%; height:100%; object-fit:cover; filter:saturate(1.02) contrast(1.02); transition:transform .6s ease; }
 
 /* Overlays */
 #es-mats .es-card::before{
@@ -27,19 +27,18 @@
   content:""; position:absolute; inset:-20% -40%;
   transform:skewX(-18deg) translateX(-120%);
   background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.35) 50%,rgba(255,255,255,0) 100%);
-  mix-blend-mode:soft-light; filter:blur(6px); opacity:.0; z-index:1; pointer-events:none;
+  mix-blend-mode:soft-light; filter:blur(6px); opacity:.0; z-index:3; pointer-events:none;
 }
 #es-mats .es-card._in::after{ animation:es-sheen .9s .25s ease forwards; }
 @keyframes es-sheen{ to{ transform:skewX(-18deg) translateX(120%); opacity:.55; } }
 
-/* Vertical tags */
-#es-mats .vtag{
-  position:absolute; left:10px; top:50%; transform:translateY(-50%) rotate(180deg);
-  writing-mode:vertical-rl; white-space:nowrap; line-height:1; background:#111; color:#fff;
-  border-radius:999px; padding:10px 9px; font-weight:800; letter-spacing:.6px;
-  box-shadow:0 6px 22px rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.15); z-index:2;
-}
-#es-mats .vtag.vtag--right{ left:auto; right:10px; }
+/* Tint layer and content */
+#es-mats .es-card .tint{ position:absolute; inset:0; background:rgba(4,20,47,.55); mix-blend-mode:multiply; z-index:1; transition:background .45s ease; }
+#es-mats .card-title{ position:absolute; left:18px; bottom:16px; font-weight:700; font-size:1.125rem; z-index:2; letter-spacing:.3px; }
+#es-mats .card-index{ position:absolute; top:10px; right:14px; font-size:2.5rem; font-weight:800; line-height:1; opacity:.15; z-index:2; transition:opacity .45s ease; }
+#es-mats .es-card:hover img{ transform:scale(1.05); }
+#es-mats .es-card:hover .tint{ background:rgba(4,20,47,.72); }
+#es-mats .es-card:hover .card-index{ opacity:.3; }
 
 /* Animation is opt-in (JS adds .es-animate) */
 #es-mats.es-animate .es-card{
