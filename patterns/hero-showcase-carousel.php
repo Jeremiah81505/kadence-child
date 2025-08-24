@@ -6,14 +6,13 @@
  */
 ?>
 
-<!-- wp:group {"tagName":"section","className":"kc-hero-showcase","layout":{"type":"constrained"}} -->
+<!-- wp:html -->
 <section class="kc-hero-showcase" aria-label="Premium Countertops Hero">
   <div class="kc-hero-bg" style="--hero-bg:url('BACKGROUND_IMAGE_URL');"></div>
   <div class="kc-hero-scrim"></div>
 
   <div class="kc-hero-wrap">
     <div class="kc-hero-grid">
-      <!-- LEFT -->
       <header class="kc-hero-left">
         <p class="kc-eyebrow">Countertops for every space · <span class="nowrap">Wisconsin</span></p>
         <h1 class="kc-heading">
@@ -32,7 +31,6 @@
         </nav>
       </header>
 
-      <!-- RIGHT -->
       <aside class="kc-hero-right" aria-label="<?php esc_attr_e( 'Browse categories', 'kadence-child' ); ?>">
         <a class="kc-card" href="/quartz"><span class="kc-card-title"><?php esc_html_e( 'Quartz', 'kadence-child' ); ?></span></a>
         <a class="kc-card" href="/natural-stone"><span class="kc-card-title"><?php esc_html_e( 'Natural Stone', 'kadence-child' ); ?></span></a>
@@ -43,17 +41,14 @@
       </aside>
     </div>
 
-    <!-- CTA BAR -->
     <div class="kc-cta-bar" role="region" aria-label="Quick actions">
       <a class="kc-pill" href="/free-quote">Schedule Your Free Quote</a>
       <a class="kc-pill kc-pill--ghost" href="/color-samples">Explore Countertop Colors</a>
     </div>
 
-    <!-- Reuse the existing, working carousel pattern -->
-    <!-- IMPORTANT: This slug must match the existing pattern. -->
     <!-- wp:pattern {"slug":"kadence-child/carousel-3d-ring"} /-->
 
   </div>
 </section>
-<!-- /wp:group -->
+<!-- /wp:html -->
 

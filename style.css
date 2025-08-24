@@ -844,14 +844,14 @@
 }
 
 /* "View Colors" as blue button (overrides secondary look) */
-.kc-cta-secondary .kc-btn-blue{
+.kc-cta-secondary.kc-btn-blue .wp-block-button__link{
   color:#fff;
   background: linear-gradient(180deg, var(--kc-blue-1), var(--kc-blue-2));
   border: 1px solid rgba(255,255,255,.22);
   box-shadow: 0 10px 26px rgba(37,99,235,.30);
 }
-.kc-cta-secondary .kc-btn-blue:hover,
-.kc-cta-secondary .kc-btn-blue:focus-visible{
+.kc-cta-secondary.kc-btn-blue .wp-block-button__link:hover,
+.kc-cta-secondary.kc-btn-blue .wp-block-button__link:focus-visible{
   background: linear-gradient(180deg, var(--kc-blue-hover-1), var(--kc-blue-hover-2));
   transform: translateY(-2px);
   border-color: rgba(255,255,255,.30);
@@ -860,7 +860,7 @@
 }
 
 /* Ensure text stays readable on dark backgrounds */
-.kc-cta-secondary .kc-btn-blue,
+.kc-cta-secondary.kc-btn-blue .wp-block-button__link,
 .kc-badge--blue{
   text-shadow: 0 1px 0 rgba(0,0,0,.18);
 }
