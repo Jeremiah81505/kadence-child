@@ -44,7 +44,7 @@
   font-weight:700; font-size:1.125rem; letter-spacing:.3px;
   transform:translateY(0); pointer-events:none; transition:transform .45s ease;
 }
-#es-mats .card-title{ left:18px; }
+#es-mats .card-title{ left:18px; white-space:nowrap; }
 #es-mats .card-index{ right:18px; font-weight:800; opacity:.65; }
 
 /* Hover / focus */

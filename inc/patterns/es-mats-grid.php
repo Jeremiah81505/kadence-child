@@ -37,7 +37,7 @@ if ( file_exists( $include_path ) ) {
     <a href="https://elevatedcountertopexperts.com/natural-stone/" class="es-card cell-ns" data-dir="up">
       <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vertical-Application-of-Natural-Stone-Kitchen-Lakewood-CO-1-1.jpeg" alt="Natural stone countertop">
       <span class="tint"></span>
-      <span class="card-title">Natural&nbsp;Stone</span>
+      <span class="card-title">Natural Stone</span>
       <span class="card-index">02</span>
     </a>
 
@@ -45,7 +45,7 @@ if ( file_exists( $include_path ) ) {
     <a href="https://elevatedcountertopexperts.com/solid-surface/" class="es-card cell-solid" data-dir="down">
       <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Solid-Surface-1.jpg" alt="Solid surface countertop">
       <span class="tint"></span>
-      <span class="card-title">Solid&nbsp;Surface</span>
+      <span class="card-title">Solid Surface</span>
       <span class="card-index">03</span>
     </a>
 
@@ -53,7 +53,7 @@ if ( file_exists( $include_path ) ) {
     <a href="https://elevatedcountertopexperts.com/ultra-compact/" class="es-card cell-ultra" data-dir="right">
       <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Dekton-Countertops.avif" alt="Ultra compact surface">
       <span class="tint"></span>
-      <span class="card-title">Ultra&nbsp;Compact</span>
+      <span class="card-title">Ultra Compact</span>
       <span class="card-index">04</span>
     </a>
 
