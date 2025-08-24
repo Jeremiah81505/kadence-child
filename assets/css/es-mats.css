@@ -42,10 +42,14 @@
   transform:translateY(0); transition:transform .45s ease, background .45s ease;
 }
 #es-mats .label-index{ font-weight:800; opacity:.65; }
-#es-mats .es-card:hover img{ transform:scale(1.05); }
-#es-mats .es-card:hover::before{ background:linear-gradient(180deg,rgba(0,0,0,.22) 0%,rgba(0,0,0,.60) 100%),
+#es-mats .es-card:hover img,
+#es-mats .es-card:focus-visible img{ transform:scale(1.05); }
+#es-mats .es-card:hover::before,
+#es-mats .es-card:focus-visible::before{ background:linear-gradient(180deg,rgba(0,0,0,.22) 0%,rgba(0,0,0,.60) 100%),
              radial-gradient(120% 100% at 110% -10%,rgba(255,255,255,.22),rgba(255,255,255,0) 45%); }
-#es-mats .es-card:hover .card-label{ background:rgba(0,0,0,.72); transform:translateY(-6px); }
+#es-mats .es-card:hover .card-label,
+#es-mats .es-card:focus-visible .card-label{ background:rgba(0,0,0,.72); transform:translateY(-6px); }
+#es-mats .es-card:focus-visible{ outline:2px solid rgba(255,255,255,.85); outline-offset:-2px; }
 
 /* Animation is opt-in (JS adds .es-animate) */
 #es-mats.es-animate .es-card{
