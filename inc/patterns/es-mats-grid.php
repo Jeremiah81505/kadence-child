@@ -3,21 +3,30 @@
  * Pattern: Materials Grid (6 Cards, Hero + Mix)
  *
  * Registers a block pattern for a 6-card materials grid.
- * If patterns/es-mats-grid.php exists, its output is used.
- * Otherwise, a safe inline HTML fallback is registered.
+ * Prefers patterns/es-mats-grid.php if present (full control).
+ * Falls back to inc/patterns/es-mats-grid-template.php if present.
+ * Otherwise, registers a safe inline HTML fallback.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$include_path = get_theme_file_path( 'patterns/es-mats-grid.php' );
+$primary_include   = get_theme_file_path( 'patterns/es-mats-grid.php' );
+$template_include  = get_theme_file_path( 'inc/patterns/es-mats-grid-template.php' );
 
-if ( file_exists( $include_path ) ) {
+if ( file_exists( $primary_include ) ) {
 	ob_start();
-	include $include_path;
+	include $primary_include;
 	$pattern_content = ob_get_clean();
+
+} elseif ( file_exists( $template_include ) ) {
+	ob_start();
+	include $template_include;
+	$pattern_content = ob_get_clean();
+
 } else {
+	// Safe inline fallback.
 	$pattern_content = <<<HTML
 <!-- wp:group {"tagName":"section","layout":{"type":"constrained"}} -->
 <section class="wp-block-group">
