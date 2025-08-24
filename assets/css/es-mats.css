@@ -1,4 +1,4 @@
-/* ---- Materials Grid (ES) ---- */
+/* ---- Materials Grid (ES) pattern styles ---- */
 #es-mats { max-width:1440px; margin:0 auto; padding:6px; color:#fff; font-family:inherit; }
 
 /* Grid layout */
@@ -19,13 +19,7 @@
   object-fit:cover; filter:saturate(1.02) contrast(1.02); transition:transform .6s ease;
 }
 
-/* Overlays */
-#es-mats .es-card::before{
-  content:""; position:absolute; inset:0; z-index:0;
-  background:linear-gradient(180deg,rgba(0,0,0,.15) 0%,rgba(0,0,0,.45) 100%),
-             radial-gradient(120% 100% at 110% -10%,rgba(255,255,255,.15),rgba(255,255,255,0) 45%);
-  pointer-events:none; transition:background .45s ease;
-}
+/* Sheen effect */
 #es-mats .es-card::after{
   content:""; position:absolute; inset:-20% -40%;
   transform:skewX(-18deg) translateX(-120%);
@@ -38,7 +32,10 @@
 /* Overlay tint and labels */
 #es-mats .tint{
   position:absolute; inset:0; z-index:1;
-  background:rgba(0,0,0,.35);
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.15) 0%,rgba(0,0,0,.45) 100%),
+    radial-gradient(120% 100% at 110% -10%,rgba(255,255,255,.15),rgba(255,255,255,0) 45%),
+    rgba(0,0,0,.35);
   pointer-events:none; transition:background .45s ease;
 }
 #es-mats .card-title,
@@ -53,13 +50,13 @@
 /* Hover / focus */
 #es-mats .es-card:hover img,
 #es-mats .es-card:focus-visible img{ transform:scale(1.05); }
-#es-mats .es-card:hover::before,
-#es-mats .es-card:focus-visible::before{
-  background:linear-gradient(180deg,rgba(0,0,0,.22) 0%,rgba(0,0,0,.60) 100%),
-             radial-gradient(120% 100% at 110% -10%,rgba(255,255,255,.22),rgba(255,255,255,0) 45%);
-}
 #es-mats .es-card:hover .tint,
-#es-mats .es-card:focus-visible .tint{ background:rgba(0,0,0,.55); }
+#es-mats .es-card:focus-visible .tint{
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.22) 0%,rgba(0,0,0,.60) 100%),
+    radial-gradient(120% 100% at 110% -10%,rgba(255,255,255,.22),rgba(255,255,255,0) 45%),
+    rgba(0,0,0,.55);
+}
 #es-mats .es-card:hover .card-title,
 #es-mats .es-card:hover .card-index,
 #es-mats .es-card:focus-visible .card-title,
@@ -77,41 +74,4 @@
 #es-mats.es-animate .es-card[data-dir="up"]    { transform:translateY(-44px) scale(.98); }
 #es-mats.es-animate .es-card[data-dir="down"]  { transform:translateY( 44px) scale(.98); }
 #es-mats.es-animate .es-card._in{ opacity:1; transform:none; }
-#es-mats.es-animate .es-card{ transition-delay:var(--delay,0ms); }
-
-/* Grid placement */
-#es-mats .cell-quartz   { grid-column:1/2; grid-row:1/3; }
-#es-mats .cell-ns       { grid-column:2/3; grid-row:1/2; } /* Natural Stone */
-#es-mats .cell-solid    { grid-column:3/4; grid-row:1/2; }
-#es-mats .cell-ultra    { grid-column:2/4; grid-row:2/3; }
-#es-mats .cell-laminate { grid-column:1/3; grid-row:3/4; }
-#es-mats .cell-sinks    { grid-column:3/4; grid-row:3/4; }
-
-/* Image focal points (moved from inline) */
-#es-mats .cell-ns img       { object-position:50% 88%; }
-#es-mats .cell-solid img    { object-position:50% 55%; }
-#es-mats .cell-ultra img    { object-position:50% 82%; }
-#es-mats .cell-laminate img { object-position:50% 92%; }
-#es-mats .cell-sinks img    { object-position:50% 62%; }
-
-/* Responsive tweaks */
-@media (max-width:1024px){
-  #es-mats .es-grid{ grid-template-columns:1fr 1fr; grid-template-rows:auto; }
-  #es-mats .cell-ultra img{ object-position:50% 80%; }
-}
-@media (max-width:640px){
-  #es-mats .es-grid{ grid-template-columns:1fr; gap:16px; }
-  #es-mats .es-card{ height:240px; }
-  #es-mats .cell-quartz,
-  #es-mats .cell-ns,
-  #es-mats .cell-solid,
-  #es-mats .cell-ultra,
-  #es-mats .cell-laminate,
-  #es-mats .cell-sinks{ grid-column:auto; grid-row:auto; }
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion:reduce){
-  #es-mats.es-animate .es-card{ opacity:1!important; transform:none!important; transition:none!important; }
-  #es-mats .es-card._in::after{ animation:none; }
-}
+#es-mats.es-animate .es-card{ transition-delay:
