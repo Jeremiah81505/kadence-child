@@ -1,4 +1,4 @@
-/* ---- Materials Grid (ES) ---- */
+/* ---- Materials Grid (ES) pattern styles ---- */
 #es-mats { max-width:1440px; margin:0 auto; padding:6px; color:#fff; font-family:inherit; }
 
 /* Grid layout */
@@ -19,13 +19,7 @@
   object-fit:cover; filter:saturate(1.02) contrast(1.02); transition:transform .6s ease;
 }
 
-/* Overlays */
-#es-mats .es-card::before{
-  content:""; position:absolute; inset:0; z-index:0;
-  background:linear-gradient(180deg,rgba(0,0,0,.15) 0%,rgba(0,0,0,.45) 100%),
-             radial-gradient(120% 100% at 110% -10%,rgba(255,255,255,.15),rgba(255,255,255,0) 45%);
-  pointer-events:none; transition:background .45s ease;
-}
+/* Sheen effect */
 #es-mats .es-card::after{
   content:""; position:absolute; inset:-20% -40%;
   transform:skewX(-18deg) translateX(-120%);
@@ -35,26 +29,38 @@
 #es-mats .es-card._in::after{ animation:es-sheen .9s .25s ease forwards; }
 @keyframes es-sheen{ to{ transform:skewX(-18deg) translateX(120%); opacity:.55; } }
 
-/* Label overlay (chosen variant) */
-#es-mats .card-label{
-  position:absolute; left:0; right:0; bottom:0; z-index:2;
-  display:flex; justify-content:space-between; align-items:center;
-  padding:14px 18px; background:rgba(0,0,0,.55);
-  font-weight:700; font-size:1.125rem; letter-spacing:.3px;
-  transform:translateY(0); transition:transform .45s ease, background .45s ease;
+/* Overlay tint and labels */
+#es-mats .tint{
+  position:absolute; inset:0; z-index:1;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.15) 0%,rgba(0,0,0,.45) 100%),
+    radial-gradient(120% 100% at 110% -10%,rgba(255,255,255,.15),rgba(255,255,255,0) 45%),
+    rgba(0,0,0,.35);
+  pointer-events:none; transition:background .45s ease;
 }
-#es-mats .label-index{ font-weight:800; opacity:.65; }
+#es-mats .card-title,
+#es-mats .card-index{
+  position:absolute; bottom:14px; z-index:2;
+  font-weight:700; font-size:1.125rem; letter-spacing:.3px;
+  transform:translateY(0); pointer-events:none; transition:transform .45s ease;
+}
+#es-mats .card-title{ left:18px; }
+#es-mats .card-index{ right:18px; font-weight:800; opacity:.65; }
 
 /* Hover / focus */
 #es-mats .es-card:hover img,
 #es-mats .es-card:focus-visible img{ transform:scale(1.05); }
-#es-mats .es-card:hover::before,
-#es-mats .es-card:focus-visible::before{
-  background:linear-gradient(180deg,rgba(0,0,0,.22) 0%,rgba(0,0,0,.60) 100%),
-             radial-gradient(120% 100% at 110% -10%,rgba(255,255,255,.22),rgba(255,255,255,0) 45%);
+#es-mats .es-card:hover .tint,
+#es-mats .es-card:focus-visible .tint{
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.22) 0%,rgba(0,0,0,.60) 100%),
+    radial-gradient(120% 100% at 110% -10%,rgba(255,255,255,.22),rgba(255,255,255,0) 45%),
+    rgba(0,0,0,.55);
 }
-#es-mats .es-card:hover .card-label,
-#es-mats .es-card:focus-visible .card-label{ background:rgba(0,0,0,.72); transform:translateY(-6px); }
+#es-mats .es-card:hover .card-title,
+#es-mats .es-card:hover .card-index,
+#es-mats .es-card:focus-visible .card-title,
+#es-mats .es-card:focus-visible .card-index{ transform:translateY(-6px); }
 #es-mats .es-card:focus-visible{ outline:2px solid rgba(255,255,255,.85); outline-offset:-2px; }
 
 /* Animation is opt-in (JS adds .es-animate) */
