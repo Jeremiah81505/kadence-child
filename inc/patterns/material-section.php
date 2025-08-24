@@ -11,8 +11,7 @@ register_block_pattern(
     'kadence-child/material-section',
     [
         'title'       => __( 'Material Section', 'kadence-child' ),
-        'description' => __( 'Heading with three material columns.', 'kadence-child' ),
-        'categories'  => [ 'kadence-child', 'elevated' ],
+
         'content'     => $pattern_content,
     ]
 );
