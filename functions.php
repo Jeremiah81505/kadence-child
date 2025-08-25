@@ -114,3 +114,14 @@ add_action('init', function () {
     }
   }
 });
+
+// Force local media and content URLs to use HTTPS to avoid mixed-content warnings
+add_filter( 'wp_get_attachment_url', function ( $url ) {
+  return set_url_scheme( $url, 'https' );
+} );
+
+add_filter( 'the_content', function ( $content ) {
+  $home_http  = set_url_scheme( home_url(), 'http' );
+  $home_https = set_url_scheme( home_url(), 'https' );
+  return str_replace( $home_http, $home_https, $content );
+} );
