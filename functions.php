@@ -1,8 +1,17 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) { exit; }
 require_once __DIR__ . '/utils.php';
 
 add_action( 'after_setup_theme', function () {
   load_child_theme_textdomain( 'kadence-child', get_stylesheet_directory() . '/languages' );
+} );
+
+add_action( 'after_setup_theme', function(){
+  register_nav_menus( [
+    'primary'   => __( 'Primary Menu', 'kadence-child' ),
+    'secondary' => __( 'Secondary Menu', 'kadence-child' ),
+    'footer'    => __( 'Footer Menu', 'kadence-child' ),
+  ] );
 } );
 /**
  * Kadence Child – enqueue styles & JS
@@ -15,11 +24,11 @@ add_filter( 'body_class', function ( $classes ) {
   return $classes;
 } );
 
-add_action('wp_enqueue_scripts', function () {
+add_action( 'wp_enqueue_scripts', function () {
   // Parent theme CSS
   $parent_css_path = get_template_directory() . '/style.css';
   wp_enqueue_style(
-    'kadence-parent',
+    'kadence-theme',
     get_template_directory_uri() . '/style.css',
     [],
     file_exists( $parent_css_path ) ? filemtime( $parent_css_path ) : null
@@ -30,7 +39,7 @@ add_action('wp_enqueue_scripts', function () {
   wp_enqueue_style(
     'kadence-child',
     get_stylesheet_uri(),
-    ['kadence-parent'],
+    [ 'kadence-theme' ],
     file_exists( $child_css_path ) ? filemtime( $child_css_path ) : null
   );
 
@@ -50,7 +59,7 @@ add_action('wp_enqueue_scripts', function () {
   $header_css = get_stylesheet_directory() . '/assets/css/header.css';
   if ( file_exists( $header_css ) ) {
     wp_enqueue_style(
-      'kadence-child-header',
+      'kc-header',
       get_stylesheet_directory_uri() . '/assets/css/header.css',
       [],
       filemtime( $header_css )
@@ -61,14 +70,17 @@ add_action('wp_enqueue_scripts', function () {
   $header_js = get_stylesheet_directory() . '/assets/js/header.js';
   if ( file_exists( $header_js ) ) {
     wp_enqueue_script(
-      'kadence-child-header',
+      'kc-header',
       get_stylesheet_directory_uri() . '/assets/js/header.js',
       [],
       filemtime( $header_js ),
       true
     );
+    wp_localize_script( 'kc-header', 'KC_HEADER', [
+      'stickyOffset' => 64,
+    ] );
   }
-});
+}, 20 );
 
 add_action( 'wp_enqueue_scripts', function () {
   wp_enqueue_script(
@@ -137,3 +149,15 @@ add_action('init', function () {
     }
   }
 });
+
+if ( class_exists( 'WooCommerce' ) ) {
+  add_filter( 'woocommerce_add_to_cart_fragments', function( $fragments ) {
+    ob_start(); ?>
+    <span class="kc-cart-count" data-count="<?php echo WC()->cart->get_cart_contents_count(); ?>">
+      <?php echo WC()->cart->get_cart_contents_count(); ?>
+    </span>
+    <?php
+    $fragments['span.kc-cart-count'] = ob_get_clean();
+    return $fragments;
+  } );
+}
