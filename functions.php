@@ -35,17 +35,40 @@ add_action('wp_enqueue_scripts', function () {
   );
 
   // ---- Child JS (loads only if the file exists) ----
-    $child_js_file = get_stylesheet_directory() . '/assets/child.js';
-    if ( file_exists( $child_js_file ) ) {
-      wp_enqueue_script(
-        'kadence-child-js',
-        get_stylesheet_directory_uri() . '/assets/child.js',
-        [],                                   // Add deps here if you ever need (e.g., ['jquery'])
-        filemtime( $child_js_file ),          // Cache-bust when file changes
-        true                                  // Load in footer
-      );
-    }
-  });
+  $child_js_file = get_stylesheet_directory() . '/assets/child.js';
+  if ( file_exists( $child_js_file ) ) {
+    wp_enqueue_script(
+      'kadence-child-js',
+      get_stylesheet_directory_uri() . '/assets/child.js',
+      [],                                   // Add deps here if you ever need (e.g., ['jquery'])
+      filemtime( $child_js_file ),          // Cache-bust when file changes
+      true                                  // Load in footer
+    );
+  }
+
+  // ---- Header CSS ----
+  $header_css = get_stylesheet_directory() . '/assets/css/header.css';
+  if ( file_exists( $header_css ) ) {
+    wp_enqueue_style(
+      'kadence-child-header',
+      get_stylesheet_directory_uri() . '/assets/css/header.css',
+      [],
+      filemtime( $header_css )
+    );
+  }
+
+  // ---- Header JS ----
+  $header_js = get_stylesheet_directory() . '/assets/js/header.js';
+  if ( file_exists( $header_js ) ) {
+    wp_enqueue_script(
+      'kadence-child-header',
+      get_stylesheet_directory_uri() . '/assets/js/header.js',
+      [],
+      filemtime( $header_js ),
+      true
+    );
+  }
+});
 
 add_action( 'wp_enqueue_scripts', function () {
   wp_enqueue_script(
