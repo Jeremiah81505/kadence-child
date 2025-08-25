@@ -11,7 +11,7 @@
  * - data-tilt   : tilt angle in degrees (defaults to 8)
  */
 ?>
-<!-- wp:group {"align":"full","className":"kc-ring-wrap","style":{"spacing":{"padding":{"top":"36px","bottom":"36px"}}},"layout":{"type":"constrained","contentSize":"1200px"}} -->
+<!-- wp:group {"align":"full","className":"kc-ring-wrap","style":{"spacing":{"padding":{"top":"36px","bottom":"36px"}}},"layout":{"type":"constrained","contentSize":"1900px"}} -->
 <div class="wp-block-group alignfull kc-ring-wrap">
   <!-- wp:html -->
     <div class="es-stage">
