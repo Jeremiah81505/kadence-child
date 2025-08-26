@@ -1,4 +1,5 @@
 document.body.classList.remove('no-js');
+document.body.classList.add('js');
 
 // toggle verbose logging
 const DEBUG = false;
