@@ -1,155 +1,48 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) { exit; }
-require_once __DIR__ . '/utils.php';
 
-add_action( 'after_setup_theme', function () {
-  load_child_theme_textdomain( 'kadence-child', get_stylesheet_directory() . '/languages' );
-} );
-
-add_action( 'after_setup_theme', function(){
-  register_nav_menus( [
-    'primary'   => __( 'Primary Menu', 'kadence-child' ),
-    'secondary' => __( 'Secondary Menu', 'kadence-child' ),
-    'footer'    => __( 'Footer Menu', 'kadence-child' ),
-  ] );
-} );
 /**
- * Kadence Child – enqueue styles & JS
+ * Enqueue child + header assets
  */
+add_action( 'wp_enqueue_scripts', function() {
+  // Ensure child stylesheet after parent
+  wp_enqueue_style( 'kadence-child', get_stylesheet_uri(), array( 'kadence-theme' ), '1.0.0' );
 
-add_filter( 'body_class', function ( $classes ) {
-  if ( ! in_array( 'no-js', $classes, true ) ) {
-    $classes[] = 'no-js';
-  }
-  return $classes;
-} );
-
-add_action( 'wp_enqueue_scripts', function () {
-  // Parent theme CSS
-  $parent_css_path = get_template_directory() . '/style.css';
+  // Header assets
   wp_enqueue_style(
-    'kadence-theme',
-    get_template_directory_uri() . '/style.css',
-    [],
-    file_exists( $parent_css_path ) ? filemtime( $parent_css_path ) : null
+    'kc-header',
+    get_stylesheet_directory_uri() . '/assets/css/header.css',
+    array(),
+    '1.0.0'
   );
-
-  // Child theme CSS (cache-bust via file modification time)
-  $child_css_path = get_stylesheet_directory() . '/style.css';
-  wp_enqueue_style(
-    'kadence-child',
-    get_stylesheet_uri(),
-    [ 'kadence-theme' ],
-    file_exists( $child_css_path ) ? filemtime( $child_css_path ) : null
-  );
-
-  // ---- Child JS (loads only if the file exists) ----
-  $child_js_file = get_stylesheet_directory() . '/assets/child.js';
-  if ( file_exists( $child_js_file ) ) {
-    wp_enqueue_script(
-      'kadence-child-js',
-      get_stylesheet_directory_uri() . '/assets/child.js',
-      [],                                   // Add deps here if you ever need (e.g., ['jquery'])
-      filemtime( $child_js_file ),          // Cache-bust when file changes
-      true                                  // Load in footer
-    );
-  }
-
-  // ---- Header CSS ----
-  $header_css = get_stylesheet_directory() . '/assets/css/header.css';
-  if ( file_exists( $header_css ) ) {
-    wp_enqueue_style(
-      'kc-header',
-      get_stylesheet_directory_uri() . '/assets/css/header.css',
-      [],
-      filemtime( $header_css )
-    );
-  }
-
-  // ---- Header JS ----
-  $header_js = get_stylesheet_directory() . '/assets/js/header.js';
-  if ( file_exists( $header_js ) ) {
-    wp_enqueue_script(
-      'kc-header',
-      get_stylesheet_directory_uri() . '/assets/js/header.js',
-      [],
-      filemtime( $header_js ),
-      true
-    );
-    wp_localize_script( 'kc-header', 'KC_HEADER', [
-      'stickyOffset' => 64,
-    ] );
-  }
-}, 20 );
-
-add_action( 'wp_enqueue_scripts', function () {
   wp_enqueue_script(
-    'kc-hero-ultimate-motion',
-    get_stylesheet_directory_uri() . '/assets/js/hero-ultimate-motion.js',
-    [],
+    'kc-header',
+    get_stylesheet_directory_uri() . '/assets/js/header.js',
+    array(),
     '1.0.0',
     true
   );
+
+  // Pass settings to JS
+  wp_localize_script( 'kc-header', 'KC_HEADER', array(
+    'stickyOffset' => 64,
+  ) );
 }, 20 );
 
-/** ---------- BEGIN: Kadence Child Pattern Category ---------- */
-add_action( 'init', function () {
-  if ( function_exists( 'register_block_pattern_category' ) ) {
-    register_block_pattern_category(
-      'kadence-child',
-      [ 'label' => __( 'Kadence Child', 'kadence-child' ) ]
-    );
-  }
-});
+/**
+ * Declare menu locations
+ */
+add_action( 'after_setup_theme', function() {
+  register_nav_menus( array(
+    'primary'   => __( 'Primary Menu', 'kadence-child' ),
+    'secondary' => __( 'Secondary Menu', 'kadence-child' ),
+    'footer'    => __( 'Footer Menu', 'kadence-child' ),
+  ) );
+} );
 
-/** ---------- END: Kadence Child Pattern Category ---------- */
-
-// Enqueue editor-only styles so patterns preview correctly in the editor
-add_action('enqueue_block_editor_assets', function () {
-  $dir = get_stylesheet_directory();
-  $uri = get_stylesheet_directory_uri();
-
-  $editor = $dir . '/assets/css/editor.css';
-  if ( file_exists( $editor ) ) {
-    wp_enqueue_style(
-      'kadence-child-editor',
-      $uri . '/assets/css/editor.css',
-      [],
-      filemtime( $editor )
-    );
-  }
-
-  });
-
-
-add_action('init', function () {
-  if ( ! function_exists( 'register_block_pattern' ) ) {
-    return;
-  }
-
-  if ( function_exists('register_block_pattern_category') ) {
-    register_block_pattern_category(
-      'elevated',
-      ['label' => __('Elevated Surfaces', 'kadence-child')]
-    );
-  }
-
-  $patterns = [
-    'hero-intro.php',
-    'hero-ultimate.php',
-    'hero-showcase-carousel.php',
-    'material-section.php',
-    'es-mats-grid.php',
-  ];
-
-  foreach ( $patterns as $pattern ) {
-    $pattern_file = get_stylesheet_directory() . '/inc/patterns/' . $pattern;
-    if ( file_exists( $pattern_file ) ) {
-      require_once $pattern_file;
-    }
-  }
-});
-
+/**
+ * WooCommerce mini-cart count fragment (optional)
+ */
 if ( class_exists( 'WooCommerce' ) ) {
   add_filter( 'woocommerce_add_to_cart_fragments', function( $fragments ) {
     ob_start(); ?>
@@ -161,3 +54,14 @@ if ( class_exists( 'WooCommerce' ) ) {
     return $fragments;
   } );
 }
+
+/**
+ * Optional: add .has-hero class for transparent header pages (front page or hero template)
+ */
+add_filter( 'body_class', function( $classes ){
+  if ( is_front_page() ) {
+    $classes[] = 'has-hero';
+  }
+  return $classes;
+} );
+
