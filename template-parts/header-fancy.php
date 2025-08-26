@@ -1,16 +1,15 @@
 <?php
 /**
- * Fancy Header (transparent + sticky + mega menu ready)
+ * Fancy Header (transparent + sticky + mega-menu ready)
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-// Convenience flags
 $has_woo = class_exists( 'WooCommerce' );
-$phone   = get_theme_mod( 'es_header_phone', '(920) 555-1234' ); // optional: wire to Customizer later
+$phone   = get_theme_mod( 'es_header_phone', '(920) 555-1234' );
 $cta_url = get_theme_mod( 'es_header_cta_url', '/contact/' );
 $cta_txt = get_theme_mod( 'es_header_cta_txt', 'Get a Quote' );
 $logo_id = get_theme_mod( 'custom_logo' );
-$logo    = $logo_id ? wp_get_attachment_image( $logo_id, 'full', false, ['class'=>'kc-logo-img'] ) : get_bloginfo('name');
+$logo    = $logo_id ? wp_get_attachment_image( $logo_id, 'full', false, array('class'=>'kc-logo-img') ) : '';
 ?>
 <header id="kc-header" class="kc-header kc-header--transparent" data-sticky="true">
 
@@ -43,26 +42,25 @@ $logo    = $logo_id ? wp_get_attachment_image( $logo_id, 'full', false, ['class'
 
       <div class="kc-left">
         <a class="kc-brand" href="<?php echo esc_url( home_url('/') ); ?>" aria-label="<?php bloginfo('name'); ?>">
-          <?php echo $logo ? $logo : '<span class="kc-logo-text">'. esc_html( get_bloginfo('name') ) .'</span>'; ?>
+          <?php
+            if ( $logo ) {
+              echo $logo;
+            } else {
+              echo '<span class="kc-logo-text">' . esc_html( get_bloginfo('name') ) . '</span>';
+            }
+          ?>
         </a>
       </div>
 
       <nav class="kc-nav" aria-label="Primary">
         <?php
-          wp_nav_menu( [
+          wp_nav_menu( array(
             'theme_location' => 'primary',
             'container'      => false,
             'menu_class'     => 'kc-menu',
             'depth'          => 3,
             'fallback_cb'    => '__return_empty_string',
-            'walker'         => new class extends Walker_Nav_Menu {
-              // Add .has-mega on top-level items with a specific CSS class if needed
-              function start_lvl( &$output, $depth = 0, $args = null ) {
-                $submenu_class = $depth === 0 ? 'kc-sub kc-sub--level1' : 'kc-sub kc-sub--level'.($depth+1);
-                $output .= "\n<ul class=\"$submenu_class\" role=\"menu\">\n";
-              }
-            }
-          ] );
+          ) );
         ?>
       </nav>
 
@@ -98,7 +96,13 @@ $logo    = $logo_id ? wp_get_attachment_image( $logo_id, 'full', false, ['class'
     <div class="kc-drawer__inner">
       <div class="kc-drawer__head">
         <a class="kc-brand" href="<?php echo esc_url( home_url('/') ); ?>">
-          <?php echo $logo ? $logo : '<span class="kc-logo-text">'. esc_html( get_bloginfo('name') ) .'</span>'; ?>
+          <?php
+            if ( $logo ) {
+              echo $logo;
+            } else {
+              echo '<span class="kc-logo-text">' . esc_html( get_bloginfo('name') ) . '</span>';
+            }
+          ?>
         </a>
         <button class="kc-drawer-close" aria-label="Close menu">
           <svg aria-hidden="true" class="kc-ico"><use href="#ico-close"></use></svg>
@@ -111,13 +115,13 @@ $logo    = $logo_id ? wp_get_attachment_image( $logo_id, 'full', false, ['class'
 
       <nav class="kc-drawer__nav" aria-label="Mobile">
         <?php
-          wp_nav_menu( [
+          wp_nav_menu( array(
             'theme_location' => 'primary',
             'container'      => false,
             'menu_class'     => 'kc-menu-mobile',
             'depth'          => 2,
             'fallback_cb'    => '__return_empty_string',
-          ] );
+          ) );
         ?>
       </nav>
 
@@ -145,7 +149,7 @@ $logo    = $logo_id ? wp_get_attachment_image( $logo_id, 'full', false, ['class'
     </div>
   </div>
 
-  <!-- SVG sprite (inline for reliability) -->
+  <!-- SVG sprite -->
   <svg width="0" height="0" style="position:absolute;visibility:hidden" aria-hidden="true">
     <symbol id="ico-phone" viewBox="0 0 24 24"><path d="M6.6 10.8c1.5 2.9 3.8 5.1 6.7 6.7l2.2-2.2c.3-.3.8-.4 1.1-.2 1.2.4 2.6.7 4 .7.6 0 1 .4 1 1v3.6c0 .6-.4 1-1 1C11.1 21.4 2.6 12.9 2.6 2.4c0-.6.4-1 1-1H7c.6 0 1 .4 1 1 0 1.4.2 2.8.7 4 .1.4 0 .8-.3 1.1l-1.8 2.3z"/></symbol>
     <symbol id="ico-pin" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 5.2-7 13-7 13S5 14.2 5 9a7 7 0 0 1 7-7zm0 9.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/></symbol>
@@ -156,4 +160,3 @@ $logo    = $logo_id ? wp_get_attachment_image( $logo_id, 'full', false, ['class'
     <symbol id="ico-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
   </svg>
 </header>
-
