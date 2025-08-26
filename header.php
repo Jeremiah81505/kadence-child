@@ -1,7 +1,6 @@
 <?php
 /**
  * Child Theme Header Loader
- * Uses a custom header template while preserving Kadence structure.
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 ?><!DOCTYPE html>
@@ -14,4 +13,4 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
 
-<?php get_template_part( 'template-parts/header', 'fancy' ); ?>
+<?php get_template_part( 'template-parts/header-fancy' ); ?>
