@@ -1,6 +1,8 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
+require_once get_theme_file_path( 'utils.php' );
+
 /**
  * Enqueue child + header assets
  */
@@ -62,8 +64,8 @@ add_action( 'after_setup_theme', function() {
 if ( class_exists( 'WooCommerce' ) ) {
   add_filter( 'woocommerce_add_to_cart_fragments', function( $fragments ) {
     ob_start(); ?>
-    <span class="kc-cart-count" data-count="<?php echo WC()->cart->get_cart_contents_count(); ?>">
-      <?php echo WC()->cart->get_cart_contents_count(); ?>
+    <span class="kc-cart-count" data-count="<?php echo esc_attr( WC()->cart->get_cart_contents_count() ); ?>">
+      <?php echo esc_html( WC()->cart->get_cart_contents_count() ); ?>
     </span>
     <?php
     $fragments['span.kc-cart-count'] = ob_get_clean();

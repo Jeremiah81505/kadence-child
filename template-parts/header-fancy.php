@@ -41,7 +41,7 @@ $logo    = $logo_id ? wp_get_attachment_image( $logo_id, 'full', false, array('c
     <div class="kc-container">
 
       <div class="kc-left">
-        <a class="kc-brand" href="<?php echo esc_url( home_url('/') ); ?>" aria-label="<?php bloginfo('name'); ?>">
+        <a class="kc-brand" href="<?php echo esc_url( home_url( '/' ) ); ?>" aria-label="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>">
           <?php
             if ( $logo ) {
               echo $logo;
@@ -72,8 +72,8 @@ $logo    = $logo_id ? wp_get_attachment_image( $logo_id, 'full', false, array('c
         <?php if ( $has_woo ) : ?>
           <a class="kc-cart" href="<?php echo esc_url( wc_get_cart_url() ); ?>" aria-label="Cart">
             <svg aria-hidden="true" class="kc-ico"><use href="#ico-cart"></use></svg>
-            <span class="kc-cart-count" data-count="<?php echo WC()->cart->get_cart_contents_count(); ?>">
-              <?php echo WC()->cart->get_cart_contents_count(); ?>
+            <span class="kc-cart-count" data-count="<?php echo esc_attr( WC()->cart->get_cart_contents_count() ); ?>">
+              <?php echo esc_html( WC()->cart->get_cart_contents_count() ); ?>
             </span>
           </a>
         <?php endif; ?>
