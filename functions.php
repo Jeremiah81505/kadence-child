@@ -2,6 +2,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 require_once get_theme_file_path( 'utils.php' );
+require_once get_theme_file_path( 'inc/customizer.php' );
 
 /**
  * Enqueue child + header assets
