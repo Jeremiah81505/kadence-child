@@ -13,6 +13,35 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchBtn     = document.querySelector('.kc-search-btn');
   const searchClose   = document.querySelector('.kc-search-close');
 
+  const focusableSel = 'a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])';
+  const setFocusTrap = (el) => {
+    const focusables = el.querySelectorAll(focusableSel);
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const handler = (e) => {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
+    el.addEventListener('keydown', handler);
+    el._trapHandler = handler;
+    return { first, last };
+  };
+  const releaseFocusTrap = (el) => {
+    if (el?._trapHandler) {
+      el.removeEventListener('keydown', el._trapHandler);
+      delete el._trapHandler;
+    }
+  };
+
+  let drawerPrevFocus = null;
+  let searchPrevFocus = null;
+
   // JS helpers
   body.classList.remove('no-js');
   body.classList.add('js');
@@ -43,12 +72,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleDrawer = (open) => {
     if (!drawer) return;
     drawer.setAttribute('aria-hidden', String(!open));
+    drawer.setAttribute('aria-modal', String(open));
     burger?.setAttribute('aria-expanded', String(open));
     if (open) {
       lockScroll();
-      drawer.querySelector('a,button')?.focus();
+      drawerPrevFocus = document.activeElement;
+      const { first } = setFocusTrap(drawer);
+      first?.focus();
     } else {
       unlockScroll();
+      releaseFocusTrap(drawer);
+      drawerPrevFocus?.focus();
     }
   };
   burger?.addEventListener('click', () => toggleDrawer(true));
@@ -59,12 +93,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleSearch = (open) => {
     if (!searchOverlay) return;
     searchOverlay.setAttribute('aria-hidden', String(!open));
+    searchOverlay.setAttribute('aria-modal', String(open));
     if (open) {
       lockScroll();
+      searchPrevFocus = document.activeElement;
+      const { first } = setFocusTrap(searchOverlay);
       (searchOverlay.querySelector('input[type="search"]') ||
-       searchOverlay.querySelector('input[type="text"]'))?.focus();
+       searchOverlay.querySelector('input[type="text"]') ||
+       first)?.focus();
     } else {
       unlockScroll();
+      releaseFocusTrap(searchOverlay);
+      searchPrevFocus?.focus();
     }
   };
   searchBtn?.addEventListener('click', () => toggleSearch(true));
