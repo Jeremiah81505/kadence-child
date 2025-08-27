@@ -33,11 +33,19 @@
   --z-search: 1000;
 }
 
+:root[data-theme="light"]{
+  --kc-text:#0e1622; --kc-text-dim:#3a4b62;
+  --kc-bg:#ffffff; --kc-bg-2:#f8fafc; --kc-surface:#ffffff;
+  --kc-border:rgba(0,0,0,.12); --kc-glass:rgba(255,255,255,.7);
+  --kc-link:#0e1622;
+}
+
 @media (prefers-color-scheme: light){
-  :root{
+  :root:not([data-theme]){
     --kc-text:#0e1622; --kc-text-dim:#3a4b62;
     --kc-bg:#ffffff; --kc-bg-2:#f8fafc; --kc-surface:#ffffff;
     --kc-border:rgba(0,0,0,.12); --kc-glass:rgba(255,255,255,.7);
+    --kc-link:#0e1622;
   }
 }
 

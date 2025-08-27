@@ -29,7 +29,7 @@ $logo    = $logo_id ? wp_get_attachment_image( $logo_id, 'full', false, array('c
           <svg aria-hidden="true" class="kc-ico"><use href="#ico-pin"></use></svg>
           <span>Visit Our Showroom</span>
         </a>
-        <button class="kc-theme-toggle" aria-label="Toggle dark mode">
+        <button class="kc-theme-toggle" aria-label="Toggle theme">
           <svg aria-hidden="true" class="kc-ico"><use href="#ico-moon"></use></svg>
         </button>
       </div>
@@ -154,6 +154,7 @@ $logo    = $logo_id ? wp_get_attachment_image( $logo_id, 'full', false, array('c
     <symbol id="ico-phone" viewBox="0 0 24 24"><path d="M6.6 10.8c1.5 2.9 3.8 5.1 6.7 6.7l2.2-2.2c.3-.3.8-.4 1.1-.2 1.2.4 2.6.7 4 .7.6 0 1 .4 1 1v3.6c0 .6-.4 1-1 1C11.1 21.4 2.6 12.9 2.6 2.4c0-.6.4-1 1-1H7c.6 0 1 .4 1 1 0 1.4.2 2.8.7 4 .1.4 0 .8-.3 1.1l-1.8 2.3z"/></symbol>
     <symbol id="ico-pin" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 5.2-7 13-7 13S5 14.2 5 9a7 7 0 0 1 7-7zm0 9.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/></symbol>
     <symbol id="ico-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></symbol>
+    <symbol id="ico-sun" viewBox="0 0 24 24"><path d="M12 4V1m0 22v-3m10-10h3M1 12h3m15.5-6.5 2.1-2.1M3.4 20.6l2.1-2.1m0-12L3.4 3.4M20.6 20.6l-2.1-2.1M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/></symbol>
     <symbol id="ico-search" viewBox="0 0 24 24"><path d="M10 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm11 19-5.3-5.3"/></symbol>
     <symbol id="ico-cart" viewBox="0 0 24 24"><path d="M7 22a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm10 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM3 3h2l2.6 12.2A2 2 0 0 0 9.6 17h8.9a2 2 0 0 0 2-1.6l1.3-7.4H6.2"/></symbol>
     <symbol id="ico-arrow" viewBox="0 0 24 24"><path d="M4 12h16M12 4l8 8-8 8"/></symbol>

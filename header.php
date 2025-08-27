@@ -13,4 +13,6 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
 
+<a class="kc-skip-link" href="#primary"><?php esc_html_e( 'Skip to content', 'kadence-child' ); ?></a>
+
 <?php get_template_part( 'template-parts/header-fancy' ); ?>

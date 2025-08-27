@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchOverlay = document.querySelector('.kc-search');
   const searchBtn     = document.querySelector('.kc-search-btn');
   const searchClose   = document.querySelector('.kc-search-close');
+  const themeToggle   = document.querySelector('.kc-theme-toggle');
+  const themeIcon     = themeToggle?.querySelector('use');
 
   // JS helpers
   body.classList.remove('no-js');
@@ -77,6 +79,21 @@ document.addEventListener('DOMContentLoaded', () => {
       toggleDrawer(false);
       toggleSearch(false);
     }
+  });
+
+  // Theme toggle
+  const root = document.documentElement;
+  const applyTheme = (mode) => {
+    root.setAttribute('data-theme', mode);
+    localStorage.setItem('kc-theme', mode);
+    themeIcon?.setAttribute('href', mode === 'light' ? '#ico-moon' : '#ico-sun');
+    themeToggle?.setAttribute('aria-label', mode === 'light' ? 'Activate dark mode' : 'Activate light mode');
+  };
+  const storedTheme = localStorage.getItem('kc-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  applyTheme(storedTheme);
+  themeToggle?.addEventListener('click', () => {
+    const current = root.getAttribute('data-theme') || 'dark';
+    applyTheme(current === 'light' ? 'dark' : 'light');
   });
 });
 
