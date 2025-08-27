@@ -65,3 +65,20 @@ add_filter( 'body_class', function( $classes ){
   return $classes;
 } );
 
+/**
+ * Register custom block pattern category and load pattern definitions.
+ */
+add_action( 'init', function() {
+  register_block_pattern_category(
+    'kadence-child',
+    array( 'label' => __( 'Kadence Child', 'kadence-child' ) )
+  );
+
+  $pattern_dir = get_theme_file_path( 'inc/patterns' );
+  if ( is_dir( $pattern_dir ) ) {
+    foreach ( glob( $pattern_dir . '/*.php' ) as $pattern ) {
+      include $pattern;
+    }
+  }
+} );
+
