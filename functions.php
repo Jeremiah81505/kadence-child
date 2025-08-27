@@ -23,6 +23,22 @@ add_action( 'wp_enqueue_scripts', function() {
     true
   );
 
+  // Core child theme scripts
+  wp_enqueue_script(
+    'kadence-child-js',
+    get_stylesheet_directory_uri() . '/assets/child.js',
+    array(),
+    '1.0.0',
+    true
+  );
+  wp_enqueue_script(
+    'kc-hero-motion',
+    get_stylesheet_directory_uri() . '/assets/js/hero-ultimate-motion.js',
+    array(),
+    '1.0.0',
+    true
+  );
+
   // Pass settings to JS
   wp_localize_script( 'kc-header', 'KC_HEADER', array(
     'stickyOffset' => 64,
