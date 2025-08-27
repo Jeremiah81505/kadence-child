@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchOverlay = document.querySelector('.kc-search');
   const searchBtn     = document.querySelector('.kc-search-btn');
   const searchClose   = document.querySelector('.kc-search-close');
+  const themeToggle   = document.querySelector('.kc-theme-toggle');
+  const themeIcon     = themeToggle?.querySelector('use');
+  const prefersDark   = window.matchMedia('(prefers-color-scheme: dark)');
 
   // JS helpers
   body.classList.remove('no-js');
@@ -70,6 +73,40 @@ document.addEventListener('DOMContentLoaded', () => {
   searchBtn?.addEventListener('click', () => toggleSearch(true));
   searchClose?.addEventListener('click', () => toggleSearch(false));
   searchOverlay?.addEventListener('click', (e) => { if (e.target === searchOverlay) toggleSearch(false); });
+
+  // Theme toggle helpers
+  const getTheme = () => document.documentElement.getAttribute('data-theme') || (prefersDark.matches ? 'dark' : 'light');
+  const applyThemeLabel = (theme) => {
+    themeToggle?.setAttribute('aria-label', theme === 'dark' ? 'Activate light mode' : 'Activate dark mode');
+    themeIcon?.setAttribute('href', theme === 'dark' ? '#ico-sun' : '#ico-moon');
+  };
+  const setTheme = (theme, persist = true) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (persist) localStorage.setItem('kc-theme', theme);
+    applyThemeLabel(theme);
+  };
+
+  const savedTheme = localStorage.getItem('kc-theme');
+  if (savedTheme) {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    applyThemeLabel(savedTheme);
+  } else {
+    applyThemeLabel(getTheme());
+  }
+
+  themeToggle?.addEventListener('click', () => {
+    const next = getTheme() === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+  });
+
+  prefersDark.addEventListener('change', (e) => {
+    if (!localStorage.getItem('kc-theme')) {
+      applyThemeLabel(e.matches ? 'dark' : 'light');
+    }
+  });
+
+  const observer = new MutationObserver(() => applyThemeLabel(getTheme()));
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
   // Submenu toggles
   const menuButtons = header.querySelectorAll('.kc-nav .menu-item-has-children > button');
