@@ -71,11 +71,48 @@ document.addEventListener('DOMContentLoaded', () => {
   searchClose?.addEventListener('click', () => toggleSearch(false));
   searchOverlay?.addEventListener('click', (e) => { if (e.target === searchOverlay) toggleSearch(false); });
 
+  // Submenu toggles
+  const menuButtons = header.querySelectorAll('.kc-nav .menu-item-has-children > button');
+  menuButtons.forEach((btn) => {
+    const li = btn.parentElement;
+    const close = () => btn.setAttribute('aria-expanded', 'false');
+
+    btn.addEventListener('click', () => {
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      menuButtons.forEach((b) => b.setAttribute('aria-expanded', 'false'));
+      btn.setAttribute('aria-expanded', String(!expanded));
+    });
+
+    btn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        btn.click();
+      } else if (e.key === 'Escape') {
+        close();
+      }
+    });
+
+    li?.addEventListener('focusout', (e) => {
+      if (!li.contains(e.relatedTarget)) {
+        close();
+      }
+    });
+
+    const submenu = document.getElementById(btn.getAttribute('aria-controls'));
+    submenu?.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        close();
+        btn.focus();
+      }
+    });
+  });
+
   // ESC closes drawer/search
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       toggleDrawer(false);
       toggleSearch(false);
+      menuButtons.forEach((btn) => btn.setAttribute('aria-expanded', 'false'));
     }
   });
 });
