@@ -111,6 +111,7 @@
   border-radius:var(--kc-radius); box-shadow:var(--kc-shadow); display:none;
 }
 .kc-menu > li:hover > .kc-sub{ display:block; }
+.kc-menu > li > button[aria-expanded="true"] + .kc-sub{ display:block; }
 .kc-sub li{ list-style:none; }
 .kc-sub a{ display:flex; padding:10px 12px; gap:10px; color:var(--kc-text); text-decoration:none; border-radius:10px; }
 .kc-sub a:hover{ background:rgba(255,255,255,.06); }

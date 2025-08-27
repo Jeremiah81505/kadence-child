@@ -10,6 +10,41 @@ $cta_url = get_theme_mod( 'es_header_cta_url', '/contact/' );
 $cta_txt = get_theme_mod( 'es_header_cta_txt', 'Get a Quote' );
 $logo_id = get_theme_mod( 'custom_logo' );
 $logo    = $logo_id ? wp_get_attachment_image( $logo_id, 'full', false, array('class'=>'kc-logo-img') ) : '';
+
+/**
+ * Custom walker to output buttons for top-level items with submenus.
+ */
+if ( ! class_exists( 'KC_Primary_Walker' ) ) {
+  class KC_Primary_Walker extends Walker_Nav_Menu {
+    private $current_item = 0;
+
+    public function start_el( &$output, $item, $depth = 0, $args = null, $id = 0 ) {
+      $classes     = empty( $item->classes ) ? array() : (array) $item->classes;
+      $class_names = implode( ' ', array_filter( $classes ) );
+      $output     .= '<li id="menu-item-' . intval( $item->ID ) . '" class="' . esc_attr( $class_names ) . '">';
+
+      $title = apply_filters( 'the_title', $item->title, $item->ID );
+      $url   = $item->url ? esc_url( $item->url ) : '';
+
+      if ( 0 === $depth && in_array( 'menu-item-has-children', $classes, true ) ) {
+        $this->current_item = $item->ID;
+        $sub_id             = 'kc-sub-' . $item->ID;
+        $output            .= '<button aria-expanded="false" aria-controls="' . esc_attr( $sub_id ) . '">' . esc_html( $title ) . '</button>';
+      } else {
+        $output            .= '<a href="' . $url . '">' . esc_html( $title ) . '</a>';
+      }
+    }
+
+    public function start_lvl( &$output, $depth = 0, $args = null ) {
+      $indent = str_repeat( "\t", $depth );
+      $id     = ( 0 === $depth && $this->current_item ) ? ' id="kc-sub-' . $this->current_item . '"' : '';
+      $output .= "\n{$indent}<ul class=\"kc-sub\"{$id}>\n";
+      if ( 0 === $depth ) {
+        $this->current_item = 0;
+      }
+    }
+  }
+}
 ?>
 <header id="kc-header" class="kc-header kc-header--transparent" data-sticky="true">
 
@@ -60,6 +95,7 @@ $logo    = $logo_id ? wp_get_attachment_image( $logo_id, 'full', false, array('c
             'menu_class'     => 'kc-menu',
             'depth'          => 3,
             'fallback_cb'    => '__return_empty_string',
+            'walker'         => new KC_Primary_Walker(),
           ) );
         ?>
       </nav>
