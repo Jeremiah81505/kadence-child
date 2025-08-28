@@ -34,8 +34,8 @@
             </div>
             <!-- /wp:html -->
 
-            <!-- wp:heading {"level":1,"className":"kc-title"} -->
-            <h1 class="kc-title">
+            <!-- wp:heading {"level":1,"className":"kc-hero-title kc-title"} -->
+            <h1 class="kc-hero-title kc-title">
               <?php
               printf(
                 /* translators: 1: opening span for gradient text, 2: closing span for gradient text, 3: line break element, 4: opening span for underlined text, 5: closing span for underlined text */
@@ -50,8 +50,8 @@
             </h1>
             <!-- /wp:heading -->
 
-            <!-- wp:paragraph {"className":"kc-sub"} -->
-            <p class="kc-sub"><?php esc_html_e( 'Quartz, natural stone, solid surface, and laminate—crafted, delivered, and installed statewide with 5-star care.', 'kadence-child' ); ?></p>
+            <!-- wp:paragraph {"className":"kc-hero-sub kc-sub"} -->
+            <p class="kc-hero-sub kc-sub"><?php esc_html_e( 'Quartz, natural stone, solid surface, and laminate—crafted, delivered, and installed statewide with 5-star care.', 'kadence-child' ); ?></p>
             <!-- /wp:paragraph -->
 
             <!-- wp:buttons {"className":"kc-hero-ctas","layout":{"type":"flex","justifyContent":"left"}} -->
