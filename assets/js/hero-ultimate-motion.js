@@ -1,6 +1,6 @@
 (() => {
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const hero = document.querySelector('.kc-hero-fore') || document;
+  const hero = document.querySelector('.kc-hero-ultimate');
   if (!hero) return;
 
   /* Staggered reveal */
