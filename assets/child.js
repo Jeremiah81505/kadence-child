@@ -53,6 +53,7 @@ const DEBUG = false;
     CLEANUPS.get(ring)?.();
 
     const stage = ring.closest('.es-stage');
+    const fallback = stage?.nextElementSibling;
     const tiles = $$('.es-tile', ring);
     if (!tiles.length) return;
 
@@ -75,7 +76,9 @@ const DEBUG = false;
     if (stage) {
       const h = Math.round(Math.max(180, Math.min(sw * 0.5, 320)));
       stage.style.height = h + 'px';
+      stage.classList.add('is-ready');
     }
+    if (fallback) fallback.classList.add('is-hidden');
 
     // JS rotation + face-camera cards
     const reduced = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
