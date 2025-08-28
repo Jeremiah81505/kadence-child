@@ -53,7 +53,7 @@ const DEBUG = false;
     CLEANUPS.get(ring)?.();
 
     const stage = ring.closest('.es-stage');
-    const fallback = stage?.nextElementSibling;
+    const fallback = stage?.parentElement?.querySelector('.es-fallback');
     const tiles = $$('.es-tile', ring);
     if (!tiles.length) return;
 

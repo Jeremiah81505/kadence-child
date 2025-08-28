@@ -85,9 +85,9 @@
 .es-stage{
   position:relative; width:100%;
   height:clamp(120px,26vw,240px); perspective:clamp(900px,160vw,1400px); perspective-origin:50% 42%;
-  overflow:visible; display:none;
+  overflow:visible; visibility:hidden; opacity:0;
 }
-.es-stage.is-ready{ display:block; }
+.es-stage.is-ready{ visibility:visible; opacity:1; }
 .es-ring{
   position:absolute; top:50%; left:50%;
   transform-style:preserve-3d;
