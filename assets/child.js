@@ -188,6 +188,8 @@ const DEBUG = false;
   };
 
   const initAll = () => {
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) return; // respect motion preferences by leaving fallback grid visible
     $$('.es-ring').forEach(ring => imagesReady(ring, ()=>initOne(ring)));
   };
   const debounce=(fn,ms)=>{let t;return()=>{clearTimeout(t);t=setTimeout(fn,ms)}};
