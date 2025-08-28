@@ -85,8 +85,9 @@
 .es-stage{
   position:relative; width:100%;
   height:clamp(120px,26vw,240px); perspective:clamp(900px,160vw,1400px); perspective-origin:50% 42%;
-  overflow:visible;
+  overflow:visible; display:none;
 }
+.es-stage.is-ready{ display:block; }
 .es-ring{
   position:absolute; top:50%; left:50%;
   transform-style:preserve-3d;
@@ -108,15 +109,14 @@
 }
 .es-card img{ display:block; width:100%; height:100%; object-fit:cover; }
 
-/* ===== No-JS fallbacks ===== */
+/* ===== Logo fallbacks ===== */
 .es-fallback{
-  display:none;
+  display:grid;
   grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
   gap:clamp(16px,3vw,24px);
   justify-items:center;
 }
-.no-js .es-stage{ display:none; }
-.no-js .es-fallback{ display:grid; }
+.es-fallback.is-hidden{ display:none; }
 
 /* ================================
    Hero — Showcase (with Carousel) styles
