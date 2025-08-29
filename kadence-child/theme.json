@@ -6,19 +6,18 @@
       "blockGap": "1.2rem"
     },
     "color": {
-      "palette": [],
+      "duotone": [],
       "gradients": [],
-      "duotone": []
+      "palette": []
+    },
+    "custom": {
+      "elevatedSurfaces": true
     }
   },
   "styles": {
     "elements": {
       "heading": {
-        "spacing": {
-          "margin": {
-            "bottom": "0.6em"
-          }
-        }
+        "spacing": { "margin": { "bottom": "0.6em" } }
       }
     }
   }
