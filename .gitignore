@@ -1,0 +1,21 @@
+# Node / build
+node_modules/
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# WordPress (we only track the child theme code)
+wp-content/uploads/
+wp-content/cache/
+wp-content/upgrade/
+wp-content/ai1wm-backups/
+wp-content/languages/
+*.sql
+*.tar
+*.zip
+
+# IDE
+.vscode/
+.idea/
