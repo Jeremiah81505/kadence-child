@@ -100,4 +100,5 @@ add_action( 'init', function() {
     }
   }
 } );
+// Test commit: verifying GitHub workflow
 
