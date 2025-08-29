@@ -36,6 +36,14 @@ add_action( 'wp_enqueue_scripts', function() {
     $theme_version,
     true
   );
+    // 3D Carousel Ring JS
+    wp_enqueue_script(
+      'kc-carousel-3d-ring',
+      get_stylesheet_directory_uri() . '/assets/js/carousel-3d-ring.js',
+      array(),
+      $theme_version,
+      true
+    );
 
   // Core child theme scripts
   wp_enqueue_script(
