@@ -2,18 +2,10 @@
 /**
  * Title: Hero Intro (Premium)
  * Slug: kadence-child/hero-intro
- * Categories: kadence-child, text, featured
  * Description: Premium hero intro section with animated heading, subheading, call-to-action, and accessibility.
+ * Categories: kadence-child, featured
  */
 
-if ( function_exists( 'register_block_pattern' ) ) {
-    register_block_pattern(
-        'kadence-child/hero-intro',
-        array(
-            'title'       => __( 'Hero Intro (Premium)', 'kadence-child' ),
-            'description' => __( 'Premium hero intro section with animated heading, subheading, call-to-action, and accessibility.', 'kadence-child' ),
-            'categories'  => array( 'kadence-child', 'text', 'featured' ),
-            'content'     => '
 <!-- wp:cover {"url":"https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/hero-bg-countertop.jpg","dimRatio":60,"minHeight":480,"align":"full","className":"kc-hero-intro"} -->
 <div class="wp-block-cover alignfull kc-hero-intro" style="min-height:480px">
   <span aria-hidden="true" class="wp-block-cover__background has-background-dim"></span>

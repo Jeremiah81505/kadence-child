@@ -1,11 +1,43 @@
 <?php
 /**
- * Title: Hero Ultimate (Premium)
+ * Title: Hero Ultimate (Premium, Animated, Accessible)
  * Slug: kadence-child/hero-ultimate
+ * Description: Modern hero section with animated headline, badges, interactive chips, and accessible markup.
  * Categories: kadence-child, featured
- * Description: Modern hero section with animated headline, badges, interactive material chips, and accessibility.
  */
-
+?>
+<section class="kc-hero-ultimate">
+  <div class="kc-hero-wrap">
+    <div class="kc-hero-right">
+      <div class="kc-eyebrow">Countertop Experts</div>
+      <h1 class="kc-hero-title kc-revealed">
+        <span class="kc-reveal">Premium Surfaces</span>
+        <span class="kc-reveal">Across Wisconsin</span>
+      </h1>
+      <div class="kc-hero-sub">Explore our curated selection of quartz, stone, solid surface, ultra compact, laminate, and sinks. Trusted brands, expert installation, and stunning results.</div>
+      <div class="kc-hero-badges">
+        <span class="kc-info-badge" aria-label="Locally Owned">Locally Owned</span>
+        <span class="kc-info-badge" aria-label="Certified Installers">Certified Installers</span>
+        <span class="kc-info-badge" aria-label="Free Estimates">Free Estimates</span>
+      </div>
+      <ul class="kc-material-list" aria-label="Explore by Material">
+        <li><a href="#quartz" class="kc-chip kc-material-quartz" tabindex="0" aria-label="Quartz surfaces"><img src="/wp-content/themes/kadence-child/assets/img/quartz.png" alt="Quartz" /><span>Quartz</span></a></li>
+        <li><a href="#stone" class="kc-chip kc-material-stone" tabindex="0" aria-label="Stone surfaces"><img src="/wp-content/themes/kadence-child/assets/img/stone.png" alt="Stone" /><span>Stone</span></a></li>
+        <li><a href="#solid" class="kc-chip kc-material-solid" tabindex="0" aria-label="Solid surface"><img src="/wp-content/themes/kadence-child/assets/img/solid.png" alt="Solid Surface" /><span>Solid Surface</span></a></li>
+        <li><a href="#ultra" class="kc-chip kc-material-ultra" tabindex="0" aria-label="Ultra compact"><img src="/wp-content/themes/kadence-child/assets/img/ultra.png" alt="Ultra Compact" /><span>Ultra Compact</span></a></li>
+        <li><a href="#laminate" class="kc-chip kc-material-laminate" tabindex="0" aria-label="Laminate"><img src="/wp-content/themes/kadence-child/assets/img/laminate.png" alt="Laminate" /><span>Laminate</span></a></li>
+        <li><a href="#sinks" class="kc-chip kc-material-sinks" tabindex="0" aria-label="Sinks"><img src="/wp-content/themes/kadence-child/assets/img/sinks.png" alt="Sinks" /><span>Sinks</span></a></li>
+      </ul>
+      <div class="kc-hero-ctas">
+        <a href="#get-quote" class="wp-element-button kc-cta-primary">Get a Quote</a>
+        <a href="#view-colors" class="wp-element-button kc-cta-secondary">View Colors</a>
+      </div>
+    </div>
+    <div class="kc-float a"></div>
+    <div class="kc-float b"></div>
+    <div class="kc-scroll-cue" aria-hidden="true">Scroll to explore</div>
+  </div>
+</section>
 if ( function_exists( 'register_block_pattern' ) ) {
     register_block_pattern(
         'kadence-child/hero-ultimate',

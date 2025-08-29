@@ -66,3 +66,20 @@ add_action( 'wp_enqueue_scripts', function() {
     'stickyOffset' => 64,
   ) );
 }, 20 );
+// Register custom block patterns from patterns folder
+add_action('init', function() {
+  $patterns_dir = get_stylesheet_directory() . '/patterns';
+  foreach (glob($patterns_dir . '/*.php') as $file) {
+    $content = file_get_contents($file);
+    // Extract header info (optional: for advanced parsing)
+    register_block_pattern(
+      'kadence-child/' . basename($file, '.php'),
+      array(
+        'title'       => '', // Title is read from the file header
+        'description' => '', // Description is read from the file header
+        'categories'  => array('kadence-child', 'featured'), // Categories from header
+        'content'     => $content // Block markup
+      )
+    );
+  }
+});

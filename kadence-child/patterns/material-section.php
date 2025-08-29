@@ -1,19 +1,11 @@
 <?php
 /**
- * Title: Premium Material Section (Best of the Best)
+ * Title: Material Section (Premium)
  * Slug: kadence-child/material-section
- * Categories: kadence-child, featured
  * Description: Premium materials grid section with animated chips, icons, tooltips, and accessibility.
+ * Categories: kadence-child, featured
  */
 
-if ( function_exists( 'register_block_pattern' ) ) {
-    register_block_pattern(
-        'kadence-child/material-section',
-        array(
-            'title'       => __( 'Premium Material Section', 'kadence-child' ),
-            'description' => __( 'Premium materials grid section with animated chips, icons, tooltips, and accessibility.', 'kadence-child' ),
-            'categories'  => array( 'kadence-child', 'featured' ),
-            'content'     => '
 <!-- wp:group {"align":"full","className":"kc-materials-card"} -->
 <div class="wp-block-group alignfull kc-materials-card" aria-label="Countertop Materials">
   <!-- wp:heading {"level":2,"className":"kc-materials-heading"} -->

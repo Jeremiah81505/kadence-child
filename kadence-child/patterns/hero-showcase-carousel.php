@@ -2,18 +2,10 @@
 /**
  * Title: Hero Showcase Carousel (Premium)
  * Slug: kadence-child/hero-showcase-carousel
- * Categories: kadence-child, featured
  * Description: Premium hero section with animated headline, category cards, CTA bar, and integrated 3D logo carousel.
+ * Categories: kadence-child, featured
  */
 
-if ( function_exists( 'register_block_pattern' ) ) {
-    register_block_pattern(
-        'kadence-child/hero-showcase-carousel',
-        array(
-            'title'       => __( 'Hero Showcase Carousel (Premium)', 'kadence-child' ),
-            'description' => __( 'Premium hero section with animated headline, category cards, CTA bar, and integrated 3D logo carousel.', 'kadence-child' ),
-            'categories'  => array( 'kadence-child', 'featured' ),
-            'content'     => '
 <!-- wp:html -->
 <section class="kc-hero-showcase" aria-label="Premium Countertops Hero">
   <div class="kc-hero-bg" style="--hero-bg:url(\'BACKGROUND_IMAGE_URL\');"></div>

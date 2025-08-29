@@ -2,18 +2,11 @@
 /**
  * Title: Materials Grid (Premium)
  * Slug: kadence-child/es-mats-grid
- * Categories: kadence-child, elevated
  * Description: Premium six-card materials navigation grid with vertical labels, animated scroll reveal, and accessibility.
+ * Categories: kadence-child, featured
  */
+?>
 
-if ( function_exists( 'register_block_pattern' ) ) {
-    register_block_pattern(
-        'kadence-child/es-mats-grid',
-        array(
-            'title'       => __( 'Materials Grid (Premium)', 'kadence-child' ),
-            'description' => __( 'Premium six-card materials navigation grid with vertical labels, animated scroll reveal, and accessibility.', 'kadence-child' ),
-            'categories'  => array( 'kadence-child', 'elevated' ),
-            'content'     => '
 <!-- wp:group {"tagName":"section","layout":{"type":"constrained"}} -->
 <section class="wp-block-group" aria-label="Materials Grid">
   <div id="es-mats" data-replay="true" data-stagger="140" style="max-width:1440px;margin:0 auto;padding:6px;color:#fff;font-family:inherit;">

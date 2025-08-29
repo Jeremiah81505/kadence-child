@@ -1,20 +1,11 @@
-
 <?php
 /**
  * Title: 3D Logo Carousel – Ring (Enhanced)
  * Slug: kadence-child/carousel-3d-ring
- * Categories: kadence-child
  * Description: 3D rotating ring of logos with autoplay, drag, keyboard, tooltips, and accessibility.
+ * Categories: kadence-child, featured
  */
 
-if ( function_exists( 'register_block_pattern' ) ) {
-		register_block_pattern(
-				'kadence-child/carousel-3d-ring',
-				array(
-						'title'       => __( '3D Logo Carousel – Ring (Enhanced)', 'kadence-child' ),
-						'description' => __( '3D rotating ring of logos with autoplay, drag, keyboard, tooltips, and accessibility.', 'kadence-child' ),
-						'categories'  => array( 'kadence-child' ),
-						'content'     => '
 <!-- wp:group {"align":"full","className":"kc-ring-wrap","style":{"spacing":{"padding":{"top":"36px","bottom":"36px"}}},"layout":{"type":"constrained","contentSize":"1900px"}} -->
 <div class="wp-block-group alignfull kc-ring-wrap" aria-label="Logo Carousel">
 	<div class="es-stage">

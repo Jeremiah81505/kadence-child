@@ -19,3 +19,14 @@ function kadence_child_setup() {
 
 add_action('after_setup_theme', 'kadence_child_setup');
 ?>
+<?php
+// Register custom block patterns from patterns folder
+add_action('init', function() {
+  $patterns_dir = get_stylesheet_directory() . '/patterns';
+  foreach (glob($patterns_dir . '/*.php') as $file) {
+    register_block_pattern(
+      'kadence-child/' . basename($file, '.php'),
+      include $file
+    );
+  }
+});
