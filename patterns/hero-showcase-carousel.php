@@ -52,6 +52,7 @@
 </section>
 <!-- /wp:html -->
 
+<<<<<<< HEAD
 <?php
 /**
  * Title: Fancy Header
@@ -91,3 +92,5 @@ if ( function_exists( 'register_block_pattern' ) ) {
     );
 }
 
+=======
+>>>>>>> kadence-child/main

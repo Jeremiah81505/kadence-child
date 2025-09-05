@@ -5,6 +5,7 @@
  * Categories: kadence-child, elevated
  * Description: Six-card materials navigation grid with vertical labels and scroll reveal animation.
  */
+<<<<<<< HEAD
 
 if ( function_exists( 'register_block_pattern' ) ) {
     register_block_pattern(
@@ -14,6 +15,9 @@ if ( function_exists( 'register_block_pattern' ) ) {
             'description' => __( 'Six-card materials navigation grid with vertical labels and scroll reveal animation.', 'kadence-child' ),
             'categories'  => array( 'kadence-child', 'elevated' ),
             'content'     => '
+=======
+?>
+>>>>>>> kadence-child/main
 <!-- wp:group {"tagName":"section","layout":{"type":"constrained"}} -->
 <section class="wp-block-group">
 <!-- wp:html -->
@@ -23,38 +27,68 @@ if ( function_exists( 'register_block_pattern' ) ) {
 
     <!-- QUARTZ (hero: col 1, rows 1–2) -->
     <a href="https://elevatedcountertopexperts.com/quartz/" class="es-card" data-dir="left" style="grid-column:1/2;grid-row:1/3;">
+<<<<<<< HEAD
       <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/VIATERA-Residential-Taj-Crema-kitchen-Mid2-scaled.jpg" alt="Quartz countertop">
       <span class="vtag">Quartz</span>
+=======
+      <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/VIATERA-Residential-Taj-Crema-kitchen-Mid2-scaled.jpg" alt="<?php echo esc_attr__( 'Quartz countertop', 'kadence-child' ); ?>">
+      <span class="vtag"><?php echo esc_html__( 'Quartz', 'kadence-child' ); ?></span>
+>>>>>>> kadence-child/main
     </a>
 
     <!-- NATURAL STONE (top-right #1) — down 20% -->
     <a href="https://elevatedcountertopexperts.com/natural-stone/" class="es-card" data-dir="up" style="grid-column:2/3;grid-row:1/2;">
+<<<<<<< HEAD
       <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vertical-Application-of-Natural-Stone-Kitchen-Lakewood-CO-1-1.jpeg" alt="Natural stone countertop" style="object-position:50% 88%;">
       <span class="vtag">Natural Stone</span>
+=======
+      <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vertical-Application-of-Natural-Stone-Kitchen-Lakewood-CO-1-1.jpeg" alt="<?php echo esc_attr__( 'Natural stone countertop', 'kadence-child' ); ?>" style="object-position:50% 88%;">
+      <span class="vtag"><?php echo esc_html__( 'Natural Stone', 'kadence-child' ); ?></span>
+>>>>>>> kadence-child/main
     </a>
 
     <!-- SOLID SURFACE (top-right #2) -->
     <a href="https://elevatedcountertopexperts.com/solid-surface/" class="es-card" data-dir="down" style="grid-column:3/4;grid-row:1/2;">
+<<<<<<< HEAD
       <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Solid-Surface-1.jpg" alt="Solid surface countertop" style="object-position:50% 55%;">
       <span class="vtag">Solid Surface</span>
+=======
+      <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Solid-Surface-1.jpg" alt="<?php echo esc_attr__( 'Solid surface countertop', 'kadence-child' ); ?>" style="object-position:50% 55%;">
+      <span class="vtag"><?php echo esc_html__( 'Solid Surface', 'kadence-child' ); ?></span>
+>>>>>>> kadence-child/main
     </a>
 
     <!-- ULTRA COMPACT (middle wide) — tagged .ultra -->
     <a href="https://elevatedcountertopexperts.com/ultra-compact/" class="es-card ultra" data-dir="right" style="grid-column:2/4;grid-row:2/3;">
+<<<<<<< HEAD
       <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Dekton-Countertops.avif" alt="Ultra compact surface" style="object-position:50% 82%;">
       <span class="vtag vtag--right">Ultra Compact</span>
+=======
+      <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Dekton-Countertops.avif" alt="<?php echo esc_attr__( 'Ultra compact surface', 'kadence-child' ); ?>" style="object-position:50% 82%;">
+      <span class="vtag vtag--right"><?php echo esc_html__( 'Ultra Compact', 'kadence-child' ); ?></span>
+>>>>>>> kadence-child/main
     </a>
 
     <!-- LAMINATE (bottom-left wide) — way down -->
     <a href="https://elevatedcountertopexperts.com/laminate/" class="es-card" data-dir="up" style="grid-column:1/3;grid-row:3/4;">
+<<<<<<< HEAD
       <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Formica-7404-Neapolitan-Stone-3-scaled_4aaa1f1a-c749-4986-97ce-57f9ddcdcf1b_1080x.webp" alt="Laminate countertop" style="object-position:50% 92%;">
       <span class="vtag">Laminate</span>
+=======
+      <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Formica-7404-Neapolitan-Stone-3-scaled_4aaa1f1a-c749-4986-97ce-57f9ddcdcf1b_1080x.webp" alt="<?php echo esc_attr__( 'Laminate countertop', 'kadence-child' ); ?>" style="object-position:50% 92%;">
+      <span class="vtag"><?php echo esc_html__( 'Laminate', 'kadence-child' ); ?></span>
+>>>>>>> kadence-child/main
     </a>
 
     <!-- SINKS (bottom-right) -->
     <a href="https://elevatedcountertopexperts.com/sinks/" class="es-card" data-dir="left" style="grid-column:3/4;grid-row:3/4;">
+<<<<<<< HEAD
       <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Undermount-SInk-Karran.jpg" alt="Kitchen sinks" style="object-position:50% 62%;">
       <span class="vtag">Sinks</span>
+=======
+      <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Undermount-SInk-Karran.jpg" alt="<?php echo esc_attr__( 'Kitchen sinks', 'kadence-child' ); ?>" style="object-position:50% 62%;">
+      <span class="vtag"><?php echo esc_html__( 'Sinks', 'kadence-child' ); ?></span>
+>>>>>>> kadence-child/main
     </a>
 
   </div>
@@ -93,6 +127,7 @@ if ( function_exists( 'register_block_pattern' ) ) {
   </style>
 
   <script>
+<<<<<<< HEAD
     document.addEventListener("DOMContentLoaded",function(){
       var root=document.getElementById("es-mats"); if(!root) return;
       var cards=[].slice.call(root.querySelectorAll(".es-card"));
@@ -105,6 +140,20 @@ if ( function_exists( 'register_block_pattern' ) ) {
         },{threshold:0.18});
         cards.forEach(function(c){ io.observe(c); });
       }catch(e){ cards.forEach(function(c){ c.classList.add("_in"); }); }
+=======
+    document.addEventListener('DOMContentLoaded',function(){
+      var root=document.getElementById('es-mats'); if(!root) return;
+      var cards=[].slice.call(root.querySelectorAll('.es-card'));
+      var replay=(root.getAttribute('data-replay')||'true').toLowerCase()==='true';
+      var stagger=parseInt(root.getAttribute('data-stagger')||'140',10);
+      cards.forEach(function(c,i){ c.style.setProperty('--delay',(i*stagger)+'ms'); });
+      try{
+        var io=new IntersectionObserver(function(entries){
+          entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('_in'); } else if(replay){ e.target.classList.remove('_in'); } });
+        },{threshold:0.18});
+        cards.forEach(function(c){ io.observe(c); });
+      }catch(e){ cards.forEach(function(c){ c.classList.add('_in'); }); }
+>>>>>>> kadence-child/main
     });
   </script>
 
@@ -113,7 +162,10 @@ if ( function_exists( 'register_block_pattern' ) ) {
 <!-- /wp:html -->
 </section>
 <!-- /wp:group -->
+<<<<<<< HEAD
 '
         )
     );
 }
+=======
+>>>>>>> kadence-child/main

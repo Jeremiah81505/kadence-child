@@ -10,6 +10,7 @@
  * - data-radius : ring radius in pixels (auto if omitted)
  * - data-tilt   : tilt angle in degrees (defaults to 8)
  */
+<<<<<<< HEAD
 
 if ( function_exists( 'register_block_pattern' ) ) {
     register_block_pattern(
@@ -22,6 +23,8 @@ if ( function_exists( 'register_block_pattern' ) ) {
         )
     );
 }
+=======
+>>>>>>> kadence-child/main
 ?>
 <!-- wp:group {"align":"full","className":"kc-ring-wrap","style":{"spacing":{"padding":{"top":"36px","bottom":"36px"}}},"layout":{"type":"constrained","contentSize":"1900px"}} -->
 <div class="wp-block-group alignfull kc-ring-wrap">

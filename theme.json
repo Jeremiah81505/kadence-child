@@ -6,19 +6,32 @@
       "blockGap": "1.2rem"
     },
     "color": {
+<<<<<<< HEAD
       "palette": [],
       "gradients": [],
       "duotone": []
+=======
+      "duotone": [],
+      "gradients": [],
+      "palette": []
+    },
+    "custom": {
+      "elevatedSurfaces": true
+>>>>>>> kadence-child/main
     }
   },
   "styles": {
     "elements": {
       "heading": {
+<<<<<<< HEAD
         "spacing": {
           "margin": {
             "bottom": "0.6em"
           }
         }
+=======
+        "spacing": { "margin": { "bottom": "0.6em" } }
+>>>>>>> kadence-child/main
       }
     }
   }

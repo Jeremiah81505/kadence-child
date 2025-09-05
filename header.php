@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 <a class="kc-skip-link" href="#primary"><?php esc_html_e( 'Skip to content', 'kadence-child' ); ?></a>
 
 <?php get_template_part( 'template-parts/header-fancy' ); ?>
+<<<<<<< HEAD
 
 <!-- wp:group {"align":"full","className":"kc-header"} -->
 <header class="wp-block-group alignfull kc-header" role="banner">
@@ -35,3 +36,5 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
   </div>
 </header>
 <!-- /wp:group -->
+=======
+>>>>>>> kadence-child/main

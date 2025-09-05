@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .es-stage {
   perspective: 1400px;
   min-height: 320px;
@@ -69,6 +70,8 @@
     max-width: 98vw;
   }
 }
+=======
+>>>>>>> kadence-child/main
 /*
  Theme Name: Kadence Child
  Template: kadence
@@ -153,6 +156,7 @@
 .kc-ring-wrap{ display:flex; justify-content:center; margin-top:8px; max-width:1900px; margin-inline:auto; }
 
 /* ===== ES CAROUSEL (namespaced, clean) ===== */
+<<<<<<< HEAD
 
 .es-stage {
   perspective: 1800px;
@@ -185,6 +189,14 @@
 }
 .es-card { box-shadow: 0 2px 16px rgba(0,0,0,0.18); border-radius: 12px; background: #fff; overflow: hidden; width: 180px; height: 120px; display: flex; align-items: center; justify-content: center; }
 .es-card img { display: block; width: 100%; height: 100%; object-fit: contain; }
+=======
+.es-stage{
+  position:relative; width:100%;
+  height:clamp(120px,26vw,240px); perspective:clamp(900px,160vw,1400px); perspective-origin:50% 42%;
+  overflow:visible; display:none;
+}
+.es-stage.is-ready{ display:block; }
+>>>>>>> kadence-child/main
 .es-ring{
   position:absolute; top:50%; left:50%;
   transform-style:preserve-3d;
@@ -192,6 +204,7 @@
   transform:translate(-50%,-50%) rotateX(0deg) rotateY(0deg);
   will-change:transform;
 }
+<<<<<<< HEAD
 
 .es-tile, .es-card {
   width: 180px;
@@ -221,6 +234,15 @@
   align-items: center;
   justify-content: center;
 }
+=======
+.es-tile{
+  position:absolute; top:50%; left:50%;
+  transform-style:preserve-3d; backface-visibility:hidden;
+  transform:translate(-50%,-50%); /* JS adds rotateY(theta) translateZ(r) */
+}
+.es-card{
+  width:clamp(100px,20vw,160px); height:clamp(68px,13vw,110px); display:grid; place-items:center;
+>>>>>>> kadence-child/main
   background:#fff; border-radius:clamp(12px,2vw,16px);
   box-shadow:0 clamp(12px,3vw,18px) clamp(24px,6vw,40px) rgba(0,0,0,.10), 0 clamp(4px,1.5vw,6px) clamp(12px,3vw,16px) rgba(0,0,0,.06);
   backface-visibility:hidden;

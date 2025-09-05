@@ -11,4 +11,7 @@
 function kc_get_theme_version() {
   return wp_get_theme()->get('Version');
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> kadence-child/main
