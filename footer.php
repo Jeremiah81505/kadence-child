@@ -10,7 +10,6 @@
     <div class="kc-footer-brand">
       <a href="/" class="kc-footer-logo">
         <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/elevated-logo.svg" alt="Elevated Surfaces Logo" />
-  <!-- Test push from local on 2025-09-04 -->
       </a>
       <span class="kc-footer-title">Elevated Surfaces</span>
     </div>

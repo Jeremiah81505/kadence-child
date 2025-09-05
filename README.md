@@ -1,5 +1,4 @@
 # Kadence Child Theme
-# <!-- Test push from local on 2025-09-04 -->
 
 A minimal child theme for the [Kadence](https://www.kadencewp.com/kadence-theme/) parent theme. It adds a few bespoke block patterns and light CSS/JS enhancements, including a draggable 3D logo carousel.
 
