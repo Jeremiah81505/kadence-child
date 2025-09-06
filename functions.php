@@ -27,13 +27,27 @@ add_action( 'wp_enqueue_scripts', function() {
     true
   );
     // 3D Carousel Ring JS
+    // 3D Carousel Ring JS (cache-busted by file modification time so updates propagate immediately)
+    $carousel_file = get_stylesheet_directory() . '/assets/js/carousel-3d-ring.js';
+    $carousel_ver  = file_exists( $carousel_file ) ? filemtime( $carousel_file ) : $theme_version;
     wp_enqueue_script(
       'kc-carousel-3d-ring',
       get_stylesheet_directory_uri() . '/assets/js/carousel-3d-ring.js',
       array(),
-      $theme_version,
+      $carousel_ver,
       true
     );
+    // Advanced variant script (new experimental build)
+    $carousel2_file = get_stylesheet_directory() . '/assets/js/carousel-3d-ring-advanced.js';
+    if ( file_exists( $carousel2_file ) ) {
+      wp_enqueue_script(
+        'kc-carousel-3d-ring-advanced',
+        get_stylesheet_directory_uri() . '/assets/js/carousel-3d-ring-advanced.js',
+        array(),
+        filemtime( $carousel2_file ),
+        true
+      );
+    }
 
   // Core child theme scripts
   wp_enqueue_script(
