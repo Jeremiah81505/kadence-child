@@ -5,6 +5,17 @@ require_once get_theme_file_path( 'utils.php' ); // Provides kc_get_theme_versio
 require_once get_theme_file_path( 'inc/customizer.php' );
 
 /**
+ * Polyfills & defensive guards
+ */
+// PHP 8 str_starts_with used later; add lightweight polyfill for older PHP.
+if ( ! function_exists( 'str_starts_with' ) ) {
+  function str_starts_with( $haystack, $needle ) {
+    if ( $needle === '' ) { return true; }
+    return strpos( $haystack, $needle ) === 0;
+  }
+}
+
+/**
  * Enqueue child + header assets
  */
 add_action( 'wp_enqueue_scripts', function() {
@@ -110,6 +121,7 @@ add_action( 'init', function() {
     return;
   }
   // If at least one of our namespace patterns is registered, skip fallback.
+  if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) { return; }
   $registry = WP_Block_Patterns_Registry::get_instance();
   $has_namespace = false;
   foreach ( $registry->get_all_registered() as $slug => $data ) {
@@ -158,6 +170,7 @@ add_action( 'init', function() {
 add_action( 'admin_notices', function() {
   if ( ! current_user_can( 'manage_options' ) ) { return; }
   if ( empty( $_GET['kc_patterns_debug'] ) ) { return; }
+  if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) { echo '<div class="notice notice-error"><p>Block Patterns Registry unavailable.</p></div>'; return; }
   $registry = WP_Block_Patterns_Registry::get_instance();
   $patterns = array();
   foreach ( $registry->get_all_registered() as $slug => $data ) {
