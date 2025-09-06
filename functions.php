@@ -97,20 +97,17 @@ if ( defined( 'KC_DEBUG_PATTERNS' ) && KC_DEBUG_PATTERNS ) {
   } );
 }
 
-/**
- * Hard cleanup: strip any residual inline carousel markup (ring / adv) left in stored post content.
- * Disable via define('KC_DISABLE_CAROUSEL_STRIP', true);
- */
-add_filter( 'the_content', function( $content ) {
-  if ( defined( 'KC_DISABLE_CAROUSEL_STRIP' ) && KC_DISABLE_CAROUSEL_STRIP ) { return $content; }
-  if ( strpos( $content, 'kc-ring-wrap' ) === false && strpos( $content, 'kc-adv-stage-wrap' ) === false && strpos( $content, 'es-ring' ) === false ) {
-    return $content;
+// Final safeguard: explicitly unregister any deprecated carousel pattern slugs if they somehow exist.
+add_action( 'init', function() {
+  if ( ! function_exists( 'unregister_block_pattern' ) ) { return; }
+  foreach ( array(
+    'kadence-child/carousel-3d-ring',
+    'kadence-child/carousel-3d-ring-basic',
+    'kadence-child/carousel-3d-ring-v2',
+    'kadence-child/carousel-3d-ring-adv',
+    'kadence-child/hero-showcase-carousel'
+  ) as $slug ) {
+    unregister_block_pattern( $slug );
   }
-  // Remove inline style / script blocks referencing legacy carousel selectors.
-  $content = preg_replace( '~<style[^>]*>.*?(kc-(?:ring-wrap|adv-stage-wrap)|es-ring).*?</style>~is', '', $content );
-  $content = preg_replace( '~<script[^>]*>.*?(kc-(?:ring-wrap|adv-stage-wrap)|es-ring).*?</script>~is', '', $content );
-  // Remove outer wrappers with known classes (non-greedy to avoid nuking unrelated content).
-  $content = preg_replace( '~<div[^>]*class="[^"]*(kc-(?:ring-wrap|adv-stage-wrap))[^"]*"[^>]*>.*?</div>~is', '', $content );
-  return $content;
-}, 4 );
+}, 99 );
 
