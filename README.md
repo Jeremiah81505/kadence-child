@@ -39,3 +39,5 @@ The theme registers a `Kadence Child` pattern category and provides:
 2. Make your changes and verify PHP syntax with `php -l`.
 3. Commit with clear messages and open a pull request describing the update.
 
+<!-- Deployment trigger: no-op change to force WP Pusher redeploy (2025-09-05) -->
+
