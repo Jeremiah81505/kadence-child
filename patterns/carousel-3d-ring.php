@@ -1,1 +1,1 @@
-<?php // Fully purged carousel ring pattern. return; ?>
+<?php // Intentionally blank deprecated carousel file (ring). ?>
