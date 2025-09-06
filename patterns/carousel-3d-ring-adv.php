@@ -109,38 +109,5 @@
     if(activeIndex>-1 && (force || tiles[activeIndex].getAttribute('data-active'))){
       const alt=tiles[activeIndex].querySelector('img')?.getAttribute('alt')||''; live.textContent='Showing '+alt; }
   }
-  function frame(now){
-    const dt=(now-last)/1000; last=now;
-    if(playing){ angle += dt*velocity; }
-    update(false); requestAnimationFrame(frame);
-  }
-  update(true); requestAnimationFrame(frame);
-  panel.addEventListener('click',e=>{
-    const btn=e.target.closest('.kc-adv-btn');
-    if(btn){ const action=btn.dataset.action; if(action==='playpause'){ playing=!playing; if(playing){ velocity=baseSpeed; } panel.closest('.kc-adv-carousel')?.setAttribute('data-paused', (!playing).toString()); btn.setAttribute('aria-pressed', playing?'true':'false'); btn.textContent=playing?'Pause':'Play'; }
-      if(action==='next'){ angle -= step; update(true); }
-      if(action==='prev'){ angle += step; update(true); }
-      return; }
-    const tile=e.target.closest('.kc-adv-tile'); if(tile){ const idx=tiles.indexOf(tile); angle = idx*step; playing=false; const pb=panel.querySelector('[data-action="playpause"]'); if(pb){ pb.textContent='Play'; pb.setAttribute('aria-pressed','false'); } update(true); }
-  });
-  // Hover pause
-  panel.addEventListener('mouseenter',()=>{ playing=false; const pb=panel.querySelector('[data-action="playpause"]'); if(pb){ pb.textContent='Play'; pb.setAttribute('aria-pressed','false'); }});
-  panel.addEventListener('mouseleave',()=>{ playing=true; velocity=baseSpeed; const pb=panel.querySelector('[data-action="playpause"]'); if(pb){ pb.textContent='Pause'; pb.setAttribute('aria-pressed','true'); }});
-  // Drag / swipe
-  let dragging=false,startX=0,startAngle=0,lastMoveTime=0,lastX=0; const sensitivity=0.45; // deg per px
-  function pointerDown(e){ dragging=true; playing=false; startX=lastX=e.clientX||e.touches?.[0]?.clientX||0; startAngle=angle; panel.classList.add('is-dragging'); lastMoveTime=performance.now(); }
-  function pointerMove(e){ if(!dragging) return; const x=e.clientX||e.touches?.[0]?.clientX||0; const dx=x-startX; angle = startAngle - dx*sensitivity; const now=performance.now(); if(Math.abs(x-lastX)>2){ velocity = ( (x-lastX)*sensitivity / ((now-lastMoveTime)/1000) ); lastMoveTime=now; lastX=x; } }
-  function pointerUp(){ if(!dragging) return; dragging=false; panel.classList.remove('is-dragging'); // inertia
-    velocity = Math.max(-baseSpeed*2, Math.min(baseSpeed*2, velocity)); // clamp
-    if(Math.abs(velocity) < baseSpeed*0.25) { velocity = baseSpeed; playing=true; }
-    else { playing=true; }
-  }
-  panel.addEventListener('mousedown',pointerDown); window.addEventListener('mousemove',pointerMove); window.addEventListener('mouseup',pointerUp);
-  panel.addEventListener('touchstart',pointerDown,{passive:true}); panel.addEventListener('touchmove',pointerMove,{passive:true}); window.addEventListener('touchend',pointerUp);
-  window.addEventListener('resize',()=>{ getRadius(); update(true); });
-  panel.tabIndex=0;
-  panel.addEventListener('keydown',e=>{ if(e.key==='ArrowRight'){ angle -= step; update(true); } else if(e.key==='ArrowLeft'){ angle += step; update(true); } else if(e.code==='Space'){ e.preventDefault(); const pb=panel.querySelector('[data-action="playpause"]'); pb&&pb.click(); } });
-  try{ const io=new IntersectionObserver(entries=>{ entries.forEach(ent=>{ if(ent.target===panel){ if(!ent.isIntersecting){ playing=false; } else { playing=true; velocity=baseSpeed; } const pb=panel.querySelector('[data-action="playpause"]'); if(pb){ pb.setAttribute('aria-pressed', playing?'true':'false'); pb.textContent=playing?'Pause':'Play'; } } }); }); io.observe(panel); }catch(err){}
-})();
-</script>
-<!-- /wp:html -->
+  <!-- /wp:html -->
+    <!-- wp:html -->

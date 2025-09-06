@@ -80,6 +80,27 @@ add_action( 'wp_enqueue_scripts', function() {
     true
   );
 
+  // Advanced 3D carousel (externalized assets)
+  $adv_css = get_stylesheet_directory() . '/assets/css/carousel-adv.css';
+  if ( file_exists( $adv_css ) ) {
+    wp_enqueue_style(
+      'kc-carousel-adv',
+      get_stylesheet_directory_uri() . '/assets/css/carousel-adv.css',
+      array(),
+      filemtime( $adv_css )
+    );
+  }
+  $adv_js = get_stylesheet_directory() . '/assets/js/carousel-adv.js';
+  if ( file_exists( $adv_js ) ) {
+    wp_enqueue_script(
+      'kc-carousel-adv',
+      get_stylesheet_directory_uri() . '/assets/js/carousel-adv.js',
+      array(),
+      filemtime( $adv_js ),
+      true
+    );
+  }
+
   // Pass settings to JS
   wp_localize_script( 'kc-header', 'KC_HEADER', array(
     'stickyOffset' => 64,
