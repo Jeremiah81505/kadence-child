@@ -1,24 +1,14 @@
 <?php
 /**
- * Child Theme Header Loader
+ * Proxy to Kadence parent theme header.
+ *
+ * Keeping this file (instead of deleting) guarantees future updates won't accidentally recreate a custom markup.
+ * It simply includes the parent theme's original header.php so you get the normal Kadence Header Builder output.
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
-?><!DOCTYPE html>
-<html <?php language_attributes(); ?>>
-<head>
-<meta charset="<?php bloginfo( 'charset' ); ?>" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<?php wp_head(); ?>
-</head>
-<body <?php body_class(); ?>>
-<?php wp_body_open(); ?>
 
-<a class="kc-skip-link" href="#primary"><?php esc_html_e( 'Skip to content', 'kadence-child' ); ?></a>
-
-<?php
-// Use the Kadence parent theme header (header builder) instead of custom child header.
-// If you later want the fancy header only on the front page you can do:
-// if ( is_front_page() ) { get_template_part('template-parts/header-fancy'); } else { get_template_part('template-parts/header'); }
-// For now we always load the parent header template part.
-get_template_part( 'template-parts/header' );
+// Directly load the parent theme header template and stop.
+// This prevents duplicate DOCTYPE/body tags that occurred when we manually output them here.
+require get_template_directory() . '/header.php';
+return; // Safety: ensure nothing else runs below.
 ?>
