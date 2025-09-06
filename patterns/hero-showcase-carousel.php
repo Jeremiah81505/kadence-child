@@ -1,1 +1,1 @@
-<?php // Intentionally left blank; deprecated pattern removed. ?>
+<?php // Deprecated hero showcase carousel placeholder intentionally left blank. ?>

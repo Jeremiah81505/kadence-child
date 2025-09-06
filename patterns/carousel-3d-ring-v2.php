@@ -1,1 +1,1 @@
-<?php // Intentionally blank deprecated carousel file (v2). ?>
+<?php // Deprecated carousel placeholder (v2) intentionally left blank. ?>

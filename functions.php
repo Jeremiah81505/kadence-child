@@ -1,19 +1,4 @@
-<?php
-if ( ! defined( 'ABSPATH' ) ) { exit; }
-
-require_once get_theme_file_path( 'utils.php' ); // Provides kc_get_theme_version()
-// customizer.php removed with inc/ purge.
-
-/**
- * Polyfills & defensive guards
- */
-// PHP 8 str_starts_with used later; add lightweight polyfill for older PHP.
-if ( ! function_exists( 'str_starts_with' ) ) {
-  function str_starts_with( $haystack, $needle ) {
-    if ( $needle === '' ) { return true; }
-    return strpos( $haystack, $needle ) === 0;
-  }
-}
+// Removed legacy carousel content scrubbing filter after full purge.
 
 /**
  * Enqueue child + header assets
