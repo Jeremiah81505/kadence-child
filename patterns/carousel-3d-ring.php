@@ -10,21 +10,6 @@
  * - data-radius : ring radius in pixels (auto if omitted)
  * - data-tilt   : tilt angle in degrees (defaults to 8)
  */
-<<<<<<< HEAD
-
-if ( function_exists( 'register_block_pattern' ) ) {
-    register_block_pattern(
-        'kadence-child/carousel-3d-ring',
-        array(
-            'title'       => __( '3D Logo Carousel – Ring', 'kadence-child' ),
-            'description' => __( '3D rotating ring of logos with autoplay and hover pause.', 'kadence-child' ),
-            'categories'  => array( 'kadence-child' ),
-            'content'     => file_get_contents( __FILE__, false, null, strpos( file_get_contents( __FILE__ ), '<!-- wp:group' ) )
-        )
-    );
-}
-=======
->>>>>>> kadence-child/main
 ?>
 <!-- wp:group {"align":"full","className":"kc-ring-wrap","style":{"spacing":{"padding":{"top":"36px","bottom":"36px"}}},"layout":{"type":"constrained","contentSize":"1900px"}} -->
 <div class="wp-block-group alignfull kc-ring-wrap">

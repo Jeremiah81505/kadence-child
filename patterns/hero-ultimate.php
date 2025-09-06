@@ -1,20 +1,11 @@
 <?php
 /**
-<<<<<<< HEAD
  * Title: Hero Ultimate
  * Slug: kadence-child/hero-ultimate
  * Categories: kadence-child, featured
  * Description: Modern hero section with headline, subheading, badges, and material chips.
  */
-
-if ( function_exists( 'register_block_pattern' ) ) {
-    register_block_pattern(
-        'kadence-child/hero-ultimate',
-        array(
-            'title'       => __( 'Hero Ultimate', 'kadence-child' ),
-            'description' => __( 'Modern hero section with headline, subheading, badges, and material chips.', 'kadence-child' ),
-            'categories'  => array( 'kadence-child', 'featured' ),
-            'content'     => '
+?>
 <!-- wp:cover {"url":"https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/hero-bg-countertop.jpg","dimRatio":60,"minHeight":520,"align":"full","className":"kc-hero-ultimate"} -->
 <div class="wp-block-cover alignfull kc-hero-ultimate" style="min-height:520px">
   <span aria-hidden="true" class="wp-block-cover__background has-background-dim"></span>
@@ -120,33 +111,7 @@ if ( function_exists( 'register_block_pattern' ) ) {
               </div>
               <!-- /wp:button -->
             </div>
-            <!-- /wp:buttons -->
-
-          </div>
-          <!-- /wp:group -->
-        </div>
-        <!-- /wp:group -->
-
-        <!-- wp:group {"className":"kc-hero-right","layout":{"type":"flex","orientation":"vertical"}} -->
-        <div class="wp-block-group kc-hero-right">
-          <!-- wp:group {"className":"kc-materials-card"} -->
-          <div class="wp-block-group kc-materials-card" role="region" aria-label="<?php esc_attr_e( 'Browse materials', 'kadence-child' ); ?>">
-            <!-- wp:heading {"level":3,"className":"kc-materials-heading"} -->
-            <h3 class="kc-materials-heading"><?php esc_html_e( 'Explore by Material', 'kadence-child' ); ?></h3>
-            <!-- /wp:heading -->
-
-            <!-- wp:html -->
-            <nav class="kc-material-grid" aria-label="<?php esc_attr_e( 'Material categories', 'kadence-child' ); ?>">
-              <a class="kc-chip kc-quartz" href="/quartz/"><span class="kc-txt"><?php esc_html_e( 'Quartz', 'kadence-child' ); ?></span></a>
-              <a class="kc-chip kc-stone" href="/natural-stone/"><span class="kc-txt"><?php printf( esc_html__( 'Natural%1$sStone', 'kadence-child' ), '<wbr>' ); ?></span></a>
-              <a class="kc-chip kc-solid" href="/solid-surface/"><span class="kc-txt"><?php printf( esc_html__( 'Solid%1$sSurface', 'kadence-child' ), '<wbr>' ); ?></span></a>
-              <a class="kc-chip kc-ultra" href="/ultra-compact/"><span class="kc-txt"><?php printf( esc_html__( 'Ultra%1$sCompact', 'kadence-child' ), '<wbr>' ); ?></span></a>
-              <a class="kc-chip kc-lam" href="/laminate/"><span class="kc-txt"><?php esc_html_e( 'Laminate', 'kadence-child' ); ?></span></a>
-              <a class="kc-chip kc-sinks" href="/sinks/"><span class="kc-txt"><?php esc_html_e( 'Sinks', 'kadence-child' ); ?></span></a>
-            </nav>
-            <!-- /wp:html -->
-          </div>
-          <!-- /wp:group -->
+            <!-- /wp:cover -->
         </div>
         <!-- /wp:group -->
       </div>

@@ -51,46 +51,4 @@
   </div>
 </section>
 <!-- /wp:html -->
-
-<<<<<<< HEAD
-<?php
-/**
- * Title: Fancy Header
- * Slug: kadence-child/header-fancy
- * Categories: kadence-child, header
- * Description: Modern header with logo, navigation, and call-to-action button.
- */
-
-if ( function_exists( 'register_block_pattern' ) ) {
-    register_block_pattern(
-        'kadence-child/header-fancy',
-        array(
-            'title'       => __( 'Fancy Header', 'kadence-child' ),
-            'description' => __( 'Modern header with logo, navigation, and call-to-action button.', 'kadence-child' ),
-            'categories'  => array( 'kadence-child', 'header' ),
-            'content'     => '
-<!-- wp:group {"align":"full","className":"kc-header-fancy"} -->
-<div class="wp-block-group alignfull kc-header-fancy">
-  <div class="kc-header-inner">
-    <a href="/" class="kc-header-logo">
-      <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/elevated-logo.svg" alt="Elevated Surfaces Logo" />
-    </a>
-    <nav class="kc-header-nav" aria-label="Main navigation">
-      <a href="/quartz">Quartz</a>
-      <a href="/natural-stone">Natural Stone</a>
-      <a href="/solid-surface">Solid Surface</a>
-      <a href="/ultra-compact">Ultra Compact</a>
-      <a href="/laminate">Laminate</a>
-      <a href="/sinks">Sinks</a>
-    </nav>
-    <a href="/free-quote" class="kc-header-cta">Get a Free Quote</a>
-  </div>
-</div>
-<!-- /wp:group -->
-'
-        )
-    );
-}
-
-=======
->>>>>>> kadence-child/main
+<!-- end file -->

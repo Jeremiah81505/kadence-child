@@ -3,18 +3,9 @@
  * Title: Hero Intro
  * Slug: kadence-child/hero-intro
  * Categories: kadence-child, text, featured
-<<<<<<< HEAD
  * Description: Premium hero intro section with animated heading, subheading, and call-to-action.
  */
-
-if ( function_exists( 'register_block_pattern' ) ) {
-    register_block_pattern(
-        'kadence-child/hero-intro',
-        array(
-            'title'       => __( 'Hero Intro', 'kadence-child' ),
-            'description' => __( 'Premium hero intro section with animated heading, subheading, and call-to-action.', 'kadence-child' ),
-            'categories'  => array( 'kadence-child', 'text', 'featured' ),
-            'content'     => '
+?>
 <!-- wp:cover {"url":"https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/hero-bg-countertop.jpg","dimRatio":60,"minHeight":480,"align":"full","className":"kc-hero-intro"} -->
 <div class="wp-block-cover alignfull kc-hero-intro" style="min-height:480px">
   <span aria-hidden="true" class="wp-block-cover__background has-background-dim"></span>
@@ -62,23 +53,3 @@ if ( function_exists( 'register_block_pattern' ) ) {
   to { opacity:1; transform:none;}
 }
 </style>
-'
-        )
-    );
-}
-=======
- * Description: Simple hero intro section with heading and paragraph.
- */
-?>
-<!-- wp:group {"align":"full","style":{"spacing":{"padding":{"top":"60px","bottom":"60px","left":"20px","right":"20px"}}},"layout":{"type":"constrained"}} -->
-<div class="wp-block-group alignfull" style="padding-top:60px;padding-right:20px;padding-bottom:60px;padding-left:20px">
-  <!-- wp:heading {"level":1} -->
-  <h1><?php esc_html_e( 'Welcome to Elevated Surfaces', 'kadence-child' ); ?></h1>
-  <!-- /wp:heading -->
-
-  <!-- wp:paragraph -->
-  <p><?php esc_html_e( 'Premium countertops—crafted, delivered, and installed with care.', 'kadence-child' ); ?></p>
-  <!-- /wp:paragraph -->
-</div>
-<!-- /wp:group -->
->>>>>>> kadence-child/main
