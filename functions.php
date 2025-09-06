@@ -175,14 +175,18 @@ add_action( 'init', function() {
  */
 add_action( 'admin_notices', function() {
   if ( ! current_user_can( 'manage_options' ) ) { return; }
-  if ( empty( $_GET['kc_patterns_debug'] ) ) { return; }
-  if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) { echo '<div class="notice notice-error"><p>Block Patterns Registry unavailable.</p></div>'; return; }
+  if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) {
+    echo '<div class="notice notice-error"><p>Block Patterns Registry unavailable.</p></div>';
+    return;
+  }
   $registry = WP_Block_Patterns_Registry::get_instance();
-  $patterns = array();
-  foreach ( $registry->get_all_registered() as $slug => $data ) {
+  $all = $registry->get_all_registered();
+  $rows = array();
+  foreach ( $all as $slug => $data ) {
     if ( str_starts_with( $slug, 'kadence-child/' ) ) {
-      $patterns[] = esc_html( $slug . ' — ' . $data['title'] );
+      $cats = isset( $data['categories'] ) ? implode( ',', (array) $data['categories'] ) : '';
+      $rows[] = esc_html( $slug . ' — ' . $data['title'] . ' [' . $cats . ']' );
     }
   }
-  echo '<div class="notice notice-info"><p><strong>Kadence Child Patterns:</strong><br>' . ( $patterns ? implode( '<br>', $patterns ) : 'None registered' ) . '</p></div>';
+  echo '<div class="notice notice-info"><p><strong>Kadence Child Patterns Registered (' . count( $rows ) . '):</strong><br>' . ( $rows ? implode( '<br>', $rows ) : 'None registered' ) . '</p></div>';
 } );
