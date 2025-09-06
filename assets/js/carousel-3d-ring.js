@@ -69,19 +69,30 @@
       return;
     }
 
-    // Position tiles
+    // Set explicit stage height based on derived radius so content reserves space
+    stage.style.height = (radius * 1.25) + 'px';
+
+    // Position ring (centered) and tiles
+    ring.style.position = 'absolute';
+    ring.style.top = '50%';
+    ring.style.left = '50%';
+    ring.style.transformStyle = 'preserve-3d';
+    ring.style.willChange = 'transform';
+
     tiles.forEach(function(tile, i) {
       var angle = i * angleStep;
       tile.style.position = 'absolute';
-      tile.style.transform = 'rotateY(' + angle + 'deg) translateZ(' + radius + 'px) rotateX(' + tilt + 'deg)';
+      tile.style.top = '50%';
+      tile.style.left = '50%';
+      tile.style.transform = 'rotateY(' + angle + 'deg) translateZ(' + radius + 'px)';
+      tile.style.transformOrigin = 'center center ' + (-radius) + 'px';
       tile.style.backfaceVisibility = 'hidden';
       tile.style.willChange = 'transform';
     });
-    ring.style.position = 'relative';
-    ring.style.transformStyle = 'preserve-3d';
-    ring.style.height = (radius * 0.9) + 'px';
     stage.classList.add('is-ready');
 
+    // Base transform (excluding rotation around Y which is animated)
+    var base = 'translate(-50%, -50%) rotateX(' + tilt + 'deg) translateZ(-' + radius + 'px)';
     var start = performance.now();
     var paused = false;
     var offscreen = false;
@@ -114,7 +125,7 @@
       if (!paused && !offscreen) {
         var elapsed = (now - start) / 1000; // seconds
         var deg = (elapsed / speed) * 360 % 360;
-        ring.style.transform = 'translateZ(-' + radius + 'px) rotateY(' + deg + 'deg)';
+        ring.style.transform = base + ' rotateY(' + deg + 'deg)';
       }
       requestAnimationFrame(frame);
     }
