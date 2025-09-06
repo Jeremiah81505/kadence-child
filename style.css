@@ -19,6 +19,20 @@ Tags: custom-block-patterns, accessibility-ready
 /* CLEANUP: removed stale merge-conflict fragments above this line */
 
 /* HERO ULTIMATE (additional list, badges etc.) */
+.kc-hero-ultimate{position:relative;color:#fff;}
+.kc-hero-ultimate .wp-block-cover__image-background{filter:brightness(.72) saturate(1.05);}
+.kc-hero-ultimate .kc-hero-wrap{position:relative;z-index:2;}
+.kc-hero-ultimate .kc-hero-flex{display:flex;align-items:flex-start;gap:clamp(40px,5vw,90px);}
+.kc-hero-ultimate .kc-hero-left{flex:1 1 54%;min-width:0;}
+.kc-hero-ultimate .kc-hero-right{flex:1 1 38%;display:flex;align-items:center;justify-content:flex-end;}
+@media (max-width:1020px){
+  .kc-hero-ultimate .kc-hero-flex{flex-direction:column;}
+  .kc-hero-ultimate .kc-hero-right{width:100%;justify-content:flex-start;}
+}
+.kc-hero-ultimate .kc-scroll-cue{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;opacity:.55;font-weight:600;}
+.kc-hero-ultimate .kc-scroll-cue:after{content:"";display:block;width:1px;height:34px;margin:6px auto 0;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0));animation:kcScroll 3.2s ease-in-out infinite;}
+@keyframes kcScroll{0%,15%{transform:translateY(0);opacity:1}50%{transform:translateY(10px);opacity:.35}85%,100%{transform:translateY(0);opacity:1}}
+
 .kc-hero-ultimate .kc-info-badge{ display:inline-flex; align-items:center; margin:0; background:rgba(255,255,255,.15); padding:.25em .6em; border-radius:4px; font-size:.75rem; line-height:1; }
 .kc-hero-ultimate .kc-hero-badges{ display:flex; align-items:center; gap:1rem; margin-bottom:1rem; }
 .kc-hero-ultimate .kc-material-list{ display:grid; gap:clamp(12px,1.5vw,20px); grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); list-style:none; margin:0; padding:0; }

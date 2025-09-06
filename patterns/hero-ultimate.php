@@ -6,17 +6,18 @@
  * Description: Full-bleed hero with layered parallax, animated headline, and dual CTAs.
  */
 ?>
-<!-- wp:cover {"dimRatio":0,"isUserOverlayColor":true,"customGradient":"linear-gradient(90deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0) 100%)","minHeight":45,"minHeightUnit":"vh","align":"full","className":"kc-hero-ultimate","style":{"spacing":{"padding":{"top":"40px","bottom":"40px"}}}} -->
-<div class="wp-block-cover alignfull kc-hero-ultimate" style="padding-top:40px;padding-bottom:40px;min-height:45vh">
+<!-- wp:cover {"dimRatio":0,"isUserOverlayColor":true,"customGradient":"linear-gradient(90deg,rgba(0,0,0,0.78) 0%,rgba(0,0,0,0.05) 60%)","minHeight":78,"minHeightUnit":"vh","align":"full","className":"kc-hero-ultimate","style":{"spacing":{"padding":{"top":"60px","bottom":"60px"}}}} -->
+<div class="wp-block-cover alignfull kc-hero-ultimate" style="padding-top:60px;padding-bottom:60px;min-height:78vh">
   <span aria-hidden="true" class="wp-block-cover__background has-background-dim-0 has-background-dim has-background-gradient" style="background:linear-gradient(90deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0) 100%)"></span>
   <img class="wp-block-cover__image-background" alt="" data-object-fit="cover" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/AdobeStock_884069741-scaled.jpeg"/>
   <div class="wp-block-cover__inner-container">
-    <!-- wp:group {"layout":{"type":"constrained","contentSize":"1900px"}} -->
+    <!-- wp:group {"layout":{"type":"constrained","contentSize":"1900px"},"className":"kc-hero-wrap"} -->
     <div class="wp-block-group kc-hero-wrap">
-      <div class="kc-float a"></div>
-      <div class="kc-float b"></div>
+      <!-- decorative floats (optional) -->
+      <div class="kc-float a" aria-hidden="true"></div>
+      <div class="kc-float b" aria-hidden="true"></div>
 
-      <!-- wp:group {"className":"kc-hero-flex","layout":{"type":"flex","justifyContent":"space-between","flexWrap":"nowrap"}} -->
+      <!-- wp:group {"className":"kc-hero-flex","layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"space-between","orientation":"horizontal"}} -->
       <div class="wp-block-group kc-hero-flex">
         <!-- wp:group {"className":"kc-hero-left","layout":{"type":"flex","orientation":"vertical"}} -->
         <div class="wp-block-group kc-hero-left">
@@ -68,13 +69,31 @@
               </div>
               <!-- /wp:button -->
             </div>
-            <!-- /wp:cover -->
+            <!-- /wp:buttons -->
+          </div>
+          <!-- /wp:group -->
+        </div>
+        <!-- /wp:group -->
+
+        <!-- wp:group {"className":"kc-hero-right","layout":{"type":"constrained"}} -->
+        <div class="wp-block-group kc-hero-right">
+          <!-- wp:html -->
+          <div class="kc-materials-card">
+            <h3 class="kc-materials-heading"><?php esc_html_e( 'Shop by Material', 'kadence-child' ); ?></h3>
+            <div class="kc-material-grid">
+              <a class="kc-chip kc-chip-quartz" href="/products/quartz/">Quartz</a>
+              <a class="kc-chip kc-chip-stone" href="/products/natural-stone/">Natural Stone</a>
+              <a class="kc-chip kc-chip-solid" href="/products/solid-surface/">Solid Surface</a>
+              <a class="kc-chip kc-chip-ultra" href="/products/ultra-compact/">Ultra Compact</a>
+              <a class="kc-chip kc-chip-laminate" href="/products/laminate/">Laminate</a>
+              <a class="kc-chip kc-chip-sinks" href="/products/sinks/">Sinks</a>
+            </div>
+          </div>
+          <!-- /wp:html -->
         </div>
         <!-- /wp:group -->
       </div>
       <!-- /wp:group -->
-
-  <!-- Carousel section removed -->
 
       <div class="kc-scroll-cue" aria-hidden="true"><?php esc_html_e( 'Scroll', 'kadence-child' ); ?></div>
     </div>
