@@ -38,6 +38,17 @@ add_action( 'wp_enqueue_scripts', function() {
         true
       );
     }
+    // Basic fallback script (for debugging environment issues). Will run only if markup uses .kc-basic-ring
+    $carousel_basic = get_stylesheet_directory() . '/assets/js/carousel-3d-ring-basic.js';
+    if ( file_exists( $carousel_basic ) ) {
+      wp_enqueue_script(
+        'kc-carousel-3d-ring-basic',
+        get_stylesheet_directory_uri() . '/assets/js/carousel-3d-ring-basic.js',
+        array(),
+        filemtime( $carousel_basic ),
+        true
+      );
+    }
 
   // Core child theme scripts
   wp_enqueue_script(
