@@ -115,42 +115,54 @@ add_action( 'init', function() {
 // Custom loader: WP core only auto-registers static patterns in /patterns that have no PHP executing inside the markup.
 // Our patterns include PHP i18n calls (esc_html_e / printf), so we parse header comments and register them manually.
 add_action( 'init', function() {
+  if ( ! function_exists( 'register_block_pattern' ) ) { return; }
   $dir = get_theme_file_path( 'patterns' );
   if ( ! is_dir( $dir ) ) { return; }
+
+  // Silence errors locally so one bad pattern file cannot white‑screen the site.
   foreach ( glob( $dir . '/*.php' ) as $file ) {
-    $contents = file_get_contents( $file );
-    if ( false === $contents ) { continue; }
-    // Extract header meta (Title, Slug, Categories, Description) like WP core does for pattern files.
-    $header = array(
-      'title'       => '',
-      'slug'        => '',
-      'categories'  => array(),
-      'description' => '',
-    );
-    foreach ( array( 'Title' => 'title', 'Slug' => 'slug', 'Categories' => 'categories', 'Description' => 'description' ) as $label => $key ) {
-      if ( preg_match( '/^\s*\*\s+' . preg_quote( $label, '/' ) . ':\s*(.+)$/mi', $contents, $m ) ) {
-        $val = trim( $m[1] );
-        if ( 'categories' === $key ) {
-          $header[ $key ] = array_map( 'trim', explode( ',', strtolower( $val ) ) );
-        } else {
-          $header[ $key ] = $val;
+    try {
+      $contents = file_get_contents( $file );
+      if ( false === $contents ) { continue; }
+      $header = array( 'title' => '', 'slug' => '', 'categories' => array(), 'description' => '' );
+      foreach ( array( 'Title' => 'title', 'Slug' => 'slug', 'Categories' => 'categories', 'Description' => 'description' ) as $label => $key ) {
+        if ( preg_match( '/^\s*\*\s+' . preg_quote( $label, '/' ) . ':\s*(.+)$/mi', $contents, $m ) ) {
+          $val = trim( $m[1] );
+            if ( 'categories' === $key ) {
+              $parts = array_filter( array_map( 'trim', explode( ',', strtolower( $val ) ) ) );
+              $header[ $key ] = $parts;
+            } else {
+              $header[ $key ] = $val;
+            }
         }
       }
-    }
-    if ( empty( $header['slug'] ) || empty( $header['title'] ) ) { continue; }
-    if ( ! str_starts_with( $header['slug'], 'kadence-child/' ) ) { continue; }
-    ob_start();
-    include $file; // Executes PHP (for translation functions) and outputs pattern markup.
-    $content = trim( ob_get_clean() );
-    if ( empty( $content ) ) { continue; }
-    // Avoid duplicate registration.
-    if ( function_exists( 'register_block_pattern' ) && ! WP_Block_Patterns_Registry::get_instance()->is_registered( $header['slug'] ) ) {
-      register_block_pattern( $header['slug'], array(
-        'title'       => $header['title'],
-        'description' => $header['description'],
-        'categories'  => $header['categories'],
-        'content'     => $content,
-      ) );
+      if ( empty( $header['slug'] ) || empty( $header['title'] ) ) { continue; }
+      if ( strpos( $header['slug'], 'kadence-child/' ) !== 0 ) { continue; }
+      ob_start();
+      include $file; // Executes PHP (for translation functions) and outputs pattern markup.
+      $content = trim( ob_get_clean() );
+      if ( empty( $content ) ) { continue; }
+      $registry = class_exists( 'WP_Block_Patterns_Registry' ) ? WP_Block_Patterns_Registry::get_instance() : null;
+      if ( ! $registry ) { continue; }
+      $already = false;
+      if ( method_exists( $registry, 'is_registered' ) ) {
+        $already = $registry->is_registered( $header['slug'] );
+      } elseif ( method_exists( $registry, 'get_registered' ) ) {
+        $already = ( null !== $registry->get_registered( $header['slug'] ) );
+      }
+      if ( ! $already ) {
+        register_block_pattern( $header['slug'], array(
+          'title'       => $header['title'],
+          'description' => $header['description'],
+          'categories'  => $header['categories'],
+          'content'     => $content,
+        ) );
+      }
+    } catch ( Throwable $e ) {
+      if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        error_log( 'Pattern load failure (' . basename( $file ) . '): ' . $e->getMessage() );
+      }
+      // Continue safely.
     }
   }
 }, 11 );
