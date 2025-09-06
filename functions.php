@@ -23,15 +23,14 @@ if ( ! function_exists( 'str_starts_with' ) ) {
 /*--------------------------------------------------------------
 | ASSETS
 --------------------------------------------------------------*/
-add_action( 'wp_enqueue_scripts', function() {
-  $ver = kc_get_theme_version();
-  wp_enqueue_style( 'kadence-child', get_stylesheet_uri(), array( 'kadence-theme' ), $ver );
-  wp_enqueue_style( 'kc-header', get_stylesheet_directory_uri() . '/assets/css/header.css', array(), $ver );
-  wp_enqueue_script( 'kc-header', get_stylesheet_directory_uri() . '/assets/js/header.js', array(), $ver, true );
-  wp_enqueue_script( 'kadence-child-js', get_stylesheet_directory_uri() . '/assets/child.js', array(), $ver, true );
-  wp_enqueue_script( 'kc-hero-motion', get_stylesheet_directory_uri() . '/assets/js/hero-ultimate-motion.js', array(), $ver, true );
-  wp_localize_script( 'kc-header', 'KC_HEADER', array( 'stickyOffset' => 64 ) );
-}, 20 );
+// Simple file-based version (cache bust on change) with fallback to theme version.
+if ( ! function_exists( 'kc_asset_ver' ) ) {
+  function kc_asset_ver( $rel_path ) {
+    $file = get_stylesheet_directory() . '/' . ltrim( $rel_path, '/' );
+    $mtime = file_exists( $file ) ? filemtime( $file ) : false;
+    return $mtime ? (string) $mtime : kc_get_theme_version();
+  }
+}
 
 /*--------------------------------------------------------------
 | THEME SETUP
@@ -116,75 +115,18 @@ add_action( 'wp_body_open', function() {
  * Enqueue child + header assets
  */
 add_action( 'wp_enqueue_scripts', function() {
-  $theme_version = kc_get_theme_version();
-  // Ensure child stylesheet after parent
-  wp_enqueue_style( 'kadence-child', get_stylesheet_uri(), array( 'kadence-theme' ), $theme_version );
+  // Styles
+  wp_enqueue_style( 'kadence-child', get_stylesheet_uri(), array( 'kadence-theme' ), kc_asset_ver( 'style.css' ) );
+  wp_enqueue_style( 'kc-header', get_stylesheet_directory_uri() . '/assets/css/header.css', array(), kc_asset_ver( 'assets/css/header.css' ) );
+  wp_enqueue_style( 'kc-carousel-adv', get_stylesheet_directory_uri() . '/assets/css/carousel-adv.css', array(), kc_asset_ver( 'assets/css/carousel-adv.css' ) );
 
-  // Header assets
-  wp_enqueue_style(
-    'kc-header',
-    get_stylesheet_directory_uri() . '/assets/css/header.css',
-    array(),
-    $theme_version
-  );
-  wp_enqueue_script(
-    'kc-header',
-    get_stylesheet_directory_uri() . '/assets/js/header.js',
-    array(),
-    $theme_version,
-    true
-  );
+  // Scripts
+  wp_enqueue_script( 'kc-header', get_stylesheet_directory_uri() . '/assets/js/header.js', array(), kc_asset_ver( 'assets/js/header.js' ), true );
+  wp_enqueue_script( 'kadence-child-js', get_stylesheet_directory_uri() . '/assets/child.js', array(), kc_asset_ver( 'assets/child.js' ), true );
+  wp_enqueue_script( 'kc-hero-motion', get_stylesheet_directory_uri() . '/assets/js/hero-ultimate-motion.js', array(), kc_asset_ver( 'assets/js/hero-ultimate-motion.js' ), true );
+  wp_enqueue_script( 'kc-carousel-adv', get_stylesheet_directory_uri() . '/assets/js/carousel-adv.js', array(), kc_asset_ver( 'assets/js/carousel-adv.js' ), true );
 
-  // Core child theme scripts
-  wp_enqueue_script(
-    'kadence-child-js',
-    get_stylesheet_directory_uri() . '/assets/child.js',
-    array(),
-    $theme_version,
-    true
-  );
-  wp_enqueue_script(
-    'kc-hero-motion',
-    get_stylesheet_directory_uri() . '/assets/js/hero-ultimate-motion.js',
-    array(),
-    $theme_version,
-    true
-  );
-
-  // 3D advanced carousel assets (used in hero pattern)
-  wp_enqueue_style(
-    'kc-carousel-adv',
-    get_stylesheet_directory_uri() . '/assets/css/carousel-adv.css',
-    array(),
-    $theme_version
-  );
-  wp_enqueue_script(
-    'kc-carousel-adv',
-    get_stylesheet_directory_uri() . '/assets/js/carousel-adv.js',
-    array(),
-    $theme_version,
-    true
-  );
-
-  // 3D advanced carousel assets (used in hero pattern)
-  wp_enqueue_style(
-    'kc-carousel-adv',
-    get_stylesheet_directory_uri() . '/assets/css/carousel-adv.css',
-    array(),
-    $theme_version
-  );
-  wp_enqueue_script(
-    'kc-carousel-adv',
-    get_stylesheet_directory_uri() . '/assets/js/carousel-adv.js',
-    array(),
-    $theme_version,
-    true
-  );
-
-  // Pass settings to JS
-  wp_localize_script( 'kc-header', 'KC_HEADER', array(
-    'stickyOffset' => 64,
-  ) );
+  wp_localize_script( 'kc-header', 'KC_HEADER', array( 'stickyOffset' => 64 ) );
 }, 20 );
 
 /**
