@@ -112,60 +112,9 @@ add_action( 'init', function() {
 }, 8 );
 
 // Removed old manual loader for inc/patterns/*.php (now relying on core /patterns auto-registration).
-// Custom loader: WP core only auto-registers static patterns in /patterns that have no PHP executing inside the markup.
-// Our patterns include PHP i18n calls (esc_html_e / printf), so we parse header comments and register them manually.
-add_action( 'init', function() {
-  if ( ! function_exists( 'register_block_pattern' ) ) { return; }
-  $dir = get_theme_file_path( 'patterns' );
-  if ( ! is_dir( $dir ) ) { return; }
-
-  // Silence errors locally so one bad pattern file cannot white‑screen the site.
-  foreach ( glob( $dir . '/*.php' ) as $file ) {
-    try {
-      $contents = file_get_contents( $file );
-      if ( false === $contents ) { continue; }
-      $header = array( 'title' => '', 'slug' => '', 'categories' => array(), 'description' => '' );
-      foreach ( array( 'Title' => 'title', 'Slug' => 'slug', 'Categories' => 'categories', 'Description' => 'description' ) as $label => $key ) {
-        if ( preg_match( '/^\s*\*\s+' . preg_quote( $label, '/' ) . ':\s*(.+)$/mi', $contents, $m ) ) {
-          $val = trim( $m[1] );
-            if ( 'categories' === $key ) {
-              $parts = array_filter( array_map( 'trim', explode( ',', strtolower( $val ) ) ) );
-              $header[ $key ] = $parts;
-            } else {
-              $header[ $key ] = $val;
-            }
-        }
-      }
-      if ( empty( $header['slug'] ) || empty( $header['title'] ) ) { continue; }
-      if ( strpos( $header['slug'], 'kadence-child/' ) !== 0 ) { continue; }
-      ob_start();
-      include $file; // Executes PHP (for translation functions) and outputs pattern markup.
-      $content = trim( ob_get_clean() );
-      if ( empty( $content ) ) { continue; }
-      $registry = class_exists( 'WP_Block_Patterns_Registry' ) ? WP_Block_Patterns_Registry::get_instance() : null;
-      if ( ! $registry ) { continue; }
-      $already = false;
-      if ( method_exists( $registry, 'is_registered' ) ) {
-        $already = $registry->is_registered( $header['slug'] );
-      } elseif ( method_exists( $registry, 'get_registered' ) ) {
-        $already = ( null !== $registry->get_registered( $header['slug'] ) );
-      }
-      if ( ! $already ) {
-        register_block_pattern( $header['slug'], array(
-          'title'       => $header['title'],
-          'description' => $header['description'],
-          'categories'  => $header['categories'],
-          'content'     => $content,
-        ) );
-      }
-    } catch ( Throwable $e ) {
-      if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        error_log( 'Pattern load failure (' . basename( $file ) . '): ' . $e->getMessage() );
-      }
-      // Continue safely.
-    }
-  }
-}, 11 );
+// Removed custom manual loader. Relying on core pattern auto-discovery (child + parent /patterns directory).
+// Pattern PHP files begin with a header comment (Title, Slug, Categories, Description) then close PHP and emit markup.
+// Translation calls inside markup are executed when core includes the file, so manual buffering is unnecessary.
 
 // Removed legacy fallback auto-registration (now using only explicit inc/patterns/*.php loaders).
 
@@ -175,18 +124,17 @@ add_action( 'init', function() {
  */
 add_action( 'admin_notices', function() {
   if ( ! current_user_can( 'manage_options' ) ) { return; }
+  if ( empty( $_GET['kc_patterns_debug'] ) ) { return; }
   if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) {
     echo '<div class="notice notice-error"><p>Block Patterns Registry unavailable.</p></div>';
     return;
   }
   $registry = WP_Block_Patterns_Registry::get_instance();
-  $all = $registry->get_all_registered();
   $rows = array();
-  foreach ( $all as $slug => $data ) {
+  foreach ( $registry->get_all_registered() as $slug => $data ) {
     if ( str_starts_with( $slug, 'kadence-child/' ) ) {
-      $cats = isset( $data['categories'] ) ? implode( ',', (array) $data['categories'] ) : '';
-      $rows[] = esc_html( $slug . ' — ' . $data['title'] . ' [' . $cats . ']' );
+      $rows[] = esc_html( $slug . ' — ' . $data['title'] );
     }
   }
-  echo '<div class="notice notice-info"><p><strong>Kadence Child Patterns Registered (' . count( $rows ) . '):</strong><br>' . ( $rows ? implode( '<br>', $rows ) : 'None registered' ) . '</p></div>';
+  echo '<div class="notice notice-info"><p><strong>Kadence Child Patterns (' . count( $rows ) . '):</strong><br>' . ( $rows ? implode( '<br>', $rows ) : 'None registered' ) . '</p></div>';
 } );
