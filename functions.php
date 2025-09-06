@@ -159,3 +159,32 @@ add_action( 'admin_notices', function() {
   }
   echo '<div class="notice notice-info"><p><strong>Kadence Child Patterns (' . count( $rows ) . '):</strong><br>' . ( $rows ? implode( '<br>', $rows ) : 'None registered' ) . '</p></div>';
 } );
+
+/**
+ * Legacy Advanced Carousel Cleanup
+ * Earlier versions of the advanced carousel pattern inlined large <style> + <script> blocks.
+ * Those blocks were persisted into page/post content when the pattern was inserted.
+ * We now provide external assets, so we strip only those obsolete blocks at render time
+ * to prevent duplicate logic & JS parse errors ("Unexpected token <").
+ * Disable by defining KC_DISABLE_ADV_CAROUSEL_CLEANUP true if ever needed.
+ */
+add_filter( 'the_content', function( $content ) {
+  if ( defined( 'KC_DISABLE_ADV_CAROUSEL_CLEANUP' ) && KC_DISABLE_ADV_CAROUSEL_CLEANUP ) { return $content; }
+  // Fast-fail: only proceed if signature classes appear AND an inline style tag exists.
+  if ( strpos( $content, 'kc-adv-stage-wrap' ) === false ) { return $content; }
+  if ( strpos( $content, '<style' ) === false && strpos( $content, '<script' ) === false ) { return $content; }
+
+  $original = $content;
+  $patterns = array(
+    // Style block containing our legacy advanced carousel declarations.
+    '~<style[^>]*>[^<]*?:root\\{--spin-seconds.*?kc-adv-controls.*?</style>~is',
+    // Script block containing legacy inline IIFE referencing kc-adv-panel & rotateY.
+    '~<script[^>]*>[^<]*?const\\s+panel[^<]*?kc-adv-panel.*?tiles\\.forEach.*?</script>~is',
+  );
+  $content = preg_replace( $patterns, '', $content );
+  // Optional: if changed, we can add an HTML comment once (avoid duplication) to aid debugging.
+  if ( $content !== $original ) {
+    $content .= "\n<!-- kc-adv-carousel: legacy inline assets stripped -->";
+  }
+  return $content;
+}, 5 );
