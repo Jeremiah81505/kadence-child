@@ -1,0 +1,1 @@
+Deprecated carousel pattern placeholders relocated here to avoid /patterns auto-discovery.
