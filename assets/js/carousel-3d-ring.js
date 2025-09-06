@@ -33,6 +33,24 @@
     const fallback = stage.parentElement.querySelector('.es-fallback');
     const tiles = Array.from(ring.querySelectorAll('.es-tile')); if(!tiles.length) return;
 
+    // Defensive: if markup accidentally duplicated (two identical logo sequences), dedupe by src order.
+    const seen = new Set();
+    tiles.forEach(t=>{
+      const img = t.querySelector('img');
+      if(!img) return;
+      const key = img.getAttribute('src');
+      if(seen.has(key)) {
+        // Remove duplicate tile from DOM.
+        t.parentNode.removeChild(t);
+      } else {
+        seen.add(key);
+      }
+    });
+
+    // Re-acquire tiles after potential removals.
+    const tilesClean = Array.from(ring.querySelectorAll('.es-tile'));
+    if(!tilesClean.length) return;
+
   stage.setAttribute('role','region'); if(!stage.hasAttribute('aria-label')) stage.setAttribute('aria-label','Logo carousel');
   if(!stage.classList.contains('es-stage')) { console.warn('[Carousel3D] Stage missing base class expectations'); }
   const can3D = supports3D() && !reduceMQ.matches;
@@ -46,12 +64,12 @@
     let tileSize = parseInt(ring.dataset.size)||120;
     ring.style.setProperty('--tile-size', tileSize+'px');
 
-    const tileAngles = tiles.map((_,i)=> i*(360/tiles.length));
+  const tileAngles = tilesClean.map((_,i)=> i*(360/tilesClean.length));
     let radius=0; // resolved later
 
     function layout(){
       if(!document.body.contains(ring)){ return; }
-      const count = tiles.length;
+  const count = tilesClean.length;
       // Derive radius: prefer fixed if provided, else proportional to tile count.
       const ideal = (tileSize*count)/(2*Math.PI); // radius for circumference ~ count*tileSize
       radius = fixedRadius || Math.max(tileSize*1.8, Math.min(ideal*1.05, tileSize*count*0.9));
@@ -59,7 +77,7 @@
       radius = Math.min(radius, 900);
       stage.style.height = Math.max(tileSize*2.2, radius*0.95 + tileSize*0.9) + 'px';
       ring.style.position='absolute'; ring.style.top='50%'; ring.style.left='50%'; ring.style.transformStyle='preserve-3d';
-  tiles.forEach((tile,i)=>{
+  tilesClean.forEach((tile,i)=>{
         tile.style.position='absolute';
         tile.style.width=tileSize+'px'; tile.style.height=tileSize+'px';
         tile.style.top='50%'; tile.style.left='50%';
@@ -75,7 +93,7 @@
 
     let start = performance.now();
     let paused=false, offscreen=false;
-    ring.tabIndex=0;
+  ring.tabIndex=0;
     ring.addEventListener('mouseenter',()=>paused=true);
     ring.addEventListener('mouseleave',()=>paused=false);
     ring.addEventListener('keydown', e=>{ if(e.key==='ArrowLeft'||e.key==='Left'){ start-=speed*180; e.preventDefault(); } else if(e.key==='ArrowRight'||e.key==='Right'){ start+=speed*180; e.preventDefault(); }});
@@ -90,8 +108,8 @@
   // Keep ring centered: translateZ(-radius) recenters pivot so tiles form a ring around center
   ring.style.transform = 'translate(-50%, -50%) rotateX('+tilt+'deg) translateZ(-'+radius+'px) rotateY('+deg+'deg)';
         // Depth emphasis per tile
-        for(let i=0;i<tiles.length;i++){
-          const t=tiles[i];
+        for(let i=0;i<tilesClean.length;i++){
+          const t=tilesClean[i];
             let diff = ( (tileAngles[i]-deg+540)%360 )-180; // -180..180 (0 is front)
             const front = Math.abs(diff) <= 90; // only scale visibly on front half
             const closeness = 1 - Math.min(1, Math.abs(diff)/120);
@@ -99,6 +117,7 @@
             const op = front ? 0.35 + 0.65 * Math.pow(closeness,1.6) : 0.12;
             t.style.transform = 'rotateY('+tileAngles[i]+'deg) translateZ('+radius+'px) scale('+scale.toFixed(3)+')';
             t.style.opacity = op.toFixed(3);
+            if(front) t.classList.add('is-front'); else t.classList.remove('is-front');
         }
       }
       requestAnimationFrame(frame);
@@ -108,8 +127,15 @@
     // Debounced resize: re-measure (respect fixedRadius if provided)
     let to; window.addEventListener('resize',()=>{ clearTimeout(to); to=setTimeout(()=>{ fixedRadius = parseFloat(ring.dataset.radius)||0; layout(); },120); });
 
+  // Allow external styling for fixed width: stage can opt-in via data-fullwidth
+  if(stage && !stage.dataset.fullwidthApplied){
+    stage.style.maxWidth = '1920px';
+    stage.style.marginLeft = 'auto';
+    stage.style.marginRight = 'auto';
+    stage.dataset.fullwidthApplied = '1';
+  }
   stage.dispatchEvent(new CustomEvent('esRingReady',{detail:{ring}}));
-  console.debug('[Carousel3D] Initialized ring with', {tiles: tiles.length, radius, speed, tilt, tileSize});
+  console.debug('[Carousel3D] Initialized ring with', {tiles: tilesClean.length, radius, speed, tilt, tileSize});
   }
 
   // Observe late-added rings
