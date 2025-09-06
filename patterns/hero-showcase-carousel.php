@@ -54,7 +54,7 @@
     <!-- wp:group {"className":"kc-ring-inline","layout":{"type":"constrained","contentSize":"1900px"}} -->
     <div class="wp-block-group kc-ring-inline">
       <div class="es-stage">
-        <div class="es-ring" data-radius="560" data-speed="30" data-tilt="8">
+  <div class="es-ring" data-speed="32" data-tilt="10" data-size="120">
           <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Wilsonart-01.png" alt="Wilsonart" /></div>
           <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vicostone-01.png" alt="Vicostone" /></div>
           <div class="es-tile"><img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Viatera-01.png" alt="Viatera" /></div>
@@ -125,10 +125,8 @@
 .kc-pill--ghost:hover{background:rgba(255,255,255,.22);} 
 /* Ring inline adjustments */
 .kc-ring-inline{margin-top:24px;}
-.kc-ring-inline .es-stage{position:relative;perspective:2200px;perspective-origin:50% 50%;width:100%;height:420px;}
-.kc-ring-inline .es-ring{position:absolute;top:50%;left:50%;transform-style:preserve-3d;}
-.kc-ring-inline .es-tile{width:140px;height:140px;display:flex;align-items:center;justify-content:center;}
-.kc-ring-inline .es-tile img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,.45));}
+.kc-ring-inline .es-stage{height:440px;}
+.kc-ring-inline .es-tile img{filter:drop-shadow(0 4px 12px rgba(0,0,0,.45));}
 @media (max-width:960px){.kc-hero-grid{flex-direction:column;}.kc-hero-right{grid-template-columns:repeat(3,1fr);}.kc-ring-inline .es-stage{height:360px;}}
 @media (max-width:640px){.kc-hero-right{grid-template-columns:repeat(2,1fr);} .kc-ring-inline .es-stage{height:320px;} }
 /* Motion preference */
