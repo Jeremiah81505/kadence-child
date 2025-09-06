@@ -27,27 +27,30 @@ add_action( 'wp_enqueue_scripts', function() {
     true
   );
     // 3D Carousel Ring JS
-    // 3D Carousel Ring JS (cache-busted)
-    $carousel_file = get_stylesheet_directory() . '/assets/js/carousel-3d-ring.js';
-    if ( file_exists( $carousel_file ) ) {
-      wp_enqueue_script(
-        'kc-carousel-3d-ring',
-        get_stylesheet_directory_uri() . '/assets/js/carousel-3d-ring.js',
-        array(),
-        filemtime( $carousel_file ),
-        true
-      );
-    }
-    // Basic fallback script (for debugging environment issues). Will run only if markup uses .kc-basic-ring
-    $carousel_basic = get_stylesheet_directory() . '/assets/js/carousel-3d-ring-basic.js';
-    if ( file_exists( $carousel_basic ) ) {
-      wp_enqueue_script(
-        'kc-carousel-3d-ring-basic',
-        get_stylesheet_directory_uri() . '/assets/js/carousel-3d-ring-basic.js',
-        array(),
-        filemtime( $carousel_basic ),
-        true
-      );
+    // Allow emergency disabling of carousel scripts (define KC_DISABLE_CAROUSEL true in wp-config.php)
+    if ( ! defined( 'KC_DISABLE_CAROUSEL' ) || ! KC_DISABLE_CAROUSEL ) {
+      // 3D Carousel Ring JS (cache-busted)
+      $carousel_file = get_stylesheet_directory() . '/assets/js/carousel-3d-ring.js';
+      if ( file_exists( $carousel_file ) ) {
+        wp_enqueue_script(
+          'kc-carousel-3d-ring',
+          get_stylesheet_directory_uri() . '/assets/js/carousel-3d-ring.js',
+          array(),
+          filemtime( $carousel_file ),
+          true
+        );
+      }
+      // Basic fallback script (for debugging environment issues). Will run only if markup uses .kc-basic-ring
+      $carousel_basic = get_stylesheet_directory() . '/assets/js/carousel-3d-ring-basic.js';
+      if ( file_exists( $carousel_basic ) ) {
+        wp_enqueue_script(
+          'kc-carousel-3d-ring-basic',
+          get_stylesheet_directory_uri() . '/assets/js/carousel-3d-ring-basic.js',
+          array(),
+          filemtime( $carousel_basic ),
+          true
+        );
+      }
     }
 
   // Core child theme scripts
