@@ -80,22 +80,22 @@ add_action( 'init', function() {
  * Optional on-demand debug: add ?kc_patterns_debug=1 to any admin page to see
  * a list of registered Kadence Child patterns & categories.
  */
-add_action( 'admin_notices', function() {
-  if ( ! current_user_can( 'manage_options' ) ) { return; }
-  if ( empty( $_GET['kc_patterns_debug'] ) ) { return; }
-  if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) {
-    echo '<div class="notice notice-error"><p>Block Patterns Registry unavailable.</p></div>';
-    return;
-  }
-  $registry = WP_Block_Patterns_Registry::get_instance();
-  $rows = array();
-  foreach ( $registry->get_all_registered() as $slug => $data ) {
-    if ( str_starts_with( $slug, 'kadence-child/' ) ) {
-      $rows[] = esc_html( $slug . ' — ' . $data['title'] );
-    }
-  }
-  echo '<div class="notice notice-info"><p><strong>Kadence Child Patterns (' . count( $rows ) . '):</strong><br>' . ( $rows ? implode( '<br>', $rows ) : 'None registered' ) . '</p></div>';
-} );
+// Lightweight optional pattern debug: enable by defining KC_DEBUG_PATTERNS true and visiting /wp-admin/?kc_patterns_debug=1
+if ( defined( 'KC_DEBUG_PATTERNS' ) && KC_DEBUG_PATTERNS ) {
+  add_action( 'admin_init', function() {
+    if ( empty( $_GET['kc_patterns_debug'] ) || ! current_user_can( 'manage_options' ) ) { return; }
+    if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) { require_once ABSPATH . 'wp-includes/class-wp-block-patterns-registry.php'; }
+    add_action( 'admin_notices', function() {
+      if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) { echo '<div class="notice notice-error"><p>Block Patterns Registry unavailable.</p></div>'; return; }
+      $registry = WP_Block_Patterns_Registry::get_instance();
+      $rows = array();
+      foreach ( $registry->get_all_registered() as $slug => $data ) {
+        if ( str_starts_with( $slug, 'kadence-child/' ) ) { $rows[] = esc_html( $slug . ' — ' . $data['title'] ); }
+      }
+      echo '<div class="notice notice-info"><p><strong>Kadence Child Patterns (' . count( $rows ) . '):</strong><br>' . ( $rows ? implode( '<br>', $rows ) : 'None registered' ) . '</p></div>';
+    } );
+  } );
+}
 
 /**
  * Hard cleanup: strip any residual inline carousel markup (ring / adv) left in stored post content.
