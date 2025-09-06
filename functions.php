@@ -1,18 +1,8 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-require_once get_theme_file_path( 'utils.php' );
+require_once get_theme_file_path( 'utils.php' ); // Provides kc_get_theme_version()
 require_once get_theme_file_path( 'inc/customizer.php' );
-
-/**
- * Returns the current theme version.
- *
- * @return string Theme version string.
- */
-function kc_get_theme_version() {
-    $theme = wp_get_theme();
-    return $theme->get('Version');
-}
 
 /**
  * Enqueue child + header assets
@@ -70,3 +60,13 @@ add_action( 'wp_enqueue_scripts', function() {
 // Removed legacy automatic raw file registration of patterns.
 // We now explicitly register patterns via buffered includes in inc/patterns/*.php
 // to ensure clean markup (no PHP headers) and proper titles/descriptions.
+
+// Load pattern registration scripts (each script buffers and registers a pattern).
+add_action( 'init', function() {
+  $pattern_files = glob( get_theme_file_path( 'inc/patterns/*.php' ) );
+  if ( ! empty( $pattern_files ) ) {
+    foreach ( $pattern_files as $file ) {
+      require_once $file;
+    }
+  }
+}, 9 );
