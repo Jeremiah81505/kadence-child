@@ -105,11 +105,12 @@ if ( ! class_exists( 'KC_Primary_Walker' ) ) {
           <svg aria-hidden="true" class="kc-ico"><use href="#ico-search"></use></svg>
         </button>
 
-        <?php if ( $has_woo ) : ?>
-          <a class="kc-cart" href="<?php echo esc_url( wc_get_cart_url() ); ?>" aria-label="Cart">
+        <?php if ( $has_woo && function_exists( 'WC' ) && WC() && WC()->cart ) : ?>
+          <?php $kc_cart_count = (int) WC()->cart->get_cart_contents_count(); ?>
+          <a class="kc-cart" href="<?php echo esc_url( wc_get_cart_url() ); ?>" aria-label="<?php esc_attr_e( 'Cart', 'kadence-child' ); ?>">
             <svg aria-hidden="true" class="kc-ico"><use href="#ico-cart"></use></svg>
-            <span class="kc-cart-count" data-count="<?php echo esc_attr( WC()->cart->get_cart_contents_count() ); ?>">
-              <?php echo esc_html( WC()->cart->get_cart_contents_count() ); ?>
+            <span class="kc-cart-count" data-count="<?php echo esc_attr( $kc_cart_count ); ?>">
+              <?php echo esc_html( $kc_cart_count ); ?>
             </span>
           </a>
         <?php endif; ?>
