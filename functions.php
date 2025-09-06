@@ -1,3 +1,92 @@
+<?php
+/**
+ * Kadence Child Theme core functions (repaired).
+ */
+if ( ! defined( 'ABSPATH' ) ) { exit; }
+
+// Utilities (version helper, etc.)
+if ( file_exists( get_theme_file_path( 'utils.php' ) ) ) {
+  require_once get_theme_file_path( 'utils.php' );
+}
+if ( ! function_exists( 'kc_get_theme_version' ) ) {
+  function kc_get_theme_version() { return wp_get_theme()->get( 'Version' ); }
+}
+
+// PHP 8 polyfill (older hosts)
+if ( ! function_exists( 'str_starts_with' ) ) {
+  function str_starts_with( $haystack, $needle ) {
+    if ( $needle === '' ) { return true; }
+    return strpos( $haystack, $needle ) === 0;
+  }
+}
+
+/*--------------------------------------------------------------
+| ASSETS
+--------------------------------------------------------------*/
+add_action( 'wp_enqueue_scripts', function() {
+  $ver = kc_get_theme_version();
+  wp_enqueue_style( 'kadence-child', get_stylesheet_uri(), array( 'kadence-theme' ), $ver );
+  wp_enqueue_style( 'kc-header', get_stylesheet_directory_uri() . '/assets/css/header.css', array(), $ver );
+  wp_enqueue_script( 'kc-header', get_stylesheet_directory_uri() . '/assets/js/header.js', array(), $ver, true );
+  wp_enqueue_script( 'kadence-child-js', get_stylesheet_directory_uri() . '/assets/child.js', array(), $ver, true );
+  wp_enqueue_script( 'kc-hero-motion', get_stylesheet_directory_uri() . '/assets/js/hero-ultimate-motion.js', array(), $ver, true );
+  wp_localize_script( 'kc-header', 'KC_HEADER', array( 'stickyOffset' => 64 ) );
+}, 20 );
+
+/*--------------------------------------------------------------
+| THEME SETUP
+--------------------------------------------------------------*/
+add_action( 'after_setup_theme', function() {
+  load_child_theme_textdomain( 'kadence-child', get_stylesheet_directory() . '/languages' );
+  add_theme_support( 'title-tag' );
+} );
+
+/*--------------------------------------------------------------
+| PATTERN CATEGORIES
+--------------------------------------------------------------*/
+add_action( 'init', function() {
+  if ( ! function_exists( 'register_block_pattern_category' ) ) { return; }
+  register_block_pattern_category( 'kadence-child', array( 'label' => __( 'Kadence Child', 'kadence-child' ) ) );
+  register_block_pattern_category( 'elevated', array( 'label' => __( 'Elevated', 'kadence-child' ) ) );
+  register_block_pattern_category( 'featured', array( 'label' => __( 'Featured', 'kadence-child' ) ) );
+}, 8 );
+
+/*--------------------------------------------------------------
+| OPTIONAL DEBUG (opt‑in with constant + query parameter)
+--------------------------------------------------------------*/
+if ( defined( 'KC_DEBUG_PATTERNS' ) && KC_DEBUG_PATTERNS ) {
+  add_action( 'admin_init', function() {
+    if ( empty( $_GET['kc_patterns_debug'] ) || ! current_user_can( 'manage_options' ) ) { return; }
+    if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) { require_once ABSPATH . 'wp-includes/class-wp-block-patterns-registry.php'; }
+    add_action( 'admin_notices', function() {
+      if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) { echo '<div class="notice notice-error"><p>Block Patterns Registry unavailable.</p></div>'; return; }
+      $reg = WP_Block_Patterns_Registry::get_instance();
+      $rows = array();
+      foreach ( $reg->get_all_registered() as $slug => $data ) {
+        if ( str_starts_with( $slug, 'kadence-child/' ) ) { $rows[] = esc_html( $slug . ' — ' . $data['title'] ); }
+      }
+      echo '<div class="notice notice-info"><p><strong>Kadence Child Patterns (' . count( $rows ) . ')</strong><br>' . ( $rows ? implode( '<br>', $rows ) : 'None registered' ) . '</p></div>';
+    } );
+  } );
+}
+
+/*--------------------------------------------------------------
+| FORCE UNREGISTER DEPRECATED PATTERNS
+--------------------------------------------------------------*/
+add_action( 'init', function() {
+  if ( ! function_exists( 'unregister_block_pattern' ) ) { return; }
+  foreach ( array(
+    'kadence-child/carousel-3d-ring',
+    'kadence-child/carousel-3d-ring-basic',
+    'kadence-child/carousel-3d-ring-v2',
+    'kadence-child/carousel-3d-ring-adv',
+    'kadence-child/hero-showcase-carousel'
+  ) as $slug ) {
+    unregister_block_pattern( $slug );
+  }
+}, 99 );
+
+// End of file.
 // Removed legacy carousel content scrubbing filter after full purge.
 
 /**
