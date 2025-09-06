@@ -1,50 +1,11 @@
-// 3D Logo Carousel – Ring
-// Rotates logos in a 3D ring, with autoplay and hover pause
+// 3D Logo Carousel – Ring (Enhanced)
+// Features: multi-instance support, visibility pause, reduced-motion fallback,
+// dynamic radius (if none specified), hover pause, per-instance fallback, a11y.
 
-document.addEventListener('DOMContentLoaded', function() {
-  var ring = document.querySelector('.es-ring');
-  if (!ring) return;
+(function() {
+  document.addEventListener('DOMContentLoaded', initAll);
 
-  var tiles = ring.querySelectorAll('.es-tile');
-  var speed = parseFloat(ring.dataset.speed) || 28; // seconds per revolution
-  var radius = parseFloat(ring.dataset.radius) || 560;
-  var tilt = parseFloat(ring.dataset.tilt) || 8;
-  var count = tiles.length;
-  var angleStep = 360 / count;
-  var start = Date.now();
-  var paused = false;
-
-  // Position tiles in a ring
-  tiles.forEach(function(tile, i) {
-    var angle = i * angleStep;
-    tile.style.position = 'absolute';
-    tile.style.transform =
-      'rotateY(' + angle + 'deg) translateZ(' + radius + 'px) rotateX(' + tilt + 'deg)';
-    tile.style.backfaceVisibility = 'hidden';
-  });
-  ring.style.position = 'relative';
-  ring.style.transformStyle = 'preserve-3d';
-  ring.style.height = (radius * 2 * 0.6) + 'px';
-
-  // Animate rotation
-  function animate() {
-    if (!paused) {
-      var elapsed = (Date.now() - start) / 1000;
-      var deg = (elapsed / speed) * 360 % 360;
-      ring.style.transform =
-        'translateZ(-' + radius + 'px) rotateY(' + deg + 'deg)';
-    }
-    requestAnimationFrame(animate);
-  }
-  animate();
-
-  // Pause on hover
-  ring.addEventListener('mouseenter', function() { paused = true; });
-  ring.addEventListener('mouseleave', function() { paused = false; });
-
-  // Show fallback if 3D not supported
-  var fallback = document.querySelector('.es-fallback');
-  var is3DSupported = (function() {
+  function supports3D() {
     var el = document.createElement('p');
     var has3d;
     var transforms = {
@@ -54,20 +15,116 @@ document.addEventListener('DOMContentLoaded', function() {
       'MozTransform':'-moz-transform',
       'transform':'transform'
     };
-    document.body.insertBefore(el, null);
-    for(var t in transforms){
-      if( el.style[t] !== undefined ){
+    document.body.appendChild(el);
+    for (var t in transforms) {
+      if (el.style[t] !== undefined) {
         el.style[t] = 'translateZ(1px)';
         has3d = window.getComputedStyle(el).getPropertyValue(transforms[t]);
+        break;
       }
     }
     document.body.removeChild(el);
-    return (has3d !== undefined && has3d.length > 0 && has3d !== 'none');
-  })();
-  if (!is3DSupported && fallback) {
-    fallback.classList.remove('is-hidden');
-    ring.parentNode.removeChild(ring);
-  } else if (fallback) {
-    fallback.classList.add('is-hidden');
+    return (has3d && has3d !== 'none');
   }
-});
+
+  function initAll() {
+    var rings = document.querySelectorAll('.es-ring');
+    if (!rings.length) return;
+    var enable3D = supports3D();
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    rings.forEach(function(ring, idx) {
+      initRing(ring, { enable3D: enable3D, reduce: reduce, index: idx });
+    });
+  }
+
+  function initRing(ring, ctx) {
+    var stage = ring.closest('.es-stage');
+    if (!stage) return;
+    var fallback = stage.parentElement.querySelector('.es-fallback');
+    var tiles = ring.querySelectorAll('.es-tile');
+    if (!tiles.length) return;
+
+    // Accessibility region labeling
+    stage.setAttribute('role', 'region');
+    stage.setAttribute('aria-label', stage.getAttribute('aria-label') || 'Logo carousel');
+    ring.setAttribute('aria-hidden', ctx.enable3D ? 'false' : 'true');
+
+    // Determine geometry
+    var speed = parseFloat(ring.dataset.speed) || 28; // seconds per revolution
+    var tilt = parseFloat(ring.dataset.tilt) || 8;
+    var radius = parseFloat(ring.dataset.radius);
+    if (!radius) {
+      // Derive from container width for responsiveness
+      var w = stage.clientWidth || 1200;
+      radius = Math.max(320, Math.min(680, w / 2.4));
+    }
+    var count = tiles.length;
+    var angleStep = 360 / count;
+
+    if (!ctx.enable3D || ctx.reduce) {
+      // Fallback: show grid
+      if (fallback) fallback.classList.remove('is-hidden');
+      stage.classList.add('is-ready');
+      return;
+    }
+
+    // Position tiles
+    tiles.forEach(function(tile, i) {
+      var angle = i * angleStep;
+      tile.style.position = 'absolute';
+      tile.style.transform = 'rotateY(' + angle + 'deg) translateZ(' + radius + 'px) rotateX(' + tilt + 'deg)';
+      tile.style.backfaceVisibility = 'hidden';
+      tile.style.willChange = 'transform';
+    });
+    ring.style.position = 'relative';
+    ring.style.transformStyle = 'preserve-3d';
+    ring.style.height = (radius * 0.9) + 'px';
+    stage.classList.add('is-ready');
+
+    var start = performance.now();
+    var paused = false;
+    var offscreen = false;
+
+    // Hover pause
+    ring.addEventListener('mouseenter', function(){ paused = true; });
+    ring.addEventListener('mouseleave', function(){ paused = false; });
+
+    // Visibility / intersection pause
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){ offscreen = !e.isIntersecting; });
+      }, { threshold: 0.10 });
+      io.observe(stage);
+    }
+
+    // Keyboard nudge for accessibility (Left/Right arrows)
+    ring.tabIndex = 0;
+    ring.addEventListener('keydown', function(e){
+      if (e.key === 'ArrowLeft' || e.key === 'Left') {
+        start -= speed * 100; // rotate backwards a bit
+        e.preventDefault();
+      } else if (e.key === 'ArrowRight' || e.key === 'Right') {
+        start += speed * 100; // rotate forwards
+        e.preventDefault();
+      }
+    });
+
+    function frame(now) {
+      if (!paused && !offscreen) {
+        var elapsed = (now - start) / 1000; // seconds
+        var deg = (elapsed / speed) * 360 % 360;
+        ring.style.transform = 'translateZ(-' + radius + 'px) rotateY(' + deg + 'deg)';
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    // Hide fallback for 3D case
+    if (fallback) fallback.classList.add('is-hidden');
+
+    // Dispatch custom event
+    var evt = new CustomEvent('esRingReady', { detail: { ring: ring } });
+    stage.dispatchEvent(evt);
+  }
+})();
