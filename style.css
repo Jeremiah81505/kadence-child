@@ -749,6 +749,22 @@ Tags: custom-block-patterns, accessibility-ready
 @media (max-width:880px){
   .kc-hero-ultimate .kc-hero-head::before{display:none;} /* reduce noise on small screens */
 }
+
+/* === USER REQUEST: FORCE COLORFUL TEXT + BUTTONS === */
+/* Full-title gradient (overrides plain black). If you only want the keyword, remove this block. */
+.kc-hero-ultimate .kc-title{background:linear-gradient(95deg,#3b82f6 0%,#6366f1 28%,#0ea5e9 55%,#3b82f6 85%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:kcH1Sweep 9s ease-in-out infinite alternate;}
+@keyframes kcH1Sweep{0%{background-position:0% 50%;}100%{background-position:100% 50%;}}
+/* Primary button: animated multi‑color gradient */
+.kc-hero-ultimate .kc-cta-primary .wp-block-button__link{background:linear-gradient(120deg,#3b82f6,#6366f1,#0ea5e9,#3b82f6);background-size:300% 100%;animation:kcBtnGrad 10s ease-in-out infinite;box-shadow:0 10px 26px rgba(59,130,246,.35);} 
+/* Secondary blue button: softer complementary gradient */
+.kc-hero-ultimate .kc-cta-secondary.kc-btn-blue .wp-block-button__link{background:linear-gradient(120deg,#6366f1,#3b82f6,#0ea5e9,#6366f1);background-size:300% 100%;animation:kcBtnGrad 12s linear infinite;}
+@keyframes kcBtnGrad{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+/* Ensure hover still lifts */
+.kc-hero-ultimate .kc-hero-ctas .wp-block-button__link:hover,.kc-hero-ultimate .kc-hero-ctas .wp-block-button__link:focus-visible{transform:translateY(-3px);}
+@media (prefers-reduced-motion:reduce){
+  .kc-hero-ultimate .kc-title{animation:none;background-position:50% 50%;}
+  .kc-hero-ultimate .kc-hero-ctas .wp-block-button__link{animation:none;}
+}
 /* ===== Brand Blue (adjust here if needed) ===== */
 :root{
   --kc-blue-1: #3b82f6; /* top */
