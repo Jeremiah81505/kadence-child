@@ -86,6 +86,15 @@ add_action( 'wp_enqueue_scripts', function() {
   ) );
 }, 20 );
 
+/**
+ * Theme setup: load translations, enable features.
+ */
+add_action( 'after_setup_theme', function() {
+  load_child_theme_textdomain( 'kadence-child', get_stylesheet_directory() . '/languages' );
+  // Support for automatic title tag if not already by parent.
+  add_theme_support( 'title-tag' );
+} );
+
 // Removed legacy automatic raw file registration of patterns.
 // We now explicitly register patterns via buffered includes in inc/patterns/*.php
 // to ensure clean markup (no PHP headers) and proper titles/descriptions.
@@ -106,6 +115,13 @@ add_action( 'init', function() {
   $pattern_files = glob( get_theme_file_path( 'inc/patterns/*.php' ) );
   if ( ! empty( $pattern_files ) ) {
     foreach ( $pattern_files as $file ) {
+      require_once $file;
+    }
+  }
+  // Also load root-level patterns directory if present for backward compatibility.
+  $legacy_patterns = glob( get_theme_file_path( 'patterns/*.php' ) );
+  if ( ! empty( $legacy_patterns ) ) {
+    foreach ( $legacy_patterns as $file ) {
       require_once $file;
     }
   }

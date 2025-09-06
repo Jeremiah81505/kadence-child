@@ -5,7 +5,7 @@
 get_header();
 ?>
 
-<main id="main-content" class="kc-main-content" role="main">
+<main id="primary" class="kc-main-content" role="main">
   <?php if ( have_posts() ) : ?>
     <div class="kc-post-list">
       <?php while ( have_posts() ) : the_post(); ?>

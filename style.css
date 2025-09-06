@@ -1,3 +1,21 @@
+/*
+Theme Name: Kadence Child
+Theme URI: https://example.com/kadence-child
+Description: Child theme extending Kadence with custom patterns, 3D carousel, and hero components.
+Author: Your Name
+Author URI: https://example.com
+Template: kadence
+Version: 1.0.0
+License: GNU General Public License v2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: kadence-child
+Tags: custom-block-patterns, accessibility-ready
+*/
+
+/* Accessibility: skip link */
+.kc-skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;}
+.kc-skip-link:focus{position:static;width:auto;height:auto;padding:.75rem 1rem;background:#000;color:#fff;z-index:9999;}
+
 /* CLEANUP: removed stale merge-conflict fragments above this line */
 
 /* HERO ULTIMATE (additional list, badges etc.) */

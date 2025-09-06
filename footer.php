@@ -23,7 +23,7 @@
       <a href="/contact">Contact</a>
     </nav>
     <div class="kc-footer-copy">
-      &copy; <?php echo date('Y'); ?> Elevated Surfaces. All rights reserved.
+      &copy; <?php echo esc_html( date( 'Y' ) ); ?> <?php esc_html_e( 'Elevated Surfaces. All rights reserved.', 'kadence-child' ); ?>
     </div>
   </div>
 </footer>
