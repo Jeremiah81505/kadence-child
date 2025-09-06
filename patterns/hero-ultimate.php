@@ -95,6 +95,45 @@
       </div>
       <!-- /wp:group -->
 
+      <!-- wp:group {"className":"kc-hero-carousel-wrap","layout":{"type":"constrained","contentSize":"1800px"}} -->
+      <div class="wp-block-group kc-hero-carousel-wrap">
+        <!-- wp:html -->
+        <div class="kc-adv-stage-wrap kc-adv-carousel" data-variant="ring">
+          <div class="kc-adv-panel">
+            <div class="kc-adv-world">
+              <div class="kc-adv-ring">
+                <?php
+                // Simple array of logo (src, alt). Update paths as needed.
+                $logos = array(
+                  array('https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/logo-premium-quartz.webp','Premium Natural Quartz'),
+                  array('https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/logo-himacs.webp','HI-MACS Solid Surface'),
+                  array('https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/logo-dekton.webp','Dekton Ultra Compact'),
+                  array('https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/logo-corian.webp','Corian Solid Surface'),
+                  array('https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/logo-cambria.webp','Cambria Quartz'),
+                  array('https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/logo-caesarstone.webp','Caesarstone Quartz'),
+                  array('https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/logo-wilsonart.webp','Wilsonart Laminate'),
+                  array('https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/logo-vadara.webp','Vadara Quartz'),
+                  array('https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/logo-ugm.webp','UGM Surfaces'),
+                );
+                foreach ( $logos as $l ) {
+                  echo '<div class="kc-adv-tile"><img loading="lazy" decoding="async" src="' . esc_url( $l[0] ) . '" alt="' . esc_attr( $l[1] ) . '" /></div>';
+                }
+                ?>
+              </div>
+              <div class="kc-adv-spotlight" aria-hidden="true"></div>
+              <div class="kc-adv-floor" aria-hidden="true"></div>
+            </div>
+            <div class="kc-adv-controls" aria-label="Carousel controls">
+              <button class="kc-adv-btn" data-action="prev" type="button">Prev</button>
+              <button class="kc-adv-btn" data-action="playpause" type="button" aria-pressed="true">Pause</button>
+              <button class="kc-adv-btn" data-action="next" type="button">Next</button>
+            </div>
+          </div>
+        </div>
+        <!-- /wp:html -->
+      </div>
+      <!-- /wp:group -->
+
       <div class="kc-scroll-cue" aria-hidden="true"><?php esc_html_e( 'Scroll', 'kadence-child' ); ?></div>
     </div>
     <!-- /wp:group -->

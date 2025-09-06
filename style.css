@@ -33,6 +33,17 @@ Tags: custom-block-patterns, accessibility-ready
 .kc-hero-ultimate .kc-scroll-cue:after{content:"";display:block;width:1px;height:34px;margin:6px auto 0;background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0));animation:kcScroll 3.2s ease-in-out infinite;}
 @keyframes kcScroll{0%,15%{transform:translateY(0);opacity:1}50%{transform:translateY(10px);opacity:.35}85%,100%{transform:translateY(0);opacity:1}}
 
+/* Hero carousel integration */
+.kc-hero-carousel-wrap{margin-top:clamp(30px,6vh,70px);}
+.kc-hero-ultimate .kc-adv-stage-wrap{--panel-h-min:180px;--panel-h-max:300px;--tile-min:90px;--tile-max:128px;--spin-seconds:26;}
+.kc-hero-ultimate .kc-adv-panel{background:linear-gradient(150deg,rgba(18,24,32,.86),rgba(10,14,20,.82));outline:1px solid rgba(255,255,255,.08);} 
+.kc-hero-ultimate .kc-adv-panel:before{background:radial-gradient(140% 120% at 50% 120%,rgba(0,0,0,.55),transparent 55%),linear-gradient(180deg,rgba(255,255,255,.08),transparent 40%);} 
+.kc-hero-ultimate .kc-adv-tile{background:linear-gradient(180deg,#fff,#f3f6fc);}
+.kc-hero-ultimate .kc-adv-tile[data-active]{box-shadow:0 30px 60px -24px rgba(0,0,0,.6),0 10px 28px -6px rgba(0,0,0,.45),0 0 0 1px rgba(59,130,246,.5) inset;}
+.kc-hero-ultimate .kc-adv-btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22);} 
+.kc-hero-ultimate .kc-adv-btn:hover{background:rgba(255,255,255,.22);} 
+@media (max-width:780px){.kc-hero-carousel-wrap{margin-top:40px;}}
+
 .kc-hero-ultimate .kc-info-badge{ display:inline-flex; align-items:center; margin:0; background:rgba(255,255,255,.15); padding:.25em .6em; border-radius:4px; font-size:.75rem; line-height:1; }
 .kc-hero-ultimate .kc-hero-badges{ display:flex; align-items:center; gap:1rem; margin-bottom:1rem; }
 .kc-hero-ultimate .kc-material-list{ display:grid; gap:clamp(12px,1.5vw,20px); grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); list-style:none; margin:0; padding:0; }
