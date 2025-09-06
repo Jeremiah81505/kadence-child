@@ -62,6 +62,22 @@ add_action( 'wp_enqueue_scripts', function() {
 // to ensure clean markup (no PHP headers) and proper titles/descriptions.
 
 // Load pattern registration scripts (each script buffers and registers a pattern).
+// First ensure our custom pattern categories exist.
+add_action( 'init', function() {
+  if ( function_exists( 'register_block_pattern_category' ) ) {
+    $cats = array(
+      'kadence-child' => __( 'Kadence Child', 'kadence-child' ),
+      'elevated'      => __( 'Elevated', 'kadence-child' ),
+      'featured'      => __( 'Featured', 'kadence-child' ),
+    );
+    foreach ( $cats as $slug => $label ) {
+      if ( ! WP_Block_Pattern_Categories_Registry::get_instance()->is_registered( $slug ) ) {
+        register_block_pattern_category( $slug, array( 'label' => $label ) );
+      }
+    }
+  }
+}, 8 );
+
 add_action( 'init', function() {
   $pattern_files = glob( get_theme_file_path( 'inc/patterns/*.php' ) );
   if ( ! empty( $pattern_files ) ) {
