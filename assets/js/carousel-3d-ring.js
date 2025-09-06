@@ -16,14 +16,27 @@
 
   function initAll(){ document.querySelectorAll('.es-ring').forEach(r=>initRing(r)); }
 
+  // Inject minimal required CSS in case theme stylesheet not yet loaded / cached incorrectly
+  (function ensureBaseCSS(){
+    if(document.getElementById('kc-es-ring-inline-css')) return;
+    const css = `.es-stage{position:relative;width:100%;perspective:1600px;perspective-origin:50% 50%;overflow:visible}`+
+                `.es-stage.is-ready{visibility:visible}`+
+                `.es-ring{position:absolute;top:50%;left:50%;transform-style:preserve-3d}`+
+                `.es-tile{position:absolute;top:50%;left:50%;display:flex;align-items:center;justify-content:center;}`+
+                `.es-tile img{max-width:100%;max-height:100%;object-fit:contain}`;
+    const el=document.createElement('style'); el.id='kc-es-ring-inline-css'; el.textContent=css; document.head.appendChild(el);
+  })();
+
   function initRing(ring){
     if(ring.__init) return; ring.__init = true;
     const stage = ring.closest('.es-stage'); if(!stage) return;
     const fallback = stage.parentElement.querySelector('.es-fallback');
     const tiles = Array.from(ring.querySelectorAll('.es-tile')); if(!tiles.length) return;
 
-    stage.setAttribute('role','region'); if(!stage.hasAttribute('aria-label')) stage.setAttribute('aria-label','Logo carousel');
-    const can3D = supports3D() && !reduceMQ.matches;
+  stage.setAttribute('role','region'); if(!stage.hasAttribute('aria-label')) stage.setAttribute('aria-label','Logo carousel');
+  if(!stage.classList.contains('es-stage')) { console.warn('[Carousel3D] Stage missing base class expectations'); }
+  const can3D = supports3D() && !reduceMQ.matches;
+  if(!can3D){ console.info('[Carousel3D] Falling back (3D unsupported or reduced-motion)'); }
     if(!can3D){ if(fallback) fallback.classList.remove('is-hidden'); stage.classList.add('is-ready'); return; }
     if(fallback) fallback.classList.add('is-hidden');
 
@@ -37,6 +50,7 @@
     let radius=0; // resolved later
 
     function layout(){
+      if(!document.body.contains(ring)){ return; }
       const count = tiles.length;
       // Derive radius: prefer fixed if provided, else proportional to tile count.
       const ideal = (tileSize*count)/(2*Math.PI); // radius for circumference ~ count*tileSize
@@ -45,7 +59,7 @@
       radius = Math.min(radius, 900);
       stage.style.height = Math.max(tileSize*2.2, radius*0.95 + tileSize*0.9) + 'px';
       ring.style.position='absolute'; ring.style.top='50%'; ring.style.left='50%'; ring.style.transformStyle='preserve-3d';
-      tiles.forEach((tile,i)=>{
+  tiles.forEach((tile,i)=>{
         tile.style.position='absolute';
         tile.style.width=tileSize+'px'; tile.style.height=tileSize+'px';
         tile.style.top='50%'; tile.style.left='50%';
@@ -54,7 +68,8 @@
         tile.style.transform='rotateY('+tileAngles[i]+'deg) translateZ('+radius+'px)';
         tile.style.opacity='0';
       });
-      stage.classList.add('is-ready');
+  stage.classList.add('is-ready');
+  ring.dataset._resolvedRadius = String(radius);
     }
     layout();
 
@@ -69,6 +84,9 @@
     function frame(now){
       if(!paused && !offscreen){
         const deg = ((now-start)/1000/speed)*360 % 360;
+        if(!ring.dataset._resolvedRadius){ // early frame before layout? run layout once more
+          layout();
+        }
   // Keep ring centered: translateZ(-radius) recenters pivot so tiles form a ring around center
   ring.style.transform = 'translate(-50%, -50%) rotateX('+tilt+'deg) translateZ(-'+radius+'px) rotateY('+deg+'deg)';
         // Depth emphasis per tile
@@ -90,7 +108,8 @@
     // Debounced resize: re-measure (respect fixedRadius if provided)
     let to; window.addEventListener('resize',()=>{ clearTimeout(to); to=setTimeout(()=>{ fixedRadius = parseFloat(ring.dataset.radius)||0; layout(); },120); });
 
-    stage.dispatchEvent(new CustomEvent('esRingReady',{detail:{ring}}));
+  stage.dispatchEvent(new CustomEvent('esRingReady',{detail:{ring}}));
+  console.debug('[Carousel3D] Initialized ring with', {tiles: tiles.length, radius, speed, tilt, tileSize});
   }
 
   // Observe late-added rings
