@@ -112,6 +112,48 @@ add_action( 'init', function() {
 }, 8 );
 
 // Removed old manual loader for inc/patterns/*.php (now relying on core /patterns auto-registration).
+// Custom loader: WP core only auto-registers static patterns in /patterns that have no PHP executing inside the markup.
+// Our patterns include PHP i18n calls (esc_html_e / printf), so we parse header comments and register them manually.
+add_action( 'init', function() {
+  $dir = get_theme_file_path( 'patterns' );
+  if ( ! is_dir( $dir ) ) { return; }
+  foreach ( glob( $dir . '/*.php' ) as $file ) {
+    $contents = file_get_contents( $file );
+    if ( false === $contents ) { continue; }
+    // Extract header meta (Title, Slug, Categories, Description) like WP core does for pattern files.
+    $header = array(
+      'title'       => '',
+      'slug'        => '',
+      'categories'  => array(),
+      'description' => '',
+    );
+    foreach ( array( 'Title' => 'title', 'Slug' => 'slug', 'Categories' => 'categories', 'Description' => 'description' ) as $label => $key ) {
+      if ( preg_match( '/^\s*\*\s+' . preg_quote( $label, '/' ) . ':\s*(.+)$/mi', $contents, $m ) ) {
+        $val = trim( $m[1] );
+        if ( 'categories' === $key ) {
+          $header[ $key ] = array_map( 'trim', explode( ',', strtolower( $val ) ) );
+        } else {
+          $header[ $key ] = $val;
+        }
+      }
+    }
+    if ( empty( $header['slug'] ) || empty( $header['title'] ) ) { continue; }
+    if ( ! str_starts_with( $header['slug'], 'kadence-child/' ) ) { continue; }
+    ob_start();
+    include $file; // Executes PHP (for translation functions) and outputs pattern markup.
+    $content = trim( ob_get_clean() );
+    if ( empty( $content ) ) { continue; }
+    // Avoid duplicate registration.
+    if ( function_exists( 'register_block_pattern' ) && ! WP_Block_Patterns_Registry::get_instance()->is_registered( $header['slug'] ) ) {
+      register_block_pattern( $header['slug'], array(
+        'title'       => $header['title'],
+        'description' => $header['description'],
+        'categories'  => $header['categories'],
+        'content'     => $content,
+      ) );
+    }
+  }
+}, 11 );
 
 // Removed legacy fallback auto-registration (now using only explicit inc/patterns/*.php loaders).
 
