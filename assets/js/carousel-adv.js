@@ -16,9 +16,7 @@
     panel.appendChild(live);
   let angle=0, playing=true, last=performance.now();
   const baseSpeed=360/(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spin-seconds'))||22);
-  let velocity=baseSpeed; // instantaneous
-  let targetVelocity=baseSpeed; // eased target
-  const minSpeed=baseSpeed*0.55; // maintain motion for loop illusion
+  let velocity=baseSpeed; // constant auto speed
     function getRadius(){ return parseFloat(getComputedStyle(panel).getPropertyValue('--r'))||500; }
     let lastActive=-1;
     function update(force){
@@ -45,32 +43,29 @@
     }
     function frame(now){
       let dt=(now-last)/1000; last=now;
-      if(dt>0.05) dt=0.05; // clamp
-      // Smoothly approach target velocity
-      velocity += (targetVelocity - velocity)*0.08;
-      if(Math.abs(velocity) < minSpeed) velocity = (velocity<0?-1:1)*minSpeed;
-      angle = (angle + dt*velocity) % 360;
+      if(dt>0.05) dt=0.05; // clamp large tab-jump
+      if(playing){ angle += dt*velocity; }
       update(false); requestAnimationFrame(frame);
     }
     update(true); requestAnimationFrame(frame);
     panel.addEventListener('click',e=>{
       const btn=e.target.closest('.kc-adv-btn');
-      if(btn){ const action=btn.dataset.action; if(action==='playpause'){ playing=!playing; if(playing){ targetVelocity=baseSpeed; } else { targetVelocity=minSpeed; } panel.closest('.kc-adv-carousel')?.setAttribute('data-paused',(!playing).toString()); btn.setAttribute('aria-pressed',playing?'true':'false'); btn.textContent=playing?'Pause':'Play'; }
-        if(action==='next'){ angle = (angle - step)%360; update(true); }
-        if(action==='prev'){ angle = (angle + step)%360; update(true); }
+      if(btn){ const action=btn.dataset.action; if(action==='playpause'){ playing=!playing; panel.closest('.kc-adv-carousel')?.setAttribute('data-paused',(!playing).toString()); btn.setAttribute('aria-pressed',playing?'true':'false'); btn.textContent=playing?'Pause':'Play'; }
+        if(action==='next'){ angle -= step; update(true); }
+        if(action==='prev'){ angle += step; update(true); }
         return; }
-      const tile=e.target.closest('.kc-adv-tile'); if(tile){ const idx=tiles.indexOf(tile); angle = (idx*step)%360; targetVelocity=baseSpeed; playing=true; const pb=panel.querySelector('[data-action="playpause"]'); if(pb){ pb.textContent='Pause'; pb.setAttribute('aria-pressed','true'); } update(true); }
+      const tile=e.target.closest('.kc-adv-tile'); if(tile){ const idx=tiles.indexOf(tile); angle = idx*step; playing=true; const pb=panel.querySelector('[data-action="playpause"]'); if(pb){ pb.textContent='Pause'; pb.setAttribute('aria-pressed','true'); } update(true); }
     });
-    panel.addEventListener('mouseenter',()=>{ targetVelocity=minSpeed; });
-    panel.addEventListener('mouseleave',()=>{ targetVelocity=baseSpeed; });
+    panel.addEventListener('mouseenter',()=>{ playing=false; });
+    panel.addEventListener('mouseleave',()=>{ playing=true; });
     let dragging=false,startX=0,startAngle=0,lastMoveTime=0,lastX=0; const sensitivity=0.45;
-  function pointerDown(e){ dragging=true; startX=lastX=(e.clientX|| (e.touches&&e.touches[0].clientX) ||0); startAngle=angle; panel.classList.add('is-dragging'); lastMoveTime=performance.now(); }
-  function pointerMove(e){ if(!dragging) return; const x=(e.clientX || (e.touches&&e.touches[0].clientX) ||0); const dx=x-startX; angle = (startAngle - dx*sensitivity)%360; const now=performance.now(); if(Math.abs(x-lastX)>2){ const instV = ((x-lastX)*sensitivity)/((now-lastMoveTime)/1000); targetVelocity = Math.max(-baseSpeed*2,Math.min(baseSpeed*2,instV)); lastMoveTime=now; lastX=x; } update(false); }
-  function pointerUp(){ if(!dragging) return; dragging=false; panel.classList.remove('is-dragging'); if(Math.abs(targetVelocity)<minSpeed){ targetVelocity = (targetVelocity<0?-1:1)*minSpeed; } playing=true; }
+  function pointerDown(e){ dragging=true; playing=false; startX=lastX=(e.clientX|| (e.touches&&e.touches[0].clientX) ||0); startAngle=angle; panel.classList.add('is-dragging'); lastMoveTime=performance.now(); }
+  function pointerMove(e){ if(!dragging) return; const x=(e.clientX || (e.touches&&e.touches[0].clientX) ||0); const dx=x-startX; angle = startAngle - dx*sensitivity; update(false); }
+  function pointerUp(){ if(!dragging) return; dragging=false; panel.classList.remove('is-dragging'); playing=true; }
     panel.addEventListener('mousedown',pointerDown); window.addEventListener('mousemove',pointerMove); window.addEventListener('mouseup',pointerUp);
     panel.addEventListener('touchstart',pointerDown,{passive:true}); panel.addEventListener('touchmove',pointerMove,{passive:true}); window.addEventListener('touchend',pointerUp);
-  panel.addEventListener('keydown',e=>{ if(e.key==='ArrowRight'){ angle = (angle - step)%360; update(true); } else if(e.key==='ArrowLeft'){ angle = (angle + step)%360; update(true); } else if(e.code==='Space'){ e.preventDefault(); const pb=panel.querySelector('[data-action="playpause"]'); pb&&pb.click(); } });
-  try{ const io=new IntersectionObserver(entries=>{ entries.forEach(ent=>{ if(ent.target===panel){ if(!ent.isIntersecting){ targetVelocity=minSpeed; } else { targetVelocity=baseSpeed; } } }); }); io.observe(panel); }catch(err){}
+  panel.addEventListener('keydown',e=>{ if(e.key==='ArrowRight'){ angle -= step; update(true); } else if(e.key==='ArrowLeft'){ angle += step; update(true); } else if(e.code==='Space'){ e.preventDefault(); const pb=panel.querySelector('[data-action="playpause"]'); pb&&pb.click(); } });
+  try{ const io=new IntersectionObserver(entries=>{ entries.forEach(ent=>{ if(ent.target===panel){ if(!ent.isIntersecting){ playing=false; } else { playing=true; } } }); }); io.observe(panel); }catch(err){}
     window.addEventListener('resize',()=>update(true));
   }
   function init(root){ document.querySelectorAll('.kc-adv-panel').forEach(initPanel); }
