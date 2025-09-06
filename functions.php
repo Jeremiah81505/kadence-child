@@ -86,6 +86,29 @@ add_action( 'init', function() {
   }
 }, 99 );
 
+/*--------------------------------------------------------------
+| OPTIONAL: FORCE A SPECIFIC REUSABLE BLOCK AS HEADER (ID 1769)
+| If the Kadence Header Builder UI isn't outputting your desired
+| block (e.g. "Header 1769"), this provides a guaranteed fallback.
+| Disable by commenting out the define() below.
+--------------------------------------------------------------*/
+if ( ! defined( 'KC_FORCE_HEADER_BLOCK_ID' ) ) {
+  // Set to the reusable block (wp_block post) ID for "Header 1769".
+  define( 'KC_FORCE_HEADER_BLOCK_ID', 1769 );
+}
+
+// Output the forced header block just after <body> opens, BEFORE page content.
+add_action( 'wp_body_open', function() {
+  if ( ! KC_FORCE_HEADER_BLOCK_ID ) { return; }
+  $block_post = get_post( KC_FORCE_HEADER_BLOCK_ID );
+  if ( ! $block_post || 'wp_block' !== $block_post->post_type || 'publish' !== $block_post->post_status ) { return; }
+  // Optionally hide the normal Kadence header (uncomment style below if needed).
+  // echo '<style>#masthead{display:none!important}</style>';
+  echo '<header id="kc-forced-header" class="kc-forced-header" data-source="kc-force-header-block">';
+  echo do_blocks( $block_post->post_content );
+  echo '</header>';
+}, 5 );
+
 // End of file.
 // Removed legacy carousel content scrubbing filter after full purge.
 
