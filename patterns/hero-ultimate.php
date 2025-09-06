@@ -7,15 +7,18 @@
  */
 ?>
 <!-- wp:cover {"dimRatio":0,"isUserOverlayColor":true,"customGradient":"linear-gradient(90deg,rgba(0,0,0,0.78) 0%,rgba(0,0,0,0.05) 60%)","minHeight":78,"minHeightUnit":"vh","align":"full","className":"kc-hero-ultimate","style":{"spacing":{"padding":{"top":"60px","bottom":"60px"}}}} -->
-<div class="wp-block-cover alignfull kc-hero-ultimate" style="padding-top:60px;padding-bottom:60px;min-height:78vh">
+<div class="wp-block-cover alignfull kc-hero-ultimate" data-enhanced="true" style="padding-top:60px;padding-bottom:60px;min-height:78vh">
   <span aria-hidden="true" class="wp-block-cover__background has-background-dim-0 has-background-dim has-background-gradient" style="background:linear-gradient(90deg,rgba(0,0,0,0.75) 0%,rgba(0,0,0,0) 100%)"></span>
   <img class="wp-block-cover__image-background" alt="" data-object-fit="cover" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/AdobeStock_884069741-scaled.jpeg"/>
+  <!-- animated color wash layer -->
+  <div class="kc-colorwash" aria-hidden="true"></div>
   <div class="wp-block-cover__inner-container">
     <!-- wp:group {"layout":{"type":"constrained","contentSize":"1900px"},"className":"kc-hero-wrap"} -->
     <div class="wp-block-group kc-hero-wrap">
       <!-- decorative floats (optional) -->
-      <div class="kc-float a" aria-hidden="true"></div>
-      <div class="kc-float b" aria-hidden="true"></div>
+  <div class="kc-float a" aria-hidden="true"></div>
+  <div class="kc-float b" aria-hidden="true"></div>
+  <div class="kc-float c" aria-hidden="true"></div>
 
       <!-- wp:group {"className":"kc-hero-flex","layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"space-between","orientation":"horizontal"}} -->
       <div class="wp-block-group kc-hero-flex">

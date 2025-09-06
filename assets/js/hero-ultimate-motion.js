@@ -3,6 +3,26 @@
   const hero = document.querySelector('.kc-hero-ultimate');
   if (!hero) return;
 
+  /* Background parallax (scroll) & color wash dynamic hue */
+  const bgImg = hero.querySelector('.wp-block-cover__image-background');
+  const wash  = hero.querySelector('.kc-colorwash');
+  const onScroll = () => {
+    const rect = hero.getBoundingClientRect();
+    const vh = window.innerHeight || 1;
+    const progress = 1 - Math.min(Math.max((rect.bottom)/ (vh + rect.height), 0), 1); // 0 top in view -> 1 scrolled past
+    if(bgImg){
+      const y = progress * 40; // shift image for depth
+      bgImg.style.transform = `translateY(${y}px) scale(1.05)`;
+    }
+    if(wash){
+      const hue = 200 + progress * 140; // 200 -> 340
+      wash.style.setProperty('--kc-wash-hue', hue.toFixed(1));
+      wash.style.opacity = (0.35 + progress * 0.25).toFixed(3);
+    }
+  };
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive:true });
+
   /* Staggered reveal */
   const items = hero.querySelectorAll('.kc-hero-title, .kc-hero-sub, .kc-hero-ctas, .kc-materials-card, .kc-material-grid .kc-chip');
   if (!reduce && 'IntersectionObserver' in window){
@@ -61,6 +81,31 @@
       window.addEventListener('mousemove', (e)=>{
         if(!rect) return; const cx=rect.left+rect.width/2; const cy=rect.top+rect.height/2; const dx=(e.clientX-cx)/rect.width; const dy=(e.clientY-cy)/rect.height; wrap.style.transform=`translate3d(${dx*12}px, ${dy*8}px, 0)`; });
       hero.addEventListener('mouseleave', ()=>{ wrap.style.transform=''; });
+    }
+  }
+
+  /* Floating organic blobs (decor) */
+  if(!reduce){
+    const blobs = hero.querySelectorAll('.kc-float');
+    blobs.forEach((b,i)=>{
+      const speed = 12000 + Math.random()*8000;
+      const driftX = 12 + Math.random()*18;
+      const driftY = 10 + Math.random()*14;
+      const scale = 0.8 + Math.random()*0.6;
+      b.style.setProperty('--fx-speed', speed+'ms');
+      b.style.setProperty('--fx-dx', driftX+'px');
+      b.style.setProperty('--fx-dy', driftY+'px');
+      b.style.setProperty('--fx-scale', scale);
+      b.classList.add('is-float');
+    });
+  }
+
+  /* Animated gradient text hue rotation (CSS variable tick) */
+  if(!reduce){
+    const gradientWord = hero.querySelector('.kc-title .kc-gradient');
+    if(gradientWord){
+      let hue = 0; const tick=()=>{ hue=(hue+0.35)%360; gradientWord.style.setProperty('--kc-grad-hue', hue.toFixed(1)); requestAnimationFrame(tick); };
+      requestAnimationFrame(tick);
     }
   }
 })();

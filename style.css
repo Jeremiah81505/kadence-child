@@ -687,6 +687,36 @@ Tags: custom-block-patterns, accessibility-ready
   .kc-title::after,
   .kc-title .kc-underline::after{ animation: none !important; }
 }
+/* ============================================================
+   HERO ULTIMATE – ENHANCED COLOR & MOTION (ADDED)
+   ============================================================ */
+.kc-hero-ultimate[data-enhanced="true"]{--kc-wash-hue:260;}
+.kc-hero-ultimate .wp-block-cover__image-background{transition:transform 1.2s cubic-bezier(.16,.72,.21,.99); will-change:transform;}
+.kc-hero-ultimate .kc-colorwash{position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay; background:radial-gradient(circle at 30% 40%,hsla(var(--kc-wash-hue),85%,62%,.55),transparent 60%),radial-gradient(circle at 75% 70%,hsla(calc(var(--kc-wash-hue)+120),75%,55%,.45),transparent 65%),linear-gradient(120deg,rgba(20,26,36,.4),rgba(12,16,26,.55));filter:saturate(130%) brightness(105%);transition:opacity .6s ease,filter 1s linear;opacity:.4;}
+
+/* Floating blobs */
+.kc-hero-ultimate .kc-float{position:absolute;border-radius:999px;filter:blur(38px) saturate(140%);background:radial-gradient(circle at 30% 30%,rgba(120,160,255,.65),rgba(80,120,255,.25) 65%,transparent 72%);opacity:.55;mix-blend-mode:screen;animation:kcBlobFloat var(--fx-speed,14000ms) ease-in-out infinite alternate-reverse;transform:translate3d(0,0,0) scale(var(--fx-scale,.9));}
+.kc-hero-ultimate .kc-float.a{width:380px;height:380px;top:-90px;left:-120px;background:radial-gradient(circle at 30% 30%,rgba(185,156,255,.75),rgba(120,90,255,.28) 70%,transparent 74%);}
+.kc-hero-ultimate .kc-float.b{width:300px;height:300px;bottom:-60px;right:10%;background:radial-gradient(circle at 40% 40%,rgba(125,226,209,.75),rgba(60,170,150,.3) 68%,transparent 72%);}
+.kc-hero-ultimate .kc-float.c{width:260px;height:260px;top:10%;right:-6%;background:radial-gradient(circle at 45% 30%,rgba(255,212,121,.8),rgba(220,160,80,.25) 72%,transparent 76%);}
+.kc-hero-ultimate .kc-float.is-float{animation:kcBlobFloat var(--fx-speed,14000ms) ease-in-out infinite alternate-reverse, kcBlobRotate calc(var(--fx-speed,14000ms)*1.6) linear infinite;}
+@keyframes kcBlobFloat{0%{transform:translate3d(0,0,0) scale(var(--fx-scale,.9));}50%{transform:translate3d(var(--fx-dx,14px),var(--fx-dy,10px),0) scale(calc(var(--fx-scale,.9) * 1.04));}100%{transform:translate3d(calc(var(--fx-dx,14px)*-1),calc(var(--fx-dy,10px)*-1),0) scale(calc(var(--fx-scale,.9) * .96));}}
+@keyframes kcBlobRotate{0%{filter:hue-rotate(0deg);}100%{filter:hue-rotate(360deg);}}
+
+/* Gradient word dynamic hue support */
+.kc-title .kc-gradient{--kc-grad-hue:0; background:linear-gradient(180deg,hsl(var(--kc-grad-hue) 100% 97%),hsl(calc(var(--kc-grad-hue)+40) 90% 85%));-webkit-background-clip:text;background-clip:text;color:transparent;transition:background .5s linear;}
+
+/* Ripple + spark (already JS) visuals */
+.kc-ripple{position:absolute;border-radius:999px;pointer-events:none;transform:translate(-50%,-50%);opacity:.22;background:currentColor;filter:blur(.5px);animation:kcRipple .6s ease-out forwards;mix-blend-mode:screen;}
+@keyframes kcRipple{from{width:0;height:0;opacity:.35}to{width:380px;height:380px;opacity:0}}
+.kc-spark{position:absolute;width:6px;height:6px;background:radial-gradient(circle,#fff,rgba(255,255,255,0) 70%);pointer-events:none;animation:kcSpark .8s ease-out forwards;transform:translate(-50%,-50%);mix-blend-mode:screen;}
+@keyframes kcSpark{0%{opacity:1;transform:translate(-50%,-50%) scale(.5);}70%{opacity:.9;}100%{opacity:0;transform:translate(calc(-50% + var(--sx)),calc(-50% + var(--sy))) scale(0);}}
+
+@media (prefers-reduced-motion:reduce){
+  .kc-hero-ultimate .kc-colorwash{animation:none;}
+  .kc-hero-ultimate .kc-float{animation:none;display:none;}
+  .kc-title .kc-gradient{transition:none;}
+}
 /* ===== Brand Blue (adjust here if needed) ===== */
 :root{
   --kc-blue-1: #3b82f6; /* top */
