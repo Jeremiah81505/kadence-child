@@ -13,6 +13,9 @@
 
 /* 3D Logo Ring (premium) */
 .es-stage{position:relative;width:100%;perspective:1800px;perspective-origin:50% 50%;overflow:visible;}
+.es-stage .es-ring{will-change:transform;}
+.es-stage .es-tile{pointer-events:none;}
+.es-stage .es-tile:hover{pointer-events:auto;}
 .es-stage:not(.is-ready){visibility:hidden;}
 .es-ring{transform-style:preserve-3d;}
 .es-tile{display:flex;align-items:center;justify-content:center;will-change:transform,opacity;transition:filter .4s;}

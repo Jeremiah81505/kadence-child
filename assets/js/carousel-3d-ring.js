@@ -38,8 +38,12 @@
 
     function layout(){
       const count = tiles.length;
-      radius = fixedRadius || Math.max(tileSize*2.2, Math.min((tileSize*count)/(2*Math.PI)*1.1, tileSize*count));
-      stage.style.height = Math.max(tileSize*2.6, radius*1.15) + 'px';
+      // Derive radius: prefer fixed if provided, else proportional to tile count.
+      const ideal = (tileSize*count)/(2*Math.PI); // radius for circumference ~ count*tileSize
+      radius = fixedRadius || Math.max(tileSize*1.8, Math.min(ideal*1.05, tileSize*count*0.9));
+      // Clamp extremely large radius to avoid pushing tiles far off-screen
+      radius = Math.min(radius, 900);
+      stage.style.height = Math.max(tileSize*2.2, radius*0.95 + tileSize*0.9) + 'px';
       ring.style.position='absolute'; ring.style.top='50%'; ring.style.left='50%'; ring.style.transformStyle='preserve-3d';
       tiles.forEach((tile,i)=>{
         tile.style.position='absolute';
@@ -65,14 +69,16 @@
     function frame(now){
       if(!paused && !offscreen){
         const deg = ((now-start)/1000/speed)*360 % 360;
-        ring.style.transform = 'translate(-50%, -50%) rotateX('+tilt+'deg) rotateY('+deg+'deg)';
+  // Keep ring centered: translateZ(-radius) recenters pivot so tiles form a ring around center
+  ring.style.transform = 'translate(-50%, -50%) rotateX('+tilt+'deg) translateZ(-'+radius+'px) rotateY('+deg+'deg)';
         // Depth emphasis per tile
         for(let i=0;i<tiles.length;i++){
           const t=tiles[i];
             let diff = ( (tileAngles[i]-deg+540)%360 )-180; // -180..180 (0 is front)
-            const closeness = 1 - Math.min(1, Math.abs(diff)/180);
-            const scale = 0.82 + 0.18 * Math.pow(closeness,1.4);
-            const op = 0.30 + 0.70 * Math.pow(closeness,1.8);
+            const front = Math.abs(diff) <= 90; // only scale visibly on front half
+            const closeness = 1 - Math.min(1, Math.abs(diff)/120);
+            const scale = front ? 0.88 + 0.22 * Math.pow(closeness,1.5) : 0.82;
+            const op = front ? 0.35 + 0.65 * Math.pow(closeness,1.6) : 0.12;
             t.style.transform = 'rotateY('+tileAngles[i]+'deg) translateZ('+radius+'px) scale('+scale.toFixed(3)+')';
             t.style.opacity = op.toFixed(3);
         }
