@@ -1,4 +1,7 @@
 <?php
+// Deprecated hero showcase carousel pattern purged.
+return;
+<?php
 /**
  * Title: Hero — Showcase (with Carousel)
  * Slug: kadence-child/hero-showcase-carousel

@@ -2,7 +2,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 require_once get_theme_file_path( 'utils.php' ); // Provides kc_get_theme_version()
-require_once get_theme_file_path( 'inc/customizer.php' );
+// customizer.php removed with inc/ purge.
 
 /**
  * Polyfills & defensive guards
@@ -37,32 +37,6 @@ add_action( 'wp_enqueue_scripts', function() {
     $theme_version,
     true
   );
-    // 3D Carousel Ring JS
-    // Allow emergency disabling of carousel scripts (define KC_DISABLE_CAROUSEL true in wp-config.php)
-    if ( ! defined( 'KC_DISABLE_CAROUSEL' ) || ! KC_DISABLE_CAROUSEL ) {
-      // 3D Carousel Ring JS (cache-busted)
-      $carousel_file = get_stylesheet_directory() . '/assets/js/carousel-3d-ring.js';
-      if ( file_exists( $carousel_file ) ) {
-        wp_enqueue_script(
-          'kc-carousel-3d-ring',
-          get_stylesheet_directory_uri() . '/assets/js/carousel-3d-ring.js',
-          array(),
-          filemtime( $carousel_file ),
-          true
-        );
-      }
-      // Basic fallback script (for debugging environment issues). Will run only if markup uses .kc-basic-ring
-      $carousel_basic = get_stylesheet_directory() . '/assets/js/carousel-3d-ring-basic.js';
-      if ( file_exists( $carousel_basic ) ) {
-        wp_enqueue_script(
-          'kc-carousel-3d-ring-basic',
-          get_stylesheet_directory_uri() . '/assets/js/carousel-3d-ring-basic.js',
-          array(),
-          filemtime( $carousel_basic ),
-          true
-        );
-      }
-    }
 
   // Core child theme scripts
   wp_enqueue_script(
@@ -80,27 +54,6 @@ add_action( 'wp_enqueue_scripts', function() {
     true
   );
 
-  // Advanced 3D carousel (externalized assets)
-  $adv_css = get_stylesheet_directory() . '/assets/css/carousel-adv.css';
-  if ( file_exists( $adv_css ) ) {
-    wp_enqueue_style(
-      'kc-carousel-adv',
-      get_stylesheet_directory_uri() . '/assets/css/carousel-adv.css',
-      array(),
-      filemtime( $adv_css )
-    );
-  }
-  $adv_js = get_stylesheet_directory() . '/assets/js/carousel-adv.js';
-  if ( file_exists( $adv_js ) ) {
-    wp_enqueue_script(
-      'kc-carousel-adv',
-      get_stylesheet_directory_uri() . '/assets/js/carousel-adv.js',
-      array(),
-      filemtime( $adv_js ),
-      true
-    );
-  }
-
   // Pass settings to JS
   wp_localize_script( 'kc-header', 'KC_HEADER', array(
     'stickyOffset' => 64,
@@ -117,8 +70,7 @@ add_action( 'after_setup_theme', function() {
 } );
 
 // Removed legacy automatic raw file registration of patterns.
-// We now explicitly register patterns via buffered includes in inc/patterns/*.php
-// to ensure clean markup (no PHP headers) and proper titles/descriptions.
+// Inc patterns loader removed; rely solely on core /patterns auto-discovery.
 
 // Load pattern registration scripts (each script buffers and registers a pattern).
 // First ensure our custom pattern categories exist.
@@ -161,30 +113,19 @@ add_action( 'admin_notices', function() {
 } );
 
 /**
- * Legacy Advanced Carousel Cleanup
- * Earlier versions of the advanced carousel pattern inlined large <style> + <script> blocks.
- * Those blocks were persisted into page/post content when the pattern was inserted.
- * We now provide external assets, so we strip only those obsolete blocks at render time
- * to prevent duplicate logic & JS parse errors ("Unexpected token <").
- * Disable by defining KC_DISABLE_ADV_CAROUSEL_CLEANUP true if ever needed.
+ * Hard cleanup: strip any residual inline carousel markup (ring / adv) left in stored post content.
+ * Disable via define('KC_DISABLE_CAROUSEL_STRIP', true);
  */
 add_filter( 'the_content', function( $content ) {
-  if ( defined( 'KC_DISABLE_ADV_CAROUSEL_CLEANUP' ) && KC_DISABLE_ADV_CAROUSEL_CLEANUP ) { return $content; }
-  // Fast-fail: only proceed if signature classes appear AND an inline style tag exists.
-  if ( strpos( $content, 'kc-adv-stage-wrap' ) === false ) { return $content; }
-  if ( strpos( $content, '<style' ) === false && strpos( $content, '<script' ) === false ) { return $content; }
-
-  $original = $content;
-  $patterns = array(
-    // Style block containing our legacy advanced carousel declarations.
-    '~<style[^>]*>[^<]*?:root\\{--spin-seconds.*?kc-adv-controls.*?</style>~is',
-    // Script block containing legacy inline IIFE referencing kc-adv-panel & rotateY.
-    '~<script[^>]*>[^<]*?const\\s+panel[^<]*?kc-adv-panel.*?tiles\\.forEach.*?</script>~is',
-  );
-  $content = preg_replace( $patterns, '', $content );
-  // Optional: if changed, we can add an HTML comment once (avoid duplication) to aid debugging.
-  if ( $content !== $original ) {
-    $content .= "\n<!-- kc-adv-carousel: legacy inline assets stripped -->";
+  if ( defined( 'KC_DISABLE_CAROUSEL_STRIP' ) && KC_DISABLE_CAROUSEL_STRIP ) { return $content; }
+  if ( strpos( $content, 'kc-ring-wrap' ) === false && strpos( $content, 'kc-adv-stage-wrap' ) === false && strpos( $content, 'es-ring' ) === false ) {
+    return $content;
   }
+  // Remove inline style / script blocks referencing legacy carousel selectors.
+  $content = preg_replace( '~<style[^>]*>.*?(kc-(?:ring-wrap|adv-stage-wrap)|es-ring).*?</style>~is', '', $content );
+  $content = preg_replace( '~<script[^>]*>.*?(kc-(?:ring-wrap|adv-stage-wrap)|es-ring).*?</script>~is', '', $content );
+  // Remove outer wrappers with known classes (non-greedy to avoid nuking unrelated content).
+  $content = preg_replace( '~<div[^>]*class="[^"]*(kc-(?:ring-wrap|adv-stage-wrap))[^"]*"[^>]*>.*?</div>~is', '', $content );
   return $content;
-}, 5 );
+}, 4 );
+
