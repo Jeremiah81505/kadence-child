@@ -22,26 +22,36 @@
       const r=getRadius();
       const displayAngle = angle % 360;
       let activeIndex=-1, best=0;
-      tiles.forEach((tile,i)=>{
+      for(let i=0;i<tiles.length;i++){
+        const tile=tiles[i];
         const tileAngle=(i*step - displayAngle);
         const rel=((tileAngle+540)%360)-180;
-        const closeness=1-Math.abs(rel)/180;
-        const scale=0.82 + 0.28*Math.pow(closeness,2);
-        const zOffset=(scale-1)*120;
-        tile.style.transform='translate(-50%,-50%) rotateY('+tileAngle+'deg) translateZ('+(r+zOffset).toFixed(2)+'px) rotateY('+(-tileAngle)+'deg) scale('+scale.toFixed(3)+')';
-        tile.style.setProperty('--c',closeness.toFixed(3));
-        tile.style.zIndex=String(Math.round(100*closeness));
+        const closeness=1-Math.abs(rel)/180; // 0..1
+        // Reduced scale delta for crispness
+        const scale=0.97 + 0.08*closeness; // 0.97 .. 1.05
+        const zOffset=(scale-1)*80; // subtle depth only
+        // No transition on transform -> prevents motion blur & shake
+        tile.style.transform='translate(-50%,-50%) rotateY('+tileAngle+'deg) translateZ('+(r+zOffset)+'px) rotateY('+(-tileAngle)+'deg) scale('+scale+')';
+        tile.style.setProperty('--c',closeness);
         if(closeness>best){ best=closeness; activeIndex=i; }
         if(closeness>0.965){ tile.setAttribute('data-active','true'); } else { tile.removeAttribute('data-active'); }
-      });
-      if(activeIndex>-1 && (force || tiles[activeIndex].getAttribute('data-active'))){
+      }
+      if(activeIndex>-1 && force){
         const alt=tiles[activeIndex].querySelector('img')?.getAttribute('alt')||'';
         live.textContent='Showing '+alt;
       }
     }
     function frame(now){
-      const dt=(now-last)/1000; last=now;
-      if(playing){ angle += dt*velocity; }
+      let dt=(now-last)/1000; last=now;
+      if(dt>0.05) dt=0.05; // clamp to avoid large jumps when tab inactive
+      if(playing){
+        angle += dt*velocity;
+      } else {
+        // Apply gentle friction to settle smoothly when not auto-playing
+        velocity *= 0.94;
+        if(Math.abs(velocity) < baseSpeed*0.2){ velocity=0; }
+        angle += dt*velocity;
+      }
       update(false); requestAnimationFrame(frame);
     }
     update(true); requestAnimationFrame(frame);
@@ -58,7 +68,7 @@
     let dragging=false,startX=0,startAngle=0,lastMoveTime=0,lastX=0; const sensitivity=0.45;
     function pointerDown(e){ dragging=true; playing=false; startX=lastX=(e.clientX|| (e.touches&&e.touches[0].clientX) ||0); startAngle=angle; panel.classList.add('is-dragging'); lastMoveTime=performance.now(); }
     function pointerMove(e){ if(!dragging) return; const x=(e.clientX || (e.touches&&e.touches[0].clientX) ||0); const dx=x-startX; angle = startAngle - dx*sensitivity; const now=performance.now(); if(Math.abs(x-lastX)>2){ velocity = ((x-lastX)*sensitivity)/((now-lastMoveTime)/1000); lastMoveTime=now; lastX=x; } }
-    function pointerUp(){ if(!dragging) return; dragging=false; panel.classList.remove('is-dragging'); velocity=Math.max(-baseSpeed*2,Math.min(baseSpeed*2,velocity)); if(Math.abs(velocity)<baseSpeed*0.25){ velocity=baseSpeed; playing=true; } else { playing=true; } }
+  function pointerUp(){ if(!dragging) return; dragging=false; panel.classList.remove('is-dragging'); velocity=Math.max(-baseSpeed*2,Math.min(baseSpeed*2,velocity)); if(Math.abs(velocity)<baseSpeed*0.25){ playing=false; velocity=0; } else { playing=false; } }
     panel.addEventListener('mousedown',pointerDown); window.addEventListener('mousemove',pointerMove); window.addEventListener('mouseup',pointerUp);
     panel.addEventListener('touchstart',pointerDown,{passive:true}); panel.addEventListener('touchmove',pointerMove,{passive:true}); window.addEventListener('touchend',pointerUp);
     panel.addEventListener('keydown',e=>{ if(e.key==='ArrowRight'){ angle -= step; update(true); } else if(e.key==='ArrowLeft'){ angle += step; update(true); } else if(e.code==='Space'){ e.preventDefault(); const pb=panel.querySelector('[data-action="playpause"]'); pb&&pb.click(); } });
