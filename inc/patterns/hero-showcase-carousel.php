@@ -91,20 +91,6 @@ if ( function_exists( 'register_block_pattern' ) ) {
         <!-- /wp:group -->
     </div>
     <!-- /wp:group -->
-<style>
-/* Hero Showcase styles embedded for pattern preview */
-</style>
-</section>
-<!-- /wp:group -->
 <?php
-        $pattern_content = ob_get_clean();
-        register_block_pattern(
-                'kadence-child/hero-showcase-carousel',
-                [
-                        'title'       => __( 'Hero — Showcase (with Carousel)', 'kadence-child' ),
-                        'description' => __( 'Hero layout featuring a showcase grid, CTA bar, and built-in carousel.', 'kadence-child' ),
-                        'categories'  => [ 'kadence-child', 'featured' ],
-                        'content'     => $pattern_content,
-                ]
-        );
-}
+// Neutralized duplicate hero-showcase-carousel pattern file.
+</style>
