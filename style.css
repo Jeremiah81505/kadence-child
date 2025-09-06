@@ -11,6 +11,10 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: kadence-child
 Tags: custom-block-patterns, accessibility-ready
 */
+/* ============================================================
+  HERO ULTIMATE – CTA BUTTON FX (flare / motion)
+  ============================================================ */
+.kc-hero-ctas{ display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
 
 /* Accessibility: skip link */
 .kc-skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;}
