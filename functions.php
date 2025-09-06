@@ -111,21 +111,7 @@ add_action( 'init', function() {
   register_block_pattern_category( 'featured', array( 'label' => __( 'Featured', 'kadence-child' ) ) );
 }, 8 );
 
-add_action( 'init', function() {
-  $pattern_files = glob( get_theme_file_path( 'inc/patterns/*.php' ) );
-  if ( ! empty( $pattern_files ) ) {
-    foreach ( $pattern_files as $file ) {
-      require_once $file;
-    }
-  }
-  // Also load root-level patterns directory if present for backward compatibility.
-  $legacy_patterns = glob( get_theme_file_path( 'patterns/*.php' ) );
-  if ( ! empty( $legacy_patterns ) ) {
-    foreach ( $legacy_patterns as $file ) {
-      require_once $file;
-    }
-  }
-}, 9 );
+// Removed old manual loader for inc/patterns/*.php (now relying on core /patterns auto-registration).
 
 // Removed legacy fallback auto-registration (now using only explicit inc/patterns/*.php loaders).
 
