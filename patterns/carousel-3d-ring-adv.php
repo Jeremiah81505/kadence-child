@@ -13,14 +13,24 @@
     <div class="kc-adv-panel" data-playing="true">
       <div class="kc-adv-world">
         <div class="kc-adv-ring">
-          <?php $logos = [
-            'Wilsonart','Vicostone','Viatera','Vadara','UGM Surfaces','Trends','Teracanto','Silestone','Q Quartz','Pionite','Nevamar','HI-MACS','Formica','Dekton','Corian','Cambria','Caesarstone'
-          ];
-          $slug_map = [ 'Vadara' => 'Vadara-Capture-the-world-in-quartz' , 'HI-MACS' => 'Hi-Macs', 'Caesarstone' => 'Caesarstone-01-scaled' ];
-          $i=0; foreach($logos as $name){
-            $file = isset($slug_map[$name])? $slug_map[$name] : $name; $file = strtolower(str_replace([' ','\' . "u{2011}"],'-',$file));
-            echo '<div class="kc-adv-tile" style="--n:'.$i++.'"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/'.esc_attr($file).'-01.png" alt="'.esc_attr($name).'" /></div>';
-          } ?>
+          <!-- Static tiles (removed dynamic PHP to prevent parse errors) -->
+          <div class="kc-adv-tile" style="--n:0"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Wilsonart-01.png" alt="Wilsonart" /></div>
+          <div class="kc-adv-tile" style="--n:1"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vicostone-01.png" alt="Vicostone" /></div>
+          <div class="kc-adv-tile" style="--n:2"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Viatera-01.png" alt="Viatera" /></div>
+          <div class="kc-adv-tile" style="--n:3"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Vadara-Capture-the-world-in-quartz-01.png" alt="Vadara" /></div>
+          <div class="kc-adv-tile" style="--n:4"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/UGM-Surfaces-01.png" alt="UGM Surfaces" /></div>
+          <div class="kc-adv-tile" style="--n:5"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Trends-01.png" alt="Trends" /></div>
+          <div class="kc-adv-tile" style="--n:6"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Teracanto-01.png" alt="Teracanto" /></div>
+          <div class="kc-adv-tile" style="--n:7"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Silestone-01.png" alt="Silestone" /></div>
+          <div class="kc-adv-tile" style="--n:8"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Q-Quartz-01.png" alt="Q Quartz" /></div>
+          <div class="kc-adv-tile" style="--n:9"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Pionite-01.png" alt="Pionite" /></div>
+          <div class="kc-adv-tile" style="--n:10"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Nevamar-01.png" alt="Nevamar" /></div>
+          <div class="kc-adv-tile" style="--n:11"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Hi-Macs-01.png" alt="HI-MACS" /></div>
+          <div class="kc-adv-tile" style="--n:12"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Formica-01.png" alt="Formica" /></div>
+          <div class="kc-adv-tile" style="--n:13"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Dekton-01.png" alt="Dekton" /></div>
+          <div class="kc-adv-tile" style="--n:14"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Corian-01.png" alt="Corian" /></div>
+          <div class="kc-adv-tile" style="--n:15"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Cambria-01.png" alt="Cambria" /></div>
+          <div class="kc-adv-tile" style="--n:16"><img loading="lazy" decoding="async" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/Caesarstone-01-scaled.png" alt="Caesarstone" /></div>
         </div>
         <div class="kc-adv-floor" aria-hidden="true"></div>
       </div>
