@@ -1,4 +1,11 @@
 (() => {
+  const VERSION = 'hero-motion:2025-09-06T2';
+  const debug = /[?&]kc_hero_debug=1/.test(location.search);
+  if (debug) {
+    console.info('[KC HERO]', VERSION, 'debug mode ON');
+  } else {
+    console.log('[KC HERO]', VERSION);
+  }
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const hero = document.querySelector('.kc-hero-ultimate');
   if (!hero) return;
@@ -31,8 +38,17 @@
   }
 
   /* Background parallax (scroll) & color wash dynamic hue */
+  if (debug) hero.classList.add('kc-hero-debug');
   const bgImg = hero.querySelector('.wp-block-cover__image-background');
   const wash  = hero.querySelector('.kc-colorwash');
+  if (debug) {
+    console.log('[KC HERO] initial state', {
+      enhanced: hero.getAttribute('data-enhanced'),
+      hasWash: !!wash,
+      hasBlobs: hero.querySelectorAll('.kc-float').length,
+      bgImg: !!bgImg
+    });
+  }
   const onScroll = () => {
     const rect = hero.getBoundingClientRect();
     const vh = window.innerHeight || 1;
@@ -49,6 +65,7 @@
   };
   onScroll();
   window.addEventListener('scroll', onScroll, { passive:true });
+  if (debug) console.log('[KC HERO] scroll handler attached');
 
   /* Staggered reveal */
   const items = hero.querySelectorAll('.kc-hero-title, .kc-hero-sub, .kc-hero-ctas, .kc-materials-card, .kc-material-grid .kc-chip');
@@ -67,6 +84,7 @@
       el.style.opacity='0'; el.style.transform='translateY(14px) scale(.98)';
       setTimeout(()=>io.observe(el), i*70);
     });
+  if (debug) console.log('[KC HERO] IO observing', items.length, 'elements');
   }
 
   /* Magnetic hover + ripple for chips & CTAs */
@@ -133,6 +151,19 @@
     if(gradientWord){
       let hue = 0; const tick=()=>{ hue=(hue+0.35)%360; gradientWord.style.setProperty('--kc-grad-hue', hue.toFixed(1)); requestAnimationFrame(tick); };
       requestAnimationFrame(tick);
+        if (debug) console.log('[KC HERO] gradient animation started');
     }
   }
+    if (debug) {
+      // Fallback visual if CSS file missing (no computed mix-blend-mode on colorwash)
+      try {
+        const hasStyles = wash && getComputedStyle(wash).mixBlendMode !== 'normal';
+        if (!hasStyles) {
+          console.warn('[KC HERO] CSS enhancement likely missing. Injecting minimal fallback styles.');
+          const style = document.createElement('style');
+          style.textContent = `.kc-hero-debug{background:#0a0f18;color:#fff;} .kc-hero-debug .kc-colorwash{background:linear-gradient(120deg,rgba(80,120,255,.4),rgba(125,226,209,.35));position:absolute;inset:0;}`;
+          document.head.appendChild(style);
+        }
+      } catch(e){ console.warn('[KC HERO] style probe failed', e); }
+    }
 })();
