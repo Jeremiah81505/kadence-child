@@ -227,3 +227,15 @@ add_filter( 'the_content', function( $content ) {
   return $modified;
 }, 12 );
 
+/**
+ * Lightweight diagnostic output: append HTML comment in footer with hero detection.
+ * Usage: add ?kc_hero_diag=1 to a singular URL while logged in or not.
+ */
+add_action( 'wp_footer', function() {
+  if ( empty( $_GET['kc_hero_diag'] ) || ! is_singular() ) { return; }
+  global $post; $raw = $post ? $post->post_content : '';
+  $has_pattern_slug = ( false !== strpos( $raw, 'kc-hero-ultimate' ) );
+  $has_enhanced_attr = ( false !== strpos( $raw, 'data-enhanced="true"' ) );
+  echo "\n<!-- kc-hero-diag id=" . ( $post ? intval( $post->ID ) : 0 ) . " pattern_present=" . ( $has_pattern_slug ? 'yes' : 'no' ) . " enhanced_attr_present=" . ( $has_enhanced_attr ? 'yes' : 'no' ) . " -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+}, 99 );
+
