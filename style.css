@@ -829,3 +829,46 @@ Tags: custom-block-patterns, accessibility-ready
 @media(max-width:1024px){.kc-mats-grid{grid-template-columns:1fr 1fr;grid-template-rows:auto;}}
 @media(max-width:640px){.kc-mats-grid{grid-template-columns:1fr;gap:16px;}.kc-mats-card{height:240px;}.kc-mats-quartz,.kc-mats-stone,.kc-mats-solid,.kc-mats-ultra,.kc-mats-laminate,.kc-mats-sinks{grid-column:auto;grid-row:auto;}}
 
+/* ============================================================
+   HERO ULTIMATE – MOTION FIX PATCH (2025-09)
+   Reason: Previous full-title gradient + legacy keyframe fades
+   were overriding JS-driven hue rotation & intersection reveals.
+   These scoped overrides restore intended dynamic behavior
+   without refactoring earlier CSS blocks.
+   ------------------------------------------------------------
+   Safe to remove once upstream styles are consolidated.
+   ============================================================ */
+/* 1. Remove full-title static gradient so only span.kc-gradient animates */
+.kc-hero-ultimate[data-enhanced="true"] .kc-title{background:none!important;-webkit-background-clip:initial!important;background-clip:initial!important;color:#fff!important;animation:none!important;}
+/* Ensure gradient word inherits readable fallback until JS hue kicks in */
+.kc-hero-ultimate[data-enhanced="true"] .kc-title .kc-gradient{background:linear-gradient(180deg,hsl(var(--kc-grad-hue,0) 100% 97%),hsl(calc(var(--kc-grad-hue,0)+40) 90% 85%));-webkit-background-clip:text;background-clip:text;color:transparent;animation:none!important;}
+/* 2. Stop legacy CSS keyframe entrance animations that pre‑reveal content */
+.kc-hero-ultimate[data-enhanced="true"] .kc-materials-card,
+.kc-hero-ultimate[data-enhanced="true"] .kc-materials-heading,
+.kc-hero-ultimate[data-enhanced="true"] .kc-material-grid,
+.kc-hero-ultimate[data-enhanced="true"] .kc-material-grid .kc-chip{animation:none!important;}
+/* 3. Provide consistent initial reveal states for JS IntersectionObserver */
+.kc-hero-ultimate[data-enhanced="true"] .kc-hero-title,
+.kc-hero-ultimate[data-enhanced="true"] .kc-hero-sub,
+.kc-hero-ultimate[data-enhanced="true"] .kc-hero-ctas,
+.kc-hero-ultimate[data-enhanced="true"] .kc-materials-card,
+.kc-hero-ultimate[data-enhanced="true"] .kc-material-grid .kc-chip{opacity:0;transform:translateY(14px) scale(.98);}
+/* 4. When user prefers reduced motion, allow content to show immediately */
+@media (prefers-reduced-motion: reduce){
+  .kc-hero-ultimate[data-enhanced="true"] .kc-hero-title,
+  .kc-hero-ultimate[data-enhanced="true"] .kc-hero-sub,
+  .kc-hero-ultimate[data-enhanced="true"] .kc-hero-ctas,
+  .kc-hero-ultimate[data-enhanced="true"] .kc-materials-card,
+  .kc-hero-ultimate[data-enhanced="true"] .kc-material-grid .kc-chip{opacity:1!important;transform:none!important;}
+}
+/* 5. Strengthen colorwash layering (ensure sits above background image but below content) */
+.kc-hero-ultimate[data-enhanced="true"] .kc-colorwash{z-index:1;}
+.kc-hero-ultimate[data-enhanced="true"] .kc-hero-wrap{position:relative;z-index:2;}
+/* 6. Defensive: if some optimization strips inline style transforms, keep transitions smooth */
+.kc-hero-ultimate[data-enhanced="true"] .wp-block-cover__image-background{will-change:transform;transform-origin:center center;}
+/* 7. Fix ripple visibility over chips/buttons that have overflow hidden */
+.kc-hero-ultimate[data-enhanced="true"] .kc-chip,.kc-hero-ultimate[data-enhanced="true"] .kc-hero-ctas .wp-block-button__link{position:relative;overflow:hidden;}
+/* 8. Prevent accidental double transform (magnetic + reveal) flicker */
+.kc-hero-ultimate[data-enhanced="true"] .kc-chip[style*="translate"]{transition:transform .25s cubic-bezier(.2,.7,.2,1), box-shadow .25s ease, border-color .25s ease, background .25s ease;}
+
+
