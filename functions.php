@@ -258,3 +258,19 @@ add_action( 'wp_body_open', function() {
   }
 }, 15 );
 
+/* -------------------------------------------------------------
+| CRITICAL INLINE HERO CSS (failsafe)
+| If style.css isn't loading or caching strips rules, this ensures
+| minimal visuals so JS doesn't flag missing CSS. Remove after fix.
+-------------------------------------------------------------- */
+add_action( 'wp_head', function() {
+  // Only output if hero likely present on this request (cheap check in post content or auto front injection on front page)
+  if ( is_admin() ) { return; }
+  $need = is_front_page();
+  if ( ! $need && is_singular() ) {
+    global $post; $need = $post && strpos( $post->post_content, 'kc-hero-ultimate' ) !== false;
+  }
+  if ( ! $need ) { return; }
+  echo '<style id="kc-hero-critical">.kc-hero-ultimate{position:relative;overflow:hidden;color:#fff;} .kc-hero-ultimate .wp-block-cover__image-background{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;z-index:0;filter:brightness(.72);} .kc-hero-ultimate .kc-colorwash{position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;background:radial-gradient(circle at 30% 40%,rgba(120,160,255,.55),transparent 60%),radial-gradient(circle at 75% 70%,rgba(125,226,209,.45),transparent 65%),linear-gradient(120deg,rgba(20,26,36,.4),rgba(12,16,26,.55));opacity:.45;z-index:1;} .kc-hero-ultimate .kc-hero-wrap{position:relative;z-index:2;} .kc-hero-ultimate .kc-float{position:absolute;border-radius:50%;filter:blur(38px) saturate(140%);opacity:.5;mix-blend-mode:screen;} .kc-hero-ultimate .kc-float.a{width:320px;height:320px;top:-80px;left:-100px;background:radial-gradient(circle at 30% 30%,rgba(185,156,255,.75),rgba(120,90,255,.28) 70%,transparent 74%);} .kc-hero-ultimate .kc-float.b{width:260px;height:260px;bottom:-40px;right:8%;background:radial-gradient(circle at 40% 40%,rgba(125,226,209,.75),rgba(60,170,150,.3) 68%,transparent 72%);} .kc-hero-ultimate .kc-float.c{width:220px;height:220px;top:12%;right:-4%;background:radial-gradient(circle at 45% 30%,rgba(255,212,121,.8),rgba(220,160,80,.25) 72%,transparent 76%);} .kc-hero-ultimate .kc-title{margin:.5em 0;font-weight:800;line-height:1.05;} .kc-hero-ultimate .kc-title .kc-gradient{background:linear-gradient(90deg,#fff,#dfe7ff);-webkit-background-clip:text;background-clip:text;color:transparent;} .kc-hero-ultimate .kc-materials-card{background:rgba(10,10,20,.6);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.4);} .kc-hero-ultimate .kc-chip{display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);padding:10px 14px;border-radius:12px;margin:4px;font-size:.85rem;color:#fff;text-decoration:none;} </style>';
+}, 5 );
+
