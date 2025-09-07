@@ -195,3 +195,35 @@ add_action( 'init', function() {
   }
 }, 99 );
 
+/* -------------------------------------------------------------
+| HERO ULTIMATE AUTO-UPGRADE (non-destructive frontend patch)
+| Reason: Previously inserted block pattern instances are static
+| snapshots. Users reported new motion / color-wash changes not
+| appearing because existing content lacked new markup pieces.
+| This filter augments legacy hero markup on the fly by:
+|  1. Adding data-enhanced="true" attribute
+|  2. Injecting .kc-colorwash layer after background image
+|  3. Injecting floating blob elements inside .kc-hero-wrap
+| Safe Guards:
+|  - Skips if already enhanced (data-enhanced or existing nodes)
+|  - Runs only on singular front-end content (not feeds / admin)
+|  - Light regex; avoids heavy DOM libs for performance
+| Remove once all pages re-saved with new pattern structure.
+-------------------------------------------------------------- */
+add_filter( 'the_content', function( $content ) {
+  if ( is_admin() || ! is_singular() ) { return $content; }
+  if ( false === strpos( $content, 'kc-hero-ultimate' ) ) { return $content; }
+  // Already enhanced? Presence of data-enhanced attr or colorwash layer.
+  if ( preg_match( '/kc-hero-ultimate[^>]*data-enhanced="true"/i', $content ) || strpos( $content, 'kc-colorwash' ) !== false ) {
+    return $content;
+  }
+  $modified = $content;
+  // 1. Add data-enhanced attribute to first hero container.
+  $modified = preg_replace( '/(<div[^>]*class="[^"]*kc-hero-ultimate[^"]*"[^>]*)>/', '$1 data-enhanced="true">', $modified, 1 );
+  // 2. Inject colorwash layer after background image element.
+  $modified = preg_replace( '/(<img[^>]*wp-block-cover__image-background[^>]*>)/', "$1\n  <div class=\"kc-colorwash\" aria-hidden=\"true\"></div>", $modified, 1 );
+  // 3. Inject floating blobs just inside hero wrap container.
+  $modified = preg_replace( '/(<div[^>]*class="[^"]*kc-hero-wrap[^"]*"[^>]*>)/', '$1\n  <div class="kc-float a" aria-hidden="true"></div><div class="kc-float b" aria-hidden="true"></div><div class="kc-float c" aria-hidden="true"></div>', $modified, 1 );
+  return $modified;
+}, 12 );
+
