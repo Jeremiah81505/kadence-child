@@ -239,3 +239,22 @@ add_action( 'wp_footer', function() {
   echo "\n<!-- kc-hero-diag id=" . ( $post ? intval( $post->ID ) : 0 ) . " pattern_present=" . ( $has_pattern_slug ? 'yes' : 'no' ) . " enhanced_attr_present=" . ( $has_enhanced_attr ? 'yes' : 'no' ) . " -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
 }, 99 );
 
+/* -------------------------------------------------------------
+| OPTIONAL AUTO FRONT PAGE HERO INJECTION (for debugging)
+| Purpose: User confusion around pattern reinsertion. This makes
+| updates to /patterns/hero-ultimate-motion.php appear instantly
+| on the front page without editing the page content. Remove or
+| disable (define KC_DISABLE_HERO_FRONT true) once resolved.
+-------------------------------------------------------------- */
+add_action( 'wp_body_open', function() {
+  if ( defined( 'KC_DISABLE_HERO_FRONT' ) && KC_DISABLE_HERO_FRONT ) { return; }
+  if ( ! is_front_page() ) { return; }
+  $file = get_stylesheet_directory() . '/patterns/hero-ultimate-motion.php';
+  if ( file_exists( $file ) ) {
+    echo "\n<!-- kc-hero-auto (front page) -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+    include $file; // phpcs:ignore WPThemeReview.CoreFunctionality.FileInclude
+  } else {
+    echo "\n<!-- kc-hero-auto missing pattern file -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+  }
+}, 15 );
+
