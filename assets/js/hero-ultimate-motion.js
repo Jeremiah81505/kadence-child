@@ -3,6 +3,33 @@
   const hero = document.querySelector('.kc-hero-ultimate');
   if (!hero) return;
 
+  /* Runtime upgrade: if legacy hero instance lacks data-enhanced + layers, add them */
+  if (!hero.hasAttribute('data-enhanced')) {
+    hero.setAttribute('data-enhanced', 'true');
+    // Color wash layer
+    if (!hero.querySelector('.kc-colorwash')) {
+      const washLayer = document.createElement('div');
+      washLayer.className = 'kc-colorwash';
+      washLayer.setAttribute('aria-hidden', 'true');
+      const bgRef = hero.querySelector('.wp-block-cover__image-background');
+      if (bgRef && bgRef.parentNode) {
+        bgRef.insertAdjacentElement('afterend', washLayer);
+      } else {
+        hero.insertBefore(washLayer, hero.firstChild);
+      }
+    }
+    // Floating blobs
+    if (!hero.querySelector('.kc-float')) {
+      const wrap = hero.querySelector('.kc-hero-wrap') || hero;
+      ['a','b','c'].forEach(cls => {
+        const blob = document.createElement('div');
+        blob.className = 'kc-float ' + cls;
+        blob.setAttribute('aria-hidden','true');
+        wrap.appendChild(blob);
+      });
+    }
+  }
+
   /* Background parallax (scroll) & color wash dynamic hue */
   const bgImg = hero.querySelector('.wp-block-cover__image-background');
   const wash  = hero.querySelector('.kc-colorwash');
