@@ -246,6 +246,13 @@ add_action( 'wp_footer', function() {
   echo "\n<!-- kc-hero-diag id=" . ( $post ? intval( $post->ID ) : 0 ) . " pattern_present=" . ( $has_pattern_slug ? 'yes' : 'no' ) . " enhanced_attr_present=" . ( $has_enhanced_attr ? 'yes' : 'no' ) . " -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
 }, 99 );
 
+// Lightweight footer hook diagnostic: visit any page with ?kc_footer_diag=1 and view-source
+add_action( 'wp_footer', function() {
+  if ( empty( $_GET['kc_footer_diag'] ) ) { return; }
+  $ts = gmdate( 'c' );
+  echo "\n<!-- kc-footer-hook ok ts={$ts} -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+}, 999 );
+
 /* -------------------------------------------------------------
 | OPTIONAL AUTO FRONT PAGE HERO INJECTION (for debugging)
 | Purpose: User confusion around pattern reinsertion. This makes
