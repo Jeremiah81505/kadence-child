@@ -1,36 +1,14 @@
 <?php
 /**
- * Footer template for Kadence Child Theme (resolved)
+ * Child footer proxy – defer rendering to Kadence parent theme.
+ *
+ * Why: A child footer.php overrides the parent and forces static markup,
+ * which makes the footer look "stuck" and uneditable. This file simply
+ * loads the parent footer template so the Kadence Footer Builder controls
+ * the output again.
  */
-?>
+if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-<!-- wp:group {"align":"full","className":"kc-footer"} -->
-<footer class="wp-block-group alignfull kc-footer" role="contentinfo">
-  <div class="kc-footer-inner">
-    <div class="kc-footer-brand">
-      <a href="/" class="kc-footer-logo">
-        <img src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/elevated-logo.svg" alt="Elevated Surfaces Logo" />
-      </a>
-      <span class="kc-footer-title">Elevated Surfaces</span>
-    </div>
-    <nav class="kc-footer-nav" aria-label="Footer navigation">
-      <a href="/quartz">Quartz</a>
-      <a href="/natural-stone">Natural Stone</a>
-      <a href="/solid-surface">Solid Surface</a>
-      <a href="/ultra-compact">Ultra Compact</a>
-      <a href="/laminate">Laminate</a>
-      <a href="/sinks">Sinks</a>
-      <a href="/contact">Contact</a>
-    </nav>
-    <div class="kc-footer-copy">
-      &copy; <?php echo esc_html( date( 'Y' ) ); ?> <?php esc_html_e( 'Elevated Surfaces. All rights reserved.', 'kadence-child' ); ?>
-    </div>
-  </div>
-</footer>
-<!-- /wp:group -->
-
-<!-- Test marker: footer update to verify GitHub sync -->
-
-<?php wp_footer(); ?>
-</body>
-</html>
+// Load the parent theme's footer template.
+// get_template_directory() always points to the parent (Kadence) theme.
+require get_template_directory() . '/footer.php';
