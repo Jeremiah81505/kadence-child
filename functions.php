@@ -256,6 +256,29 @@ add_action( 'wp_footer', function() {
   echo '<div id="kc-footer-marker" data-ts="' . esc_attr( $ts ) . '" style="display:none"></div>' ; // phpcs:ignore WordPress.Security.EscapeOutput
 }, 999 );
 
+// Add diagnostics header early to confirm child theme is active and hooks run.
+add_action( 'send_headers', function( $wp ) {
+  if ( empty( $_GET['kc_footer_diag'] ) && empty( $_GET['kc_diag'] ) ) { return; }
+  header( 'X-KC-Child: active' );
+  header( 'X-KC-Time: ' . gmdate( 'c' ) );
+  // Strongly discourage caches when diagnosing
+  header( 'Cache-Control: no-cache, no-store, must-revalidate, max-age=0' );
+  header( 'Pragma: no-cache' );
+  header( 'Expires: 0' );
+} );
+
+// Body-open marker for verification
+add_action( 'wp_body_open', function() {
+  if ( empty( $_GET['kc_diag'] ) ) { return; }
+  echo "\n<!-- kc-body-open ok -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+}, 1 );
+
+// Optional visible admin-only footer outline (toggle with ?kc_footer_outline=1)
+add_action( 'wp_head', function() {
+  if ( empty( $_GET['kc_footer_outline'] ) || ! function_exists( 'current_user_can' ) || ! current_user_can( 'manage_options' ) ) { return; }
+  echo '<style>#colophon,.kc-footer{outline: 3px solid #e91e63 !important; outline-offset: -3px;}</style>'; // phpcs:ignore WordPress.Security.EscapeOutput
+}, 99 );
+
 /* -------------------------------------------------------------
 | OPTIONAL AUTO FRONT PAGE HERO INJECTION (for debugging)
 | Purpose: User confusion around pattern reinsertion. This makes
