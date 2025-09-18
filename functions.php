@@ -92,8 +92,13 @@ add_action( 'init', function() {
 | Disable by commenting out the define() below.
 --------------------------------------------------------------*/
 if ( ! defined( 'KC_FORCE_HEADER_BLOCK_ID' ) ) {
-  // Set to the reusable block (wp_block post) ID for "Header 1769".
-  define( 'KC_FORCE_HEADER_BLOCK_ID', 1769 );
+  // Set to 0 to disable forced header block output.
+  define( 'KC_FORCE_HEADER_BLOCK_ID', 0 );
+}
+
+// Disable front-page auto hero injection so homepage shows nothing unless content exists.
+if ( ! defined( 'KC_DISABLE_HERO_FRONT' ) ) {
+  define( 'KC_DISABLE_HERO_FRONT', true );
 }
 
 // Output the forced header block just after <body> opens, BEFORE page content.
