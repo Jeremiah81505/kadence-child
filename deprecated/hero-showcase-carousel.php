@@ -1,1 +1,0 @@
-<?php // deprecated placeholder kept outside patterns directory ?>

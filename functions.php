@@ -119,6 +119,8 @@ add_action( 'wp_enqueue_scripts', function() {
   wp_enqueue_style( 'kadence-child', get_stylesheet_uri(), array( 'kadence-theme' ), kc_asset_ver( 'style.css' ) );
   wp_enqueue_style( 'kc-header', get_stylesheet_directory_uri() . '/assets/css/header.css', array(), kc_asset_ver( 'assets/css/header.css' ) );
   wp_enqueue_style( 'kc-carousel-adv', get_stylesheet_directory_uri() . '/assets/css/carousel-adv.css', array(), kc_asset_ver( 'assets/css/carousel-adv.css' ) );
+  // Dedicated hero motion styles (isolated from main style.css for reliability)
+  wp_enqueue_style( 'kc-hero-motion-css', get_stylesheet_directory_uri() . '/assets/css/hero-motion.css', array( 'kadence-child' ), kc_asset_ver( 'assets/css/hero-motion.css' ) );
 
   // Scripts
   wp_enqueue_script( 'kc-header', get_stylesheet_directory_uri() . '/assets/js/header.js', array(), kc_asset_ver( 'assets/js/header.js' ), true );
