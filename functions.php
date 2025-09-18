@@ -250,7 +250,10 @@ add_action( 'wp_footer', function() {
 add_action( 'wp_footer', function() {
   if ( empty( $_GET['kc_footer_diag'] ) ) { return; }
   $ts = gmdate( 'c' );
+  // Emit multiple signals so minifiers/caches can't hide them all
   echo "\n<!-- kc-footer-hook ok ts={$ts} -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+  echo '<script>window.KC_FOOTER_HOOK_OK = ' . json_encode( $ts ) . '; console.log("[kc] footer hook ok", window.KC_FOOTER_HOOK_OK);</script>'; // phpcs:ignore WordPress.Security.EscapeOutput
+  echo '<div id="kc-footer-marker" data-ts="' . esc_attr( $ts ) . '" style="display:none"></div>' ; // phpcs:ignore WordPress.Security.EscapeOutput
 }, 999 );
 
 /* -------------------------------------------------------------
