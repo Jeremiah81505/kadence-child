@@ -71,6 +71,17 @@
   const bsAreaEl = sel('[data-kc-bs-area]', aside);
   const perimEl = sel('[data-kc-perim]', aside);
   const edgeReadout = sel('[data-kc-edge-readout]', aside);
+  // Tabs & measurement summary fields
+  const tabBtns = all('[data-kc-tab]', aside);
+  const panels = all('[data-kc-panel]', aside);
+  const msMat = sel('[data-kc-ms-material]', aside);
+  const msThk = sel('[data-kc-ms-thickness]', aside);
+  const msFin = sel('[data-kc-ms-finish]', aside);
+  const msOh = sel('[data-kc-ms-overhang]', aside);
+  const msSink = sel('[data-kc-ms-sink]', aside);
+  const msFaucet = sel('[data-kc-ms-faucet]', aside);
+  const msCooktop = sel('[data-kc-ms-cooktop]', aside);
+  const msBs = sel('[data-kc-ms-bs]', aside);
 
   // New controls
   const presetIsland = sel('[data-kc-preset="island"]', root);
@@ -416,6 +427,11 @@
       drawRooms();
     }
 
+    function showPanel(name){
+      panels.forEach(p=> p.classList.toggle('is-hidden', p.getAttribute('data-kc-panel')!==name));
+      tabBtns.forEach(b=> b.classList.toggle('is-primary', b.getAttribute('data-kc-tab')===name));
+    }
+
     function hitTest(mx,my){
       const p = screenToWorld(mx,my);
       for (let i=state.rooms.length-1; i>=0; i--){
@@ -485,23 +501,23 @@
   bsOn?.addEventListener('change', ()=>{ state.backsplash.on = !!bsOn.checked; draw(); updateAside(); });
   bsHeight?.addEventListener('input', ()=>{ state.backsplash.heightIn = Number(bsHeight.value||0); draw(); updateAside(); });
   edgeSel?.addEventListener('change', ()=>{ state.edge = edgeSel.value; edgeReadout && (edgeReadout.textContent = edgeSel.options[edgeSel.selectedIndex].text); updateAside(); draw(); });
-  matSel?.addEventListener('change', ()=>{ state.mat.material = matSel.value; updateAside(); });
-  thickIn?.addEventListener('input', ()=>{ state.mat.thickness = Number(thickIn.value||0); updateAside(); });
-  finishSel?.addEventListener('change', ()=>{ state.mat.finish = finishSel.value; updateAside(); });
-  overhangIn?.addEventListener('input', ()=>{ state.mat.overhang = Number(overhangIn.value||0); draw(); updateAside(); });
-  sinkType?.addEventListener('change', ()=>{ state.sink.type = sinkType.value; draw(); updateAside(); });
+  matSel?.addEventListener('change', ()=>{ state.mat.material = matSel.value; updateAside(); refreshSummary(); });
+  thickIn?.addEventListener('input', ()=>{ state.mat.thickness = Number(thickIn.value||0); updateAside(); refreshSummary(); });
+  finishSel?.addEventListener('change', ()=>{ state.mat.finish = finishSel.value; updateAside(); refreshSummary(); });
+  overhangIn?.addEventListener('input', ()=>{ state.mat.overhang = Number(overhangIn.value||0); draw(); updateAside(); refreshSummary(); });
+  sinkType?.addEventListener('change', ()=>{ state.sink.type = sinkType.value; draw(); updateAside(); refreshSummary(); });
   sinkW?.addEventListener('input', ()=>{ state.sink.w = Math.max(0, Number(sinkW.value||0)); draw(); updateAside(); });
   sinkH?.addEventListener('input', ()=>{ state.sink.h = Math.max(0, Number(sinkH.value||0)); draw(); updateAside(); });
   sinkX?.addEventListener('input', ()=>{ state.sink.x = Math.max(0, Number(sinkX.value||0)); draw(); });
   sinkY?.addEventListener('input', ()=>{ state.sink.y = Math.max(0, Number(sinkY.value||0)); draw(); });
   sinkCentre?.addEventListener('change', ()=>{ state.sink.center = !!sinkCentre.checked; draw(); });
-  ctOn?.addEventListener('change', ()=>{ state.cooktop.on = !!ctOn.checked; draw(); updateAside(); });
+  ctOn?.addEventListener('change', ()=>{ state.cooktop.on = !!ctOn.checked; draw(); updateAside(); refreshSummary(); });
   ctW?.addEventListener('input', ()=>{ state.cooktop.w = Math.max(0, Number(ctW.value||0)); draw(); updateAside(); });
   ctH?.addEventListener('input', ()=>{ state.cooktop.h = Math.max(0, Number(ctH.value||0)); draw(); updateAside(); });
   ctX?.addEventListener('input', ()=>{ state.cooktop.x = Math.max(0, Number(ctX.value||0)); draw(); });
   ctY?.addEventListener('input', ()=>{ state.cooktop.y = Math.max(0, Number(ctY.value||0)); draw(); });
   ctCentre?.addEventListener('change', ()=>{ state.cooktop.center = !!ctCentre.checked; draw(); });
-  fhCount?.addEventListener('change', ()=>{ state.faucet.count = Number(fhCount.value||0); draw(); updateAside(); });
+  fhCount?.addEventListener('change', ()=>{ state.faucet.count = Number(fhCount.value||0); draw(); updateAside(); refreshSummary(); });
   fhDia?.addEventListener('input', ()=>{ state.faucet.dia = Number(fhDia.value||0); draw(); updateAside(); });
   fhCentre?.addEventListener('change', ()=>{ state.faucet.center = !!fhCentre.checked; draw(); });
   fhX?.addEventListener('input', ()=>{ state.faucet.x = Number(fhX.value||0); draw(); });
@@ -566,6 +582,25 @@
       canvas.width = oldW; canvas.height = oldH; canvas.style.width = oldStyleW; canvas.style.height = oldStyleH; oldSet(dpr,0,0,dpr,0,0); draw();
       const a = document.createElement('a'); a.href = dataURL; a.download = 'kitchen-layout.png'; a.click();
     });
+
+    // tabs
+    if (tabBtns.length){
+      tabBtns.forEach(btn=> btn.addEventListener('click', ()=> showPanel(btn.getAttribute('data-kc-tab'))));
+      showPanel('basics');
+    }
+
+    function refreshSummary(){
+      if (msMat) msMat.textContent = (state.mat?.material||'').replace(/^./,c=>c.toUpperCase());
+      if (msThk) msThk.textContent = state.mat?.thickness? `${state.mat.thickness}"` : '';
+      if (msFin) msFin.textContent = (state.mat?.finish||'').replace(/^./,c=>c.toUpperCase());
+      if (msOh) msOh.textContent = state.mat?.overhang? `${state.mat.overhang}"` : '0"';
+      if (msSink) msSink.textContent = state.sink?.type ? state.sink.type.replace(/^./,c=>c.toUpperCase()) : 'None';
+      if (msFaucet) msFaucet.textContent = `${Number(state.faucet?.count||0)} hole${Number(state.faucet?.count||0)===1?'':'s'}`;
+      if (msCooktop) msCooktop.textContent = state.cooktop?.on ? `${state.cooktop.w}"×${state.cooktop.h}"` : 'None';
+      if (msBs) msBs.textContent = state.backsplash?.on ? `${state.backsplash.heightIn||0}"` : 'None';
+    }
+
+    refreshSummary();
 
     // keyboard delete for selected
     window.addEventListener('keydown', (e)=>{

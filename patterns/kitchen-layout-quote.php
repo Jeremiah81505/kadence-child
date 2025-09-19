@@ -44,8 +44,26 @@
           <div class="kc-row" style="margin-top:6px">
             <span class="kc-badge">Options</span>
           </div>
+          <div class="kc-ms" style="margin-top:8px">
+            <dl style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0">
+              <dt>Material</dt><dd data-kc-ms-material>Granite</dd>
+              <dt>Thickness</dt><dd data-kc-ms-thickness>1.25"</dd>
+              <dt>Finish</dt><dd data-kc-ms-finish>Polished</dd>
+              <dt>Overhang</dt><dd data-kc-ms-overhang>1.5"</dd>
+              <dt>Sink</dt><dd data-kc-ms-sink>Undermount</dd>
+              <dt>Faucet</dt><dd data-kc-ms-faucet>1 hole</dd>
+              <dt>Cooktop</dt><dd data-kc-ms-cooktop>None</dd>
+              <dt>Backsplash</dt><dd data-kc-ms-bs>4"</dd>
+            </dl>
+          </div>
         </div>
-  <div class="kc-card kc-span-2">
+        <div class="kc-tabs kc-span-2" style="display:flex;gap:8px;align-items:center">
+          <button class="kc-btn is-primary" type="button" data-kc-tab="basics">Basics</button>
+          <button class="kc-btn" type="button" data-kc-tab="cutouts">Cutouts</button>
+          <button class="kc-btn" type="button" data-kc-tab="finishes">Finishes</button>
+          <button class="kc-btn" type="button" data-kc-tab="advanced">Advanced</button>
+        </div>
+  <div class="kc-card kc-span-2" data-kc-panel="basics">
           <h3>Presets</h3>
           <div class="kc-row" style="gap:8px;margin-bottom:6px">
             <button class="kc-btn" type="button" data-kc-preset="island">Island</button>
@@ -53,7 +71,7 @@
             <button class="kc-btn" type="button" data-kc-preset="ushape">U-Shape</button>
           </div>
         </div>
-        <div class="kc-card">
+  <div class="kc-card" data-kc-panel="basics">
           <h3>Selected Section</h3>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <label style="display:flex;flex-direction:column;gap:6px">
@@ -74,7 +92,7 @@
             <button class="kc-btn" type="button" data-kc-swap>Swap W/D</button>
           </div>
         </div>
-        <div class="kc-card">
+  <div class="kc-card" data-kc-panel="finishes">
           <h3>Backsplash & Edges</h3>
           <div class="kc-row">
             <label class="kc-check"><input type="checkbox" data-kc-bs-on checked> Include Backsplash</label>
@@ -95,7 +113,7 @@
             </label>
           </div>
         </div>
-        <div class="kc-card">
+  <div class="kc-card" data-kc-panel="finishes">
           <h3>Materials & Finish</h3>
           <div class="kc-row">
             <label style="display:flex;align-items:center;gap:8px">
@@ -130,7 +148,7 @@
             </label>
           </div>
         </div>
-        <div class="kc-card">
+  <div class="kc-card" data-kc-panel="cutouts">
           <h3>Cutouts</h3>
           <div class="kc-row" style="margin-bottom:6px">
             <span class="kc-badge">Cooktop</span>
@@ -192,14 +210,14 @@
             </label>
           </div>
         </div>
-        <div class="kc-card">
+  <div class="kc-card" data-kc-panel="basics">
           <h3>90° Counter w/ Seam</h3>
           <div class="kc-row" style="gap:10px">
             <button class="kc-btn" type="button" data-kc-add-seam>Add 90° Layout</button>
             <label class="kc-check"><input type="checkbox" data-kc-show-seam checked> Show Seam</label>
           </div>
         </div>
-        <div class="kc-card">
+  <div class="kc-card" data-kc-panel="cutouts">
           <h3>Sink Details</h3>
           <div class="kc-row">
             <label style="display:flex;align-items:center;gap:8px">
@@ -236,7 +254,7 @@
             <label class="kc-check"><input type="checkbox" data-kc-sink-centre> Center on Section</label>
           </div>
         </div>
-        <div class="kc-card">
+  <div class="kc-card" data-kc-panel="advanced">
           <h3>Quote Form Sync</h3>
           <p style="margin:.3em 0 .8em;opacity:.8">These hidden fields auto-fill a contact form on submit.</p>
           <input type="hidden" name="kc_layout_json" data-kc-bind="layout-json">
@@ -246,7 +264,7 @@
             <button class="kc-btn" type="button" data-kc-copy-json>Copy JSON</button>
           </div>
         </div>
-        <div class="kc-card">
+  <div class="kc-card" data-kc-panel="advanced">
           <h3>Tips</h3>
           <ul style="margin:.2em 0 .2em .95em;opacity:.9">
             <li>Hold Ctrl and scroll to zoom.</li>
