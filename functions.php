@@ -150,7 +150,27 @@ add_action( 'wp_enqueue_scripts', function() {
   wp_localize_script( 'kc-header', 'KC_HEADER', array( 'stickyOffset' => 64 ) );
   // Provide a flag to tone down hero motion without affecting carousel
   wp_localize_script( 'kc-hero-motion', 'KC_HERO', array( 'minimal' => true ) );
+
+  // Kitchen designer assets: only when the page contains the pattern/container
+  $should_load_kitchen = false;
+  if ( is_singular() ) {
+    global $post; $html = $post ? (string) $post->post_content : '';
+    $should_load_kitchen = ( false !== strpos( $html, 'kc-kitchen-designer' ) ) || ( false !== strpos( $html, 'kadence-child/kitchen-layout-quote' ) );
+  }
+  // Also allow force via query for testing
+  if ( isset( $_GET['kc_kitchen'] ) && $_GET['kc_kitchen'] == '1' ) { $should_load_kitchen = true; }
+  if ( $should_load_kitchen ) {
+    wp_enqueue_style( 'kc-kitchen-css', get_stylesheet_directory_uri() . '/assets/css/kitchen-layout.css', array(), kc_asset_ver( 'assets/css/kitchen-layout.css' ) );
+    wp_enqueue_script( 'kc-kitchen-js', get_stylesheet_directory_uri() . '/assets/js/kitchen-layout.js', array(), kc_asset_ver( 'assets/js/kitchen-layout.js' ), true );
+  }
 }, 99 );
+
+// Load kitchen designer assets inside the block editor when pattern block is present
+add_action( 'enqueue_block_editor_assets', function() {
+  // Cheap detection: always load in editor to avoid missing styles in pattern preview
+  wp_enqueue_style( 'kc-kitchen-css', get_stylesheet_directory_uri() . '/assets/css/kitchen-layout.css', array(), kc_asset_ver( 'assets/css/kitchen-layout.css' ) );
+  wp_enqueue_script( 'kc-kitchen-js', get_stylesheet_directory_uri() . '/assets/js/kitchen-layout.js', array(), kc_asset_ver( 'assets/js/kitchen-layout.js' ), true );
+}, 20 );
 
 /**
  * Theme setup: load translations, enable features.
