@@ -14,12 +14,14 @@
       <div class="kc-group">
         <button class="kc-btn is-primary" type="button" data-kc-add-rect>Add Rectangle</button>
         <button class="kc-btn" type="button" data-kc-add-l>Add L-Shape</button>
-        <button class="kc-btn" type="button" data-kc-snap>Snap</button>
+  <button class="kc-btn" type="button" data-kc-snap>Snap</button>
   <button class="kc-btn" type="button" data-kc-zoom-in>Zoom +</button>
   <button class="kc-btn" type="button" data-kc-zoom-out>Zoom -</button>
+  <button class="kc-btn" type="button" data-kc-fit>Fit</button>
       </div>
       <div class="kc-group">
-        <button class="kc-btn" type="button" data-kc-reset>Reset</button>
+  <button class="kc-btn" type="button" data-kc-reset>Reset</button>
+  <button class="kc-btn" type="button" data-kc-delete-all>Delete All</button>
       </div>
       <div class="kc-spacer"></div>
       <div class="kc-group">
@@ -44,6 +46,14 @@
           </div>
         </div>
         <div class="kc-card">
+          <h3>Presets</h3>
+          <div class="kc-row" style="gap:8px;margin-bottom:6px">
+            <button class="kc-btn" type="button" data-kc-preset="island">Island</button>
+            <button class="kc-btn" type="button" data-kc-preset="galley">Galley</button>
+            <button class="kc-btn" type="button" data-kc-preset="ushape">U-Shape</button>
+          </div>
+        </div>
+        <div class="kc-card">
           <h3>Selected Section</h3>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <label style="display:flex;flex-direction:column;gap:6px">
@@ -61,6 +71,7 @@
           </div>
           <div style="margin-top:8px;display:flex;gap:8px">
             <button class="kc-btn" type="button" data-kc-delete>Delete Selected</button>
+            <button class="kc-btn" type="button" data-kc-swap>Swap W/D</button>
           </div>
         </div>
         <div class="kc-card">
@@ -81,6 +92,102 @@
                 <option value="bullnose">Bullnose</option>
                 <option value="ogee">Ogee</option>
               </select>
+            </label>
+          </div>
+        </div>
+        <div class="kc-card">
+          <h3>Materials & Finish</h3>
+          <div class="kc-row">
+            <label style="display:flex;align-items:center;gap:8px">
+              <span style="opacity:.75;font-size:12px">Material</span>
+              <select data-kc-mat>
+                <option value="granite" selected>Granite</option>
+                <option value="quartz">Quartz</option>
+                <option value="marble">Marble</option>
+                <option value="quartzite">Quartzite</option>
+              </select>
+            </label>
+          </div>
+          <div class="kc-row">
+            <label style="display:flex;align-items:center;gap:8px">
+              <span style="opacity:.75;font-size:12px">Thickness (in)</span>
+              <input type="number" min="0.5" step="0.25" value="1.25" data-kc-thickness>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px">
+              <span style="opacity:.75;font-size:12px">Finish</span>
+              <select data-kc-finish>
+                <option value="polished" selected>Polished</option>
+                <option value="honed">Honed</option>
+                <option value="leathered">Leathered</option>
+              </select>
+            </label>
+          </div>
+          <div class="kc-row">
+            <label style="display:flex;align-items:center;gap:8px">
+              <span style="opacity:.75;font-size:12px">Overhang (in)</span>
+              <input type="number" min="0" step="0.25" value="1.5" data-kc-overhang>
+            </label>
+          </div>
+        </div>
+        <div class="kc-card">
+          <h3>Cutouts</h3>
+          <div class="kc-row" style="margin-bottom:6px">
+            <span class="kc-badge">Cooktop</span>
+            <label class="kc-check"><input type="checkbox" data-kc-ct-on> Include</label>
+          </div>
+          <div class="kc-row">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="opacity:.75;font-size:12px">Width (in)</span>
+              <input type="number" min="0" step="1" value="30" data-kc-ct-w>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="opacity:.75;font-size:12px">Depth (in)</span>
+              <input type="number" min="0" step="1" value="21" data-kc-ct-h>
+            </label>
+          </div>
+          <div class="kc-row">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="opacity:.75;font-size:12px">From Left (in)</span>
+              <input type="number" min="0" step="1" value="24" data-kc-ct-x>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="opacity:.75;font-size:12px">From Front (in)</span>
+              <input type="number" min="0" step="1" value="12" data-kc-ct-y>
+            </label>
+            <label class="kc-check"><input type="checkbox" data-kc-ct-centre> Center</label>
+          </div>
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:10px 0">
+          <div class="kc-row" style="margin-bottom:6px">
+            <span class="kc-badge">Faucet</span>
+          </div>
+          <div class="kc-row">
+            <label style="display:flex;align-items:center;gap:8px">
+              <span style="opacity:.75;font-size:12px">Holes</span>
+              <select data-kc-fh-count>
+                <option value="0">0</option>
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px">
+              <span style="opacity:.75;font-size:12px">Diameter (in)</span>
+              <input type="number" min="0.5" step="0.125" value="1.375" data-kc-fh-dia>
+            </label>
+            <label class="kc-check"><input type="checkbox" data-kc-fh-centre checked> Center above sink</label>
+          </div>
+          <div class="kc-row">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="opacity:.75;font-size:12px">From Left (in)</span>
+              <input type="number" min="0" step="1" value="24" data-kc-fh-x>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="opacity:.75;font-size:12px">From Back (in)</span>
+              <input type="number" min="0" step="0.5" value="2" data-kc-fh-from-back>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="opacity:.75;font-size:12px">3-hole spacing (in)</span>
+              <input type="number" min="3" step="0.5" value="8" data-kc-fh-spacing>
             </label>
           </div>
         </div>

@@ -30,14 +30,19 @@
   edge: 'eased',
   seam: { show: true },
   sink: { type: 'undermount', w:30, h:20, x:12, y:12, center:false },
+  mat: { material: 'granite', thickness: 1.25, finish: 'polished', overhang: 1.5 },
+  cooktop: { on:false, w:30, h:21, x:24, y:12, center:false },
+  faucet: { count:1, dia:1.375, center:true, x:24, fromBack:2, spacing:8 },
     };
 
     const aside = sel('.kc-kd-aside', root);
     const roomCountEl = sel('[data-kc-room-count]', aside);
     const areaEl = sel('[data-kc-area]', aside);
   const exportJsonBtn = sel('[data-kc-export-json]', root);
-    const exportPngBtn = sel('[data-kc-export-png]', root);
-    const resetBtn = sel('[data-kc-reset]', root);
+  const exportPngBtn = sel('[data-kc-export-png]', root);
+  const resetBtn = sel('[data-kc-reset]', root);
+  const fitBtn = sel('[data-kc-fit]', root);
+  const delAllBtn = sel('[data-kc-delete-all]', root);
     const addRectBtn = sel('[data-kc-add-rect]', root);
     const addLBtn = sel('[data-kc-add-l]', root);
   const snapBtn = sel('[data-kc-snap]', root);
@@ -51,6 +56,7 @@
   const inputH = sel('[data-kc-input-h]', root);
   const inputR = sel('[data-kc-input-radius]', root);
   const delBtn = sel('[data-kc-delete]', root);
+  const swapBtn = sel('[data-kc-swap]', root);
   const bsOn = sel('[data-kc-bs-on]', root);
   const bsHeight = sel('[data-kc-bs-height]', root);
   const edgeSel = sel('[data-kc-edge]', root);
@@ -65,6 +71,27 @@
   const bsAreaEl = sel('[data-kc-bs-area]', aside);
   const perimEl = sel('[data-kc-perim]', aside);
   const edgeReadout = sel('[data-kc-edge-readout]', aside);
+
+  // New controls
+  const presetIsland = sel('[data-kc-preset="island"]', root);
+  const presetGalley = sel('[data-kc-preset="galley"]', root);
+  const presetU = sel('[data-kc-preset="ushape"]', root);
+  const matSel = sel('[data-kc-mat]', root);
+  const thickIn = sel('[data-kc-thickness]', root);
+  const finishSel = sel('[data-kc-finish]', root);
+  const overhangIn = sel('[data-kc-overhang]', root);
+  const ctOn = sel('[data-kc-ct-on]', root);
+  const ctW = sel('[data-kc-ct-w]', root);
+  const ctH = sel('[data-kc-ct-h]', root);
+  const ctX = sel('[data-kc-ct-x]', root);
+  const ctY = sel('[data-kc-ct-y]', root);
+  const ctCentre = sel('[data-kc-ct-centre]', root);
+  const fhCount = sel('[data-kc-fh-count]', root);
+  const fhDia = sel('[data-kc-fh-dia]', root);
+  const fhCentre = sel('[data-kc-fh-centre]', root);
+  const fhX = sel('[data-kc-fh-x]', root);
+  const fhBack = sel('[data-kc-fh-from-back]', root);
+  const fhSpacing = sel('[data-kc-fh-spacing]', root);
 
     // sync canvas size
     function fit(){
@@ -119,6 +146,30 @@
       state.selId = id; draw(); updateAside();
     }
 
+    // Presets
+    function presetIslandLayout(){
+      state.rooms = [];
+      const id = 'island' + Math.random().toString(36).slice(2,6);
+      state.rooms.push({ id, x: -30, y: -15, w: 60, h: 30, type: 'counter', radius: 0 });
+      state.selId = id; centerView(); draw(); updateAside();
+    }
+    function presetGalleyLayout(){
+      state.rooms = [];
+      const a = 'galA' + Math.random().toString(36).slice(2,6);
+      const b = 'galB' + Math.random().toString(36).slice(2,6);
+      state.rooms.push({ id: a, x: -60, y: -12, w: 60, h: 24, type: 'counter', radius: 0 });
+      state.rooms.push({ id: b, x: 0, y: -12, w: 60, h: 24, type: 'counter', radius: 0 });
+      state.selId = a; centerView(); draw(); updateAside();
+    }
+    function presetUShapeLayout(){
+      state.rooms = [];
+      const id = 'u' + Math.random().toString(36).slice(2,6);
+      state.rooms.push({ id, x: -60, y: -12, w: 60, h: 24, type: 'counter', radius: 0, seg:'a', parent:id });
+      state.rooms.push({ id, x: 0, y: -36, w: 24, h: 72, type: 'counter', radius: 0, seg:'b', parent:id });
+      state.rooms.push({ id, x: 24, y: -12, w: 60, h: 24, type: 'counter', radius: 0, seg:'c', parent:id });
+      state.selId = id; centerView(); draw(); updateAside();
+    }
+
   function updateAside(){
       const in2 = totalAreaIn2();
       const ft2 = in2/144;
@@ -131,11 +182,16 @@
         edge: state.edge,
         seam: state.seam,
         sink: state.sink,
+        mat: state.mat,
+        cooktop: state.cooktop,
+        faucet: state.faucet,
         backsplash_area_ft2: Number((backsplashAreaIn2()/144).toFixed(2)),
         perimeter_lf: Number((perimeterIn()/12).toFixed(2)),
       } };
       if (bindJsonEl){ bindJsonEl.value = JSON.stringify(payload); bindJsonEl.dispatchEvent(new Event('input',{bubbles:true})); }
       if (bindAreaEl){ bindAreaEl.value = String(payload.area_ft2); bindAreaEl.dispatchEvent(new Event('input',{bubbles:true})); }
+      if (bsAreaEl) bsAreaEl.textContent = payload.options.backsplash_area_ft2.toFixed(2);
+      if (perimEl) perimEl.textContent = payload.options.perimeter_lf.toFixed(2);
     }
 
     function countShapes(){
@@ -219,6 +275,18 @@
         roundRect(ctx, r.x, r.y, r.w, r.h, (r.radius||0)/state.scale);
         ctx.fill(); ctx.stroke();
 
+        // Overhang outline
+        if (state.mat && Number(state.mat.overhang||0)>0){
+          const oh = Number(state.mat.overhang||0);
+          const rect = normalizeRect(r);
+          ctx.save();
+          ctx.strokeStyle = 'rgba(156,204,101,.7)';
+          ctx.setLineDash([3/(state.scale*state.zoom),3/(state.scale*state.zoom)]);
+          ctx.lineWidth = 1.5/(state.scale*state.zoom);
+          ctx.strokeRect(rect.x - oh, rect.y - oh, rect.w + 2*oh, rect.h + 2*oh);
+          ctx.restore();
+        }
+
         // dimensions
         ctx.save();
         ctx.strokeStyle = 'rgba(255,255,255,.55)';
@@ -265,6 +333,44 @@
         ctx.lineWidth = 2/(state.scale*state.zoom);
         ctx.strokeRect(sx, sy, state.sink.w, state.sink.h);
         ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      // Cooktop overlay
+      if (selSegs && state.cooktop.on){
+        const base = normalizeRect(selSegs[0]);
+        const cx = state.cooktop.center ? (base.x + base.w/2 - state.cooktop.w/2) : (base.x + Math.min(Math.max(0, state.cooktop.x), Math.max(0, base.w - state.cooktop.w)));
+        const cy = base.y + Math.min(Math.max(0, state.cooktop.y), Math.max(0, base.h - state.cooktop.h));
+        ctx.save();
+        ctx.strokeStyle = '#ffa726';
+        ctx.setLineDash([6/(state.scale*state.zoom), 4/(state.scale*state.zoom)]);
+        ctx.lineWidth = 2/(state.scale*state.zoom);
+        ctx.strokeRect(cx, cy, state.cooktop.w, state.cooktop.h);
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      // Faucet holes (back edge)
+      if (selSegs && Number(state.faucet.count||0)>0){
+        const base = normalizeRect(selSegs[0]);
+        const dia = Math.max(0, Number(state.faucet.dia||0));
+        const rad = dia/2;
+        const fromBack = Math.max(0, Number(state.faucet.fromBack||0));
+        let startX;
+        const spacing = Number(state.faucet.spacing||8);
+        if (state.faucet.center){
+          startX = base.x + base.w/2 - (Number(state.faucet.count||0)===3? spacing : 0)/2;
+        } else {
+          startX = base.x + Math.max(0, Math.min(base.w, Number(state.faucet.x||0)));
+        }
+        const y = base.y - fromBack;
+        ctx.save();
+        ctx.strokeStyle = '#b3e5fc';
+        ctx.lineWidth = 2/(state.scale*state.zoom);
+        for (let i=0;i<Number(state.faucet.count||0);i++){
+          const x = startX + (Number(state.faucet.count||0)===3 ? (i-1)*spacing : i*spacing);
+          ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI*2); ctx.stroke();
+        }
         ctx.restore();
       }
       ctx.restore();
@@ -371,29 +477,54 @@
   snapBtn?.addEventListener('click', ()=>{ state.snapping = !state.snapping; updateAside(); });
   zoomInBtn?.addEventListener('click', ()=>{ state.zoom = Math.min(4, state.zoom*1.1); draw(); });
   zoomOutBtn?.addEventListener('click', ()=>{ state.zoom = Math.max(0.25, state.zoom/1.1); draw(); });
+    fitBtn?.addEventListener('click', ()=>{ centerView(); draw(); });
     resetBtn?.addEventListener('click', ()=>{ state.rooms = []; state.selId=null; draw(); updateAside(); });
+    delAllBtn?.addEventListener('click', ()=>{ state.rooms = []; state.selId=null; draw(); updateAside(); });
   addSeamBtn?.addEventListener('click', addSeamLayout);
   showSeam?.addEventListener('change', ()=>{ state.seam.show = !!showSeam.checked; draw(); });
   bsOn?.addEventListener('change', ()=>{ state.backsplash.on = !!bsOn.checked; draw(); updateAside(); });
   bsHeight?.addEventListener('input', ()=>{ state.backsplash.heightIn = Number(bsHeight.value||0); draw(); updateAside(); });
   edgeSel?.addEventListener('change', ()=>{ state.edge = edgeSel.value; edgeReadout && (edgeReadout.textContent = edgeSel.options[edgeSel.selectedIndex].text); updateAside(); draw(); });
+  matSel?.addEventListener('change', ()=>{ state.mat.material = matSel.value; updateAside(); });
+  thickIn?.addEventListener('input', ()=>{ state.mat.thickness = Number(thickIn.value||0); updateAside(); });
+  finishSel?.addEventListener('change', ()=>{ state.mat.finish = finishSel.value; updateAside(); });
+  overhangIn?.addEventListener('input', ()=>{ state.mat.overhang = Number(overhangIn.value||0); draw(); updateAside(); });
   sinkType?.addEventListener('change', ()=>{ state.sink.type = sinkType.value; draw(); updateAside(); });
   sinkW?.addEventListener('input', ()=>{ state.sink.w = Math.max(0, Number(sinkW.value||0)); draw(); updateAside(); });
   sinkH?.addEventListener('input', ()=>{ state.sink.h = Math.max(0, Number(sinkH.value||0)); draw(); updateAside(); });
   sinkX?.addEventListener('input', ()=>{ state.sink.x = Math.max(0, Number(sinkX.value||0)); draw(); });
   sinkY?.addEventListener('input', ()=>{ state.sink.y = Math.max(0, Number(sinkY.value||0)); draw(); });
   sinkCentre?.addEventListener('change', ()=>{ state.sink.center = !!sinkCentre.checked; draw(); });
+  ctOn?.addEventListener('change', ()=>{ state.cooktop.on = !!ctOn.checked; draw(); updateAside(); });
+  ctW?.addEventListener('input', ()=>{ state.cooktop.w = Math.max(0, Number(ctW.value||0)); draw(); updateAside(); });
+  ctH?.addEventListener('input', ()=>{ state.cooktop.h = Math.max(0, Number(ctH.value||0)); draw(); updateAside(); });
+  ctX?.addEventListener('input', ()=>{ state.cooktop.x = Math.max(0, Number(ctX.value||0)); draw(); });
+  ctY?.addEventListener('input', ()=>{ state.cooktop.y = Math.max(0, Number(ctY.value||0)); draw(); });
+  ctCentre?.addEventListener('change', ()=>{ state.cooktop.center = !!ctCentre.checked; draw(); });
+  fhCount?.addEventListener('change', ()=>{ state.faucet.count = Number(fhCount.value||0); draw(); updateAside(); });
+  fhDia?.addEventListener('input', ()=>{ state.faucet.dia = Number(fhDia.value||0); draw(); updateAside(); });
+  fhCentre?.addEventListener('change', ()=>{ state.faucet.center = !!fhCentre.checked; draw(); });
+  fhX?.addEventListener('input', ()=>{ state.faucet.x = Number(fhX.value||0); draw(); });
+  fhBack?.addEventListener('input', ()=>{ state.faucet.fromBack = Number(fhBack.value||0); draw(); });
+  fhSpacing?.addEventListener('input', ()=>{ state.faucet.spacing = Number(fhSpacing.value||8); draw(); });
+  presetIsland?.addEventListener('click', presetIslandLayout);
+  presetGalley?.addEventListener('click', presetGalleyLayout);
+  presetU?.addEventListener('click', presetUShapeLayout);
+  swapBtn?.addEventListener('click', ()=>{ const segs = currentSelected(); if(!segs) return; segs.forEach(s=>{ const t=s.w; s.w=s.h; s.h=t; }); draw(); updateAside(); syncSelectedInputs(); });
   sinkW?.addEventListener('input', ()=>{ state.sink.w = Math.max(0, Number(sinkW.value||0)); draw(); updateAside(); });
   sinkH?.addEventListener('input', ()=>{ state.sink.h = Math.max(0, Number(sinkH.value||0)); draw(); updateAside(); });
   sinkX?.addEventListener('input', ()=>{ state.sink.x = Math.max(0, Number(sinkX.value||0)); draw(); });
   sinkY?.addEventListener('input', ()=>{ state.sink.y = Math.max(0, Number(sinkY.value||0)); draw(); });
   sinkCentre?.addEventListener('change', ()=>{ state.sink.center = !!sinkCentre.checked; draw(); });
-    exportJsonBtn?.addEventListener('click', ()=>{
+  exportJsonBtn?.addEventListener('click', ()=>{
       const data = { unit: state.unit, rooms: state.rooms, area_ft2: Number((totalAreaIn2()/144).toFixed(2)), options: {
         backsplash: state.backsplash,
         edge: state.edge,
         seam: state.seam,
-        sink: state.sink,
+    sink: state.sink,
+    mat: state.mat,
+    cooktop: state.cooktop,
+    faucet: state.faucet,
         backsplash_area_ft2: Number((backsplashAreaIn2()/144).toFixed(2)),
         perimeter_lf: Number((perimeterIn()/12).toFixed(2)),
       } };
@@ -434,6 +565,14 @@
       state.scale = saved.scale; state.zoom = saved.zoom;
       canvas.width = oldW; canvas.height = oldH; canvas.style.width = oldStyleW; canvas.style.height = oldStyleH; oldSet(dpr,0,0,dpr,0,0); draw();
       const a = document.createElement('a'); a.href = dataURL; a.download = 'kitchen-layout.png'; a.click();
+    });
+
+    // keyboard delete for selected
+    window.addEventListener('keydown', (e)=>{
+      if ((e.key==='Delete' || e.key==='Backspace') && state.selId){
+        state.rooms = state.rooms.filter(r=> r.id!==state.selId && r.parent!==state.selId);
+        state.selId=null; draw(); updateAside(); syncSelectedInputs();
+      }
     });
 
     // Try to find a form to attach hidden fields to, if not already inside one
@@ -496,6 +635,27 @@
     });
 
     fit(); updateAside(); ensureFormBindings(); syncSelectedInputs();
+
+    function centerView(){
+      // Fit all rooms into view
+      const counters = state.rooms.filter(r=> r.type!=='seam');
+      if (!counters.length){ state.pan={x:0,y:0}; state.zoom=1; return; }
+      const dpr = window.devicePixelRatio||1;
+      const w = canvas.width/dpr; const h = canvas.height/dpr;
+      let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+      for (const r of counters){ const a = normalizeRect(r); minX=Math.min(minX,a.x); minY=Math.min(minY,a.y); maxX=Math.max(maxX,a.x+a.w); maxY=Math.max(maxY,a.y+a.h); }
+      const bw = maxX-minX; const bh = maxY-minY; if (bw<=0||bh<=0){ state.pan={x:0,y:0}; state.zoom=1; return; }
+      const pad = 40; // px
+      const zx = (w - pad*2) / (bw*state.scale);
+      const zy = (h - pad*2) / (bh*state.scale);
+      state.zoom = Math.max(0.25, Math.min(4, Math.min(zx, zy)));
+      const cx = minX + bw/2; const cy = minY + bh/2;
+      // Adjust pan so that (cx,cy) is centered
+      const screenCenterX = w/2; const screenCenterY = h/2;
+      const pt = worldToScreen(cx, cy);
+      state.pan.x += (screenCenterX - pt.x);
+      state.pan.y += (screenCenterY - pt.y);
+    }
   }
 
   function boot(){
