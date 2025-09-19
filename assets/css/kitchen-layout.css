@@ -41,3 +41,20 @@
 
 /* Emphasis badges */
 .kc-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 10px;font:700 11px/1 system-ui;opacity:.9}
+
+/* Landing pattern */
+.kc-landing{--pad:clamp(16px,2vw,24px);}
+.kc-section{padding:calc(var(--pad)*1.5) var(--pad)}
+.kc-hero{background:radial-gradient(1200px 600px at 20% -10%, rgba(62,166,255,.22), transparent), linear-gradient(180deg, #0e1116, #0b0f16);border-radius:16px;margin-bottom:var(--pad);border:1px solid rgba(255,255,255,.08)}
+.kc-hero-inner{padding:40px 28px 34px;display:flex;flex-direction:column;gap:14px}
+.kc-hero h1{margin:0;font:800 clamp(26px,4vw,40px)/1.1 system-ui}
+.kc-hero p{margin:0;opacity:.85;max-width:70ch}
+.kc-hero-ctas{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.kc-steps h2,.kc-designer h2,.kc-measurements h2,.kc-submit h2{margin:0 0 10px;font:800 22px/1.2 system-ui}
+.kc-muted{opacity:.8}
+.kc-steps-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.kc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.kc-section .kc-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px}
+.kc-step{padding:12px;background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.1);border-radius:12px}
+.kc-submit .kc-form-placeholder{margin-top:8px;padding:16px;border:1px dashed rgba(255,255,255,.14);border-radius:12px;opacity:.85}
+@media (max-width: 960px){.kc-steps-grid{grid-template-columns:1fr}.kc-grid{grid-template-columns:1fr}}
