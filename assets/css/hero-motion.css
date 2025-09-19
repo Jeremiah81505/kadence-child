@@ -58,6 +58,8 @@ body.has-hero .entry-content > .wp-block-cover.alignfull:first-child{ margin-top
 }
 /* Hero CTAs – vivid brand colors (overrideable by block controls) */
 .kc-hero-ultimate .kc-hero-ctas .wp-block-button__link{font-weight:800;padding:12px 18px;border-radius:14px;text-decoration:none;display:inline-block;box-shadow:0 10px 26px rgba(0,0,0,.35);} 
+/* subtle elevated shadow to feel premium */
+.kc-hero-ultimate .kc-hero-ctas .wp-block-button__link{box-shadow:0 8px 18px rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.2);} 
 /* Primary (classed) */
 .kc-hero-ultimate .kc-cta-primary .wp-block-button__link{background:linear-gradient(180deg,#10b981,#0ea5a3);color:#001010;border:1px solid rgba(0,0,0,.06);} 
 /* Secondary (classed) */
@@ -87,3 +89,8 @@ body.has-hero .entry-content > .wp-block-cover.alignfull:first-child{ margin-top
 @keyframes kcSpark{0%{opacity:1;transform:translate(-50%,-50%) scale(.5);}70%{opacity:.9;}100%{opacity:0;transform:translate(calc(-50% + var(--sx)),calc(-50% + var(--sy))) scale(0);}}
 /* Reduced motion */
 @media (prefers-reduced-motion:reduce){.kc-hero-ultimate .kc-float{animation:none;display:none;} .kc-title .kc-gradient{animation:none;} .kc-hero-ultimate[data-enhanced=true] .kc-hero-title,.kc-hero-ultimate[data-enhanced=true] .kc-hero-sub,.kc-hero-ultimate[data-enhanced=true] .kc-hero-ctas,.kc-hero-ultimate[data-enhanced=true] .kc-materials-card,.kc-hero-ultimate[data-enhanced=true] .kc-material-grid .kc-chip{opacity:1;transform:none;}}
+
+/* Minimal mode (no fancy motion, keep refined look) */
+.kc-hero-ultimate[data-minimal="true"] .kc-float{display:none;}
+.kc-hero-ultimate[data-minimal="true"] .wp-block-cover__image-background{transform:none !important;}
+.kc-hero-ultimate[data-minimal="true"] .kc-title .kc-gradient{animation:none;}

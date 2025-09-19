@@ -101,6 +101,20 @@ if ( ! defined( 'KC_DISABLE_HERO_FRONT' ) ) {
   define( 'KC_DISABLE_HERO_FRONT', true );
 }
 
+// Global motion toggle. Default to no motion for a calmer, classy feel.
+if ( ! defined( 'KC_NO_MOTION' ) ) {
+  define( 'KC_NO_MOTION', true );
+}
+
+// Add a body class when motion is disabled; allow runtime override via ?kc_motion=1 to preview animations.
+add_filter( 'body_class', function( $classes ) {
+  $enable = isset( $_GET['kc_motion'] ) && $_GET['kc_motion'] == '1';
+  if ( KC_NO_MOTION && ! $enable && ! in_array( 'kc-no-motion', $classes, true ) ) {
+    $classes[] = 'kc-no-motion';
+  }
+  return $classes;
+}, 5 );
+
 // Output the forced header block just after <body> opens, BEFORE page content.
 add_action( 'wp_body_open', function() {
   if ( ! KC_FORCE_HEADER_BLOCK_ID ) { return; }
@@ -134,6 +148,8 @@ add_action( 'wp_enqueue_scripts', function() {
   wp_enqueue_script( 'kc-carousel-adv', get_stylesheet_directory_uri() . '/assets/js/carousel-adv.js', array(), kc_asset_ver( 'assets/js/carousel-adv.js' ), true );
 
   wp_localize_script( 'kc-header', 'KC_HEADER', array( 'stickyOffset' => 64 ) );
+  // Provide a flag to tone down hero motion without affecting carousel
+  wp_localize_script( 'kc-hero-motion', 'KC_HERO', array( 'minimal' => true ) );
 }, 20 );
 
 /**

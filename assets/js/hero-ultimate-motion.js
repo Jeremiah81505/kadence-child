@@ -7,8 +7,10 @@
     console.log('[KC HERO]', VERSION);
   }
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cfg = (typeof window.KC_HERO === 'object' && window.KC_HERO) || { minimal: false };
   const hero = document.querySelector('.kc-hero-ultimate');
   if (!hero) return;
+  const isMinimal = !!(cfg.minimal || hero.getAttribute('data-minimal') === 'true');
 
   // Fix stray visible "\n" sequences that may leak from editor content
   (()=>{
@@ -64,15 +66,17 @@
     const rect = hero.getBoundingClientRect();
     const vh = window.innerHeight || 1;
     const progress = 1 - Math.min(Math.max((rect.bottom)/ (vh + rect.height), 0), 1); // 0 top in view -> 1 scrolled past
-    if(bgImg){
+  if(bgImg && !isMinimal){
       const y = progress * 40; // shift image for depth
       bgImg.style.transform = `translateY(${y}px) scale(1.05)`;
     }
     if(wash){
       const hue = 200 + progress * 140; // 200 -> 340
       wash.style.setProperty('--kc-wash-hue', hue.toFixed(1));
-      // write to variable so CSS can win or be overridden by editor inline style
-      wash.style.setProperty('--kc-wash-opacity', (0.35 + progress * 0.25).toFixed(3));
+  if(!isMinimal){
+        // write to variable so CSS can win or be overridden by editor inline style
+        wash.style.setProperty('--kc-wash-opacity', (0.35 + progress * 0.25).toFixed(3));
+      }
     }
   };
   onScroll();
@@ -81,7 +85,7 @@
 
   /* Staggered reveal */
   const items = hero.querySelectorAll('.kc-hero-title, .kc-hero-sub, .kc-hero-ctas, .kc-materials-card, .kc-material-grid .kc-chip');
-  if (!reduce && 'IntersectionObserver' in window){
+  if (!reduce && !isMinimal && 'IntersectionObserver' in window){
     const io = new IntersectionObserver((ents)=>{
       ents.forEach((e)=>{
         if(e.isIntersecting){
@@ -100,7 +104,7 @@
   }
 
   /* Magnetic hover + ripple for chips & CTAs */
-  if (!reduce){
+  if (!reduce && !isMinimal){
     const mags = hero.querySelectorAll('.kc-chip, .kc-hero-ctas .wp-block-button__link');
     mags.forEach((el)=>{
       const strength = 10;
@@ -130,7 +134,7 @@
   }
 
   /* Subtle parallax on mouse move for hero wrapper */
-  if (!reduce){
+  if (!reduce && !isMinimal){
     const wrap = hero.querySelector('.kc-hero-wrap');
     if(wrap){
       let rect; const updateRect=()=>{ rect=wrap.getBoundingClientRect(); };
@@ -142,7 +146,7 @@
   }
 
   /* Floating organic blobs (decor) */
-  if(!reduce){
+  if(!reduce && !isMinimal){
     const blobs = hero.querySelectorAll('.kc-float');
     blobs.forEach((b,i)=>{
       const speed = 12000 + Math.random()*8000;
@@ -158,7 +162,7 @@
   }
 
   /* Animated gradient text hue rotation (CSS variable tick) */
-  if(!reduce){
+  if(!reduce && !isMinimal){
     const gradientWord = hero.querySelector('.kc-title .kc-gradient');
     if(gradientWord){
       let hue = 0; const tick=()=>{ hue=(hue+0.35)%360; gradientWord.style.setProperty('--kc-grad-hue', hue.toFixed(1)); requestAnimationFrame(tick); };
