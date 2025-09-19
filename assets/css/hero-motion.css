@@ -94,3 +94,28 @@ body.has-hero .entry-content > .wp-block-cover.alignfull:first-child{ margin-top
 .kc-hero-ultimate[data-minimal="true"] .kc-float{display:none;}
 .kc-hero-ultimate[data-minimal="true"] .wp-block-cover__image-background{transform:none !important;}
 .kc-hero-ultimate[data-minimal="true"] .kc-title .kc-gradient{animation:none;}
+
+/* Mobile-friendly adjustments */
+@media (max-width: 900px){
+   /* Stack left/right columns */
+   .kc-hero-ultimate .kc-hero-flex{flex-wrap:wrap;gap:20px;}
+   .kc-hero-ultimate .kc-hero-left,
+   .kc-hero-ultimate .kc-hero-right{flex:1 1 100%;}
+   .kc-hero-ultimate .kc-hero-right{margin-top:6px;}
+}
+@media (max-width: 700px){
+   /* Tighter hero padding on small screens – override inline cover padding */
+   .kc-hero-ultimate{padding-top:36px !important;padding-bottom:42px !important;}
+   /* CTA buttons stack full width */
+   .kc-hero-ultimate .kc-hero-ctas{flex-wrap:wrap;gap:10px;}
+   .kc-hero-ultimate .kc-hero-ctas .wp-block-button{width:100%;}
+   .kc-hero-ultimate .kc-hero-ctas .wp-block-button__link{width:100%;text-align:center;}
+   /* Materials card padding */
+   .kc-materials-card{padding:16px;border-radius:16px;}
+}
+@media (max-width: 480px){
+   /* One-column chips on extra small screens */
+   .kc-material-grid{grid-template-columns:1fr;}
+   /* Hide scroll cue to declutter */
+   .kc-scroll-cue{display:none;}
+}
