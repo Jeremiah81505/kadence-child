@@ -27,7 +27,8 @@
       <div class="kc-group">
         <button class="kc-btn" type="button" data-kc-export-json>Download JSON</button>
         <button class="kc-btn" type="button" data-kc-copy-json>Copy JSON</button>
-        <button class="kc-btn" type="button" data-kc-export-png>Export PNG</button>
+  <button class="kc-btn" type="button" data-kc-export-png>Export PNG</button>
+  <button class="kc-btn" type="button" data-kc-import-json>Import JSON</button>
       </div>
     </div>
     <div class="kc-kd-wrap">
@@ -80,6 +81,10 @@
   <div class="kc-card" data-kc-panel="basics">
           <h3>Selected Section</h3>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <label style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1">
+              <span style="opacity:.75;font-size:12px">Label</span>
+              <input type="text" placeholder="e.g., Island, Left Run" data-kc-input-label>
+            </label>
             <label style="display:flex;flex-direction:column;gap:6px">
               <span style="opacity:.75;font-size:12px">Width (in)</span>
               <input type="number" step="1" min="1" data-kc-input-w>
@@ -93,8 +98,9 @@
               <input type="number" step="1" min="0" value="0" data-kc-input-radius>
             </label>
           </div>
-          <div style="margin-top:8px;display:flex;gap:8px">
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
             <button class="kc-btn" type="button" data-kc-delete>Delete Selected</button>
+            <button class="kc-btn" type="button" data-kc-duplicate>Duplicate Selected</button>
             <button class="kc-btn" type="button" data-kc-swap>Swap W/D</button>
           </div>
         </div>
@@ -265,10 +271,18 @@
           <p style="margin:.3em 0 .8em;opacity:.8">These hidden fields auto-fill a contact form on submit.</p>
           <input type="hidden" name="kc_layout_json" data-kc-bind="layout-json">
           <input type="hidden" name="kc_area_ft2" data-kc-bind="area-ft2">
+          <input type="hidden" name="kc_notes" data-kc-bind="notes">
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="kc-btn" type="button" data-kc-copy-form>Copy to Form</button>
             <button class="kc-btn" type="button" data-kc-copy-json>Copy JSON</button>
+            <button class="kc-btn" type="button" data-kc-load-autosave>Load Autosave</button>
+            <button class="kc-btn" type="button" data-kc-clear-autosave>Clear Autosave</button>
           </div>
+        </div>
+  <div class="kc-card kc-span-2" data-kc-panel="advanced">
+          <h3>Project Notes</h3>
+          <p class="kc-muted">Add any extra info (appliance models, edge details, timelines, budget, etc.).</p>
+          <textarea rows="4" style="width:100%;background:#0f1522;border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#eaf2ff;padding:8px 10px" data-kc-notes></textarea>
         </div>
   <div class="kc-card" data-kc-panel="advanced">
           <h3>Tips</h3>

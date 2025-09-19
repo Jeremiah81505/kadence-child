@@ -22,88 +22,96 @@
       pan: {x:0,y:0},
       drawing: false,
       dragStart: null,
-  rooms: [],         // { id, x, y, w, h, type: 'counter'|'seam', radius }
+      rooms: [],         // { id, x, y, w, h, type: 'counter'|'seam', radius }
       selId: null,
       grid: { size: 6 },
-  snapping: true,
-  backsplash: { on: true, heightIn: 4 },
-  edge: 'eased',
-  seam: { show: true },
-  sink: { type: 'undermount', w:30, h:20, x:12, y:12, center:false },
-  mat: { material: 'granite', thickness: 1.25, finish: 'polished', overhang: 1.5 },
-  cooktop: { on:false, w:30, h:21, x:24, y:12, center:false },
-  faucet: { count:1, dia:1.375, center:true, x:24, fromBack:2, spacing:8 },
+      snapping: true,
+      backsplash: { on: true, heightIn: 4 },
+      edge: 'eased',
+      seam: { show: true },
+      sink: { type: 'undermount', w:30, h:20, x:12, y:12, center:false },
+      mat: { material: 'granite', thickness: 1.25, finish: 'polished', overhang: 1.5 },
+      cooktop: { on:false, w:30, h:21, x:24, y:12, center:false },
+      faucet: { count:1, dia:1.375, center:true, x:24, fromBack:2, spacing:8 },
+      notes: '',
     };
 
     const aside = sel('.kc-kd-aside', root);
     const roomCountEl = sel('[data-kc-room-count]', aside);
     const areaEl = sel('[data-kc-area]', aside);
-  const exportJsonBtn = sel('[data-kc-export-json]', root);
-  const exportPngBtn = sel('[data-kc-export-png]', root);
-  const resetBtn = sel('[data-kc-reset]', root);
-  const fitBtn = sel('[data-kc-fit]', root);
-  const delAllBtn = sel('[data-kc-delete-all]', root);
+    const exportJsonBtn = sel('[data-kc-export-json]', root);
+    const exportPngBtn = sel('[data-kc-export-png]', root);
+    const resetBtn = sel('[data-kc-reset]', root);
+    const fitBtn = sel('[data-kc-fit]', root);
+    const delAllBtn = sel('[data-kc-delete-all]', root);
     const addRectBtn = sel('[data-kc-add-rect]', root);
     const addLBtn = sel('[data-kc-add-l]', root);
-  const snapBtn = sel('[data-kc-snap]', root);
-  const zoomInBtn = sel('[data-kc-zoom-in]', root);
-  const zoomOutBtn = sel('[data-kc-zoom-out]', root);
-  let bindJsonEl = sel('[data-kc-bind="layout-json"]', root);
-  let bindAreaEl = sel('[data-kc-bind="area-ft2"]', root);
-  const copyJsonBtn = sel('[data-kc-copy-json]', root);
-  const copyToFormBtn = sel('[data-kc-copy-form]', root);
-  const inputW = sel('[data-kc-input-w]', root);
-  const inputH = sel('[data-kc-input-h]', root);
-  const inputR = sel('[data-kc-input-radius]', root);
-  const delBtn = sel('[data-kc-delete]', root);
-  const swapBtn = sel('[data-kc-swap]', root);
-  const bsOn = sel('[data-kc-bs-on]', root);
-  const bsHeight = sel('[data-kc-bs-height]', root);
-  const edgeSel = sel('[data-kc-edge]', root);
-  const addSeamBtn = sel('[data-kc-add-seam]', root);
-  const showSeam = sel('[data-kc-show-seam]', root);
-  const sinkType = sel('[data-kc-sink-type]', root);
-  const sinkW = sel('[data-kc-sink-w]', root);
-  const sinkH = sel('[data-kc-sink-h]', root);
-  const sinkX = sel('[data-kc-sink-x]', root);
-  const sinkY = sel('[data-kc-sink-y]', root);
-  const sinkCentre = sel('[data-kc-sink-centre]', root);
-  const bsAreaEl = sel('[data-kc-bs-area]', aside);
-  const perimEl = sel('[data-kc-perim]', aside);
-  const edgeReadout = sel('[data-kc-edge-readout]', aside);
-  // Tabs & measurement summary fields
-  const tabBtns = all('[data-kc-tab]', aside);
-  const accBtns = all('[data-kc-acc]', aside);
-  const panels = all('[data-kc-panel]', aside);
-  const msMat = sel('[data-kc-ms-material]', aside);
-  const msThk = sel('[data-kc-ms-thickness]', aside);
-  const msFin = sel('[data-kc-ms-finish]', aside);
-  const msOh = sel('[data-kc-ms-overhang]', aside);
-  const msSink = sel('[data-kc-ms-sink]', aside);
-  const msFaucet = sel('[data-kc-ms-faucet]', aside);
-  const msCooktop = sel('[data-kc-ms-cooktop]', aside);
-  const msBs = sel('[data-kc-ms-bs]', aside);
+    const snapBtn = sel('[data-kc-snap]', root);
+    const zoomInBtn = sel('[data-kc-zoom-in]', root);
+    const zoomOutBtn = sel('[data-kc-zoom-out]', root);
+    let bindJsonEl = sel('[data-kc-bind="layout-json"]', root);
+    let bindAreaEl = sel('[data-kc-bind="area-ft2"]', root);
+    let bindNotesEl = sel('[data-kc-bind="notes"]', root);
+    const copyJsonBtn = sel('[data-kc-copy-json]', root);
+    const copyToFormBtn = sel('[data-kc-copy-form]', root);
+    const inputW = sel('[data-kc-input-w]', root);
+    const inputH = sel('[data-kc-input-h]', root);
+    const inputR = sel('[data-kc-input-radius]', root);
+    const inputLabel = sel('[data-kc-input-label]', root);
+    const delBtn = sel('[data-kc-delete]', root);
+    const dupBtn = sel('[data-kc-duplicate]', root);
+    const swapBtn = sel('[data-kc-swap]', root);
+    const bsOn = sel('[data-kc-bs-on]', root);
+    const bsHeight = sel('[data-kc-bs-height]', root);
+    const edgeSel = sel('[data-kc-edge]', root);
+    const addSeamBtn = sel('[data-kc-add-seam]', root);
+    const showSeam = sel('[data-kc-show-seam]', root);
+    const sinkType = sel('[data-kc-sink-type]', root);
+    const sinkW = sel('[data-kc-sink-w]', root);
+    const sinkH = sel('[data-kc-sink-h]', root);
+    const sinkX = sel('[data-kc-sink-x]', root);
+    const sinkY = sel('[data-kc-sink-y]', root);
+    const sinkCentre = sel('[data-kc-sink-centre]', root);
+    const bsAreaEl = sel('[data-kc-bs-area]', aside);
+    const perimEl = sel('[data-kc-perim]', aside);
+    const edgeReadout = sel('[data-kc-edge-readout]', aside);
+    // Tabs & measurement summary fields
+    const tabBtns = all('[data-kc-tab]', aside);
+    const accBtns = all('[data-kc-acc]', aside);
+    const panels = all('[data-kc-panel]', aside);
+    const msMat = sel('[data-kc-ms-material]', aside);
+    const msThk = sel('[data-kc-ms-thickness]', aside);
+    const msFin = sel('[data-kc-ms-finish]', aside);
+    const msOh = sel('[data-kc-ms-overhang]', aside);
+    const msSink = sel('[data-kc-ms-sink]', aside);
+    const msFaucet = sel('[data-kc-ms-faucet]', aside);
+    const msCooktop = sel('[data-kc-ms-cooktop]', aside);
+    const msBs = sel('[data-kc-ms-bs]', aside);
 
-  // New controls
-  const presetIsland = sel('[data-kc-preset="island"]', root);
-  const presetGalley = sel('[data-kc-preset="galley"]', root);
-  const presetU = sel('[data-kc-preset="ushape"]', root);
-  const matSel = sel('[data-kc-mat]', root);
-  const thickIn = sel('[data-kc-thickness]', root);
-  const finishSel = sel('[data-kc-finish]', root);
-  const overhangIn = sel('[data-kc-overhang]', root);
-  const ctOn = sel('[data-kc-ct-on]', root);
-  const ctW = sel('[data-kc-ct-w]', root);
-  const ctH = sel('[data-kc-ct-h]', root);
-  const ctX = sel('[data-kc-ct-x]', root);
-  const ctY = sel('[data-kc-ct-y]', root);
-  const ctCentre = sel('[data-kc-ct-centre]', root);
-  const fhCount = sel('[data-kc-fh-count]', root);
-  const fhDia = sel('[data-kc-fh-dia]', root);
-  const fhCentre = sel('[data-kc-fh-centre]', root);
-  const fhX = sel('[data-kc-fh-x]', root);
-  const fhBack = sel('[data-kc-fh-from-back]', root);
-  const fhSpacing = sel('[data-kc-fh-spacing]', root);
+    // New controls
+    const presetIsland = sel('[data-kc-preset="island"]', root);
+    const presetGalley = sel('[data-kc-preset="galley"]', root);
+    const presetU = sel('[data-kc-preset="ushape"]', root);
+    const matSel = sel('[data-kc-mat]', root);
+    const thickIn = sel('[data-kc-thickness]', root);
+    const finishSel = sel('[data-kc-finish]', root);
+    const overhangIn = sel('[data-kc-overhang]', root);
+    const ctOn = sel('[data-kc-ct-on]', root);
+    const ctW = sel('[data-kc-ct-w]', root);
+    const ctH = sel('[data-kc-ct-h]', root);
+    const ctX = sel('[data-kc-ct-x]', root);
+    const ctY = sel('[data-kc-ct-y]', root);
+    const ctCentre = sel('[data-kc-ct-centre]', root);
+    const fhCount = sel('[data-kc-fh-count]', root);
+    const fhDia = sel('[data-kc-fh-dia]', root);
+    const fhCentre = sel('[data-kc-fh-centre]', root);
+    const fhX = sel('[data-kc-fh-x]', root);
+    const fhBack = sel('[data-kc-fh-from-back]', root);
+    const fhSpacing = sel('[data-kc-fh-spacing]', root);
+    const notesEl = sel('[data-kc-notes]', root);
+    const importJsonBtn = sel('[data-kc-import-json]', root);
+    const loadAutosaveBtn = sel('[data-kc-load-autosave]', root);
+    const clearAutosaveBtn = sel('[data-kc-clear-autosave]', root);
 
     // sync canvas size
     function fit(){
@@ -182,14 +190,14 @@
       state.selId = id; centerView(); draw(); updateAside();
     }
 
-  function updateAside(){
+    function updateAside(){
       const in2 = totalAreaIn2();
       const ft2 = in2/144;
       roomCountEl.textContent = String(countShapes());
       areaEl.textContent = ft2.toFixed(2);
       snapBtn.classList.toggle('is-primary', state.snapping);
       // form binding
-      const payload = { unit: state.unit, rooms: state.rooms, area_ft2: Number(ft2.toFixed(2)), options: {
+      const payload = { unit: state.unit, rooms: state.rooms, area_ft2: Number(ft2.toFixed(2)), notes: state.notes || '', options: {
         backsplash: state.backsplash,
         edge: state.edge,
         seam: state.seam,
@@ -202,8 +210,10 @@
       } };
       if (bindJsonEl){ bindJsonEl.value = JSON.stringify(payload); bindJsonEl.dispatchEvent(new Event('input',{bubbles:true})); }
       if (bindAreaEl){ bindAreaEl.value = String(payload.area_ft2); bindAreaEl.dispatchEvent(new Event('input',{bubbles:true})); }
+      if (bindNotesEl){ bindNotesEl.value = state.notes || ''; bindNotesEl.dispatchEvent(new Event('input',{bubbles:true})); }
       if (bsAreaEl) bsAreaEl.textContent = payload.options.backsplash_area_ft2.toFixed(2);
       if (perimEl) perimEl.textContent = payload.options.perimeter_lf.toFixed(2);
+      try{ localStorage.setItem('kc_kitchen_autosave_v1', JSON.stringify(payload)); }catch(e){}
     }
 
     function countShapes(){
@@ -263,7 +273,7 @@
       ctx.restore();
     }
 
-  function drawRooms(){
+    function drawRooms(){
       const dpr = window.devicePixelRatio||1;
       const w = canvas.width/dpr; const h = canvas.height/dpr;
       ctx.save();
@@ -318,6 +328,18 @@
         ctx.fillStyle = '#eaf2ff';
         ctx.fillText(label, p.x, p.y+1);
         ctx.restore();
+
+        // section label (optional)
+        if (r.label && (!r.seg || r.seg==='a')){
+          ctx.save();
+          ctx.scale(1/(state.scale*state.zoom), 1/(state.scale*state.zoom));
+          ctx.font = '500 11px system-ui';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+          const p2 = worldToScreen(midx, midy);
+          ctx.fillStyle = '#cde3ff';
+          ctx.fillText(String(r.label), p2.x, p2.y+14);
+          ctx.restore();
+        }
       }
 
       // Backsplash render
@@ -388,25 +410,25 @@
       ctx.restore();
     }
 
-  function normalizeRect(r){
-    const x = Math.min(r.x, r.x + r.w);
-    const y = Math.min(r.y, r.y + r.h);
-    const w = Math.abs(r.w); const h = Math.abs(r.h);
-    return { x, y, w, h };
-  }
+    function normalizeRect(r){
+      const x = Math.min(r.x, r.x + r.w);
+      const y = Math.min(r.y, r.y + r.h);
+      const w = Math.abs(r.w); const h = Math.abs(r.h);
+      return { x, y, w, h };
+    }
 
-  function backsplashAreaIn2(){
-    if (!state.backsplash.on) return 0;
-    const h = Math.max(0, Number(state.backsplash.heightIn||0));
-    let sum = 0; for (const r of state.rooms){ if (r.type!=='counter') continue; const rect = normalizeRect(r); sum += rect.w * h; }
-    return sum;
-  }
+    function backsplashAreaIn2(){
+      if (!state.backsplash.on) return 0;
+      const h = Math.max(0, Number(state.backsplash.heightIn||0));
+      let sum = 0; for (const r of state.rooms){ if (r.type!=='counter') continue; const rect = normalizeRect(r); sum += rect.w * h; }
+      return sum;
+    }
 
-  function perimeterIn(){
-    let p = 0; const seen = new Set();
-    for (const r of state.rooms){ const key = r.parent || r.id; if (seen.has(key)) continue; seen.add(key); if (r.type!=='counter') continue; const rect = normalizeRect(r); p += 2*(rect.w + rect.h); }
-    return p;
-  }
+    function perimeterIn(){
+      let p = 0; const seen = new Set();
+      for (const r of state.rooms){ const key = r.parent || r.id; if (seen.has(key)) continue; seen.add(key); if (r.type!=='counter') continue; const rect = normalizeRect(r); p += 2*(rect.w + rect.h); }
+      return p;
+    }
 
     function roundRect(ctx, x, y, w, h, r){
       const rr = Math.min(Math.abs(w), Math.abs(h)) * r;
@@ -423,7 +445,7 @@
       ctx.closePath();
     }
 
-  function draw(){
+    function draw(){
       drawGrid();
       drawRooms();
     }
@@ -452,8 +474,8 @@
       if (hit){
         state.drawing = 'move';
         state.dragStart = { mx, my, x: hit.x, y: hit.y, r: hit };
-  state.selId = hit.parent || hit.id;
-  syncSelectedInputs();
+        state.selId = hit.parent || hit.id;
+        syncSelectedInputs();
         draw();
       } else {
         state.drawing = 'pan';
@@ -468,9 +490,9 @@
         const { mx: sx, my: sy, x, y, r } = state.dragStart;
         const dx = (mx - sx)/(state.scale*state.zoom);
         const dy = (my - sy)/(state.scale*state.zoom);
-  r.x = state.snapping ? snap(x+dx) : x+dx;
-  r.y = state.snapping ? snap(y+dy) : y+dy;
-  draw(); updateAside(); syncSelectedInputs();
+        r.x = state.snapping ? snap(x+dx) : x+dx;
+        r.y = state.snapping ? snap(y+dy) : y+dy;
+        draw(); updateAside(); syncSelectedInputs();
       } else if (state.drawing==='pan'){
         const { mx: sx, my: sy, panX, panY } = state.dragStart;
         state.pan.x = panX + (mx - sx);
@@ -489,59 +511,59 @@
     }, { passive:false });
 
     // toolbar actions
-  addRectBtn?.addEventListener('click', addRect);
-  addLBtn?.addEventListener('click', addL);
-  snapBtn?.addEventListener('click', ()=>{ state.snapping = !state.snapping; updateAside(); });
-  zoomInBtn?.addEventListener('click', ()=>{ state.zoom = Math.min(4, state.zoom*1.1); draw(); });
-  zoomOutBtn?.addEventListener('click', ()=>{ state.zoom = Math.max(0.25, state.zoom/1.1); draw(); });
+    addRectBtn?.addEventListener('click', addRect);
+    addLBtn?.addEventListener('click', addL);
+    snapBtn?.addEventListener('click', ()=>{ state.snapping = !state.snapping; updateAside(); });
+    zoomInBtn?.addEventListener('click', ()=>{ state.zoom = Math.min(4, state.zoom*1.1); draw(); });
+    zoomOutBtn?.addEventListener('click', ()=>{ state.zoom = Math.max(0.25, state.zoom/1.1); draw(); });
     fitBtn?.addEventListener('click', ()=>{ centerView(); draw(); });
     resetBtn?.addEventListener('click', ()=>{ state.rooms = []; state.selId=null; draw(); updateAside(); });
     delAllBtn?.addEventListener('click', ()=>{ state.rooms = []; state.selId=null; draw(); updateAside(); });
-  addSeamBtn?.addEventListener('click', addSeamLayout);
-  showSeam?.addEventListener('change', ()=>{ state.seam.show = !!showSeam.checked; draw(); });
-  bsOn?.addEventListener('change', ()=>{ state.backsplash.on = !!bsOn.checked; draw(); updateAside(); });
-  bsHeight?.addEventListener('input', ()=>{ state.backsplash.heightIn = Number(bsHeight.value||0); draw(); updateAside(); });
-  edgeSel?.addEventListener('change', ()=>{ state.edge = edgeSel.value; edgeReadout && (edgeReadout.textContent = edgeSel.options[edgeSel.selectedIndex].text); updateAside(); draw(); });
-  matSel?.addEventListener('change', ()=>{ state.mat.material = matSel.value; updateAside(); refreshSummary(); });
-  thickIn?.addEventListener('input', ()=>{ state.mat.thickness = Number(thickIn.value||0); updateAside(); refreshSummary(); });
-  finishSel?.addEventListener('change', ()=>{ state.mat.finish = finishSel.value; updateAside(); refreshSummary(); });
-  overhangIn?.addEventListener('input', ()=>{ state.mat.overhang = Number(overhangIn.value||0); draw(); updateAside(); refreshSummary(); });
-  sinkType?.addEventListener('change', ()=>{ state.sink.type = sinkType.value; draw(); updateAside(); refreshSummary(); });
-  sinkW?.addEventListener('input', ()=>{ state.sink.w = Math.max(0, Number(sinkW.value||0)); draw(); updateAside(); });
-  sinkH?.addEventListener('input', ()=>{ state.sink.h = Math.max(0, Number(sinkH.value||0)); draw(); updateAside(); });
-  sinkX?.addEventListener('input', ()=>{ state.sink.x = Math.max(0, Number(sinkX.value||0)); draw(); });
-  sinkY?.addEventListener('input', ()=>{ state.sink.y = Math.max(0, Number(sinkY.value||0)); draw(); });
-  sinkCentre?.addEventListener('change', ()=>{ state.sink.center = !!sinkCentre.checked; draw(); });
-  ctOn?.addEventListener('change', ()=>{ state.cooktop.on = !!ctOn.checked; draw(); updateAside(); refreshSummary(); });
-  ctW?.addEventListener('input', ()=>{ state.cooktop.w = Math.max(0, Number(ctW.value||0)); draw(); updateAside(); });
-  ctH?.addEventListener('input', ()=>{ state.cooktop.h = Math.max(0, Number(ctH.value||0)); draw(); updateAside(); });
-  ctX?.addEventListener('input', ()=>{ state.cooktop.x = Math.max(0, Number(ctX.value||0)); draw(); });
-  ctY?.addEventListener('input', ()=>{ state.cooktop.y = Math.max(0, Number(ctY.value||0)); draw(); });
-  ctCentre?.addEventListener('change', ()=>{ state.cooktop.center = !!ctCentre.checked; draw(); });
-  fhCount?.addEventListener('change', ()=>{ state.faucet.count = Number(fhCount.value||0); draw(); updateAside(); refreshSummary(); });
-  fhDia?.addEventListener('input', ()=>{ state.faucet.dia = Number(fhDia.value||0); draw(); updateAside(); });
-  fhCentre?.addEventListener('change', ()=>{ state.faucet.center = !!fhCentre.checked; draw(); });
-  fhX?.addEventListener('input', ()=>{ state.faucet.x = Number(fhX.value||0); draw(); });
-  fhBack?.addEventListener('input', ()=>{ state.faucet.fromBack = Number(fhBack.value||0); draw(); });
-  fhSpacing?.addEventListener('input', ()=>{ state.faucet.spacing = Number(fhSpacing.value||8); draw(); });
-  presetIsland?.addEventListener('click', presetIslandLayout);
-  presetGalley?.addEventListener('click', presetGalleyLayout);
-  presetU?.addEventListener('click', presetUShapeLayout);
-  swapBtn?.addEventListener('click', ()=>{ const segs = currentSelected(); if(!segs) return; segs.forEach(s=>{ const t=s.w; s.w=s.h; s.h=t; }); draw(); updateAside(); syncSelectedInputs(); });
-  sinkW?.addEventListener('input', ()=>{ state.sink.w = Math.max(0, Number(sinkW.value||0)); draw(); updateAside(); });
-  sinkH?.addEventListener('input', ()=>{ state.sink.h = Math.max(0, Number(sinkH.value||0)); draw(); updateAside(); });
-  sinkX?.addEventListener('input', ()=>{ state.sink.x = Math.max(0, Number(sinkX.value||0)); draw(); });
-  sinkY?.addEventListener('input', ()=>{ state.sink.y = Math.max(0, Number(sinkY.value||0)); draw(); });
-  sinkCentre?.addEventListener('change', ()=>{ state.sink.center = !!sinkCentre.checked; draw(); });
-  exportJsonBtn?.addEventListener('click', ()=>{
-      const data = { unit: state.unit, rooms: state.rooms, area_ft2: Number((totalAreaIn2()/144).toFixed(2)), options: {
+    addSeamBtn?.addEventListener('click', addSeamLayout);
+    showSeam?.addEventListener('change', ()=>{ state.seam.show = !!showSeam.checked; draw(); });
+    bsOn?.addEventListener('change', ()=>{ state.backsplash.on = !!bsOn.checked; draw(); updateAside(); });
+    bsHeight?.addEventListener('input', ()=>{ state.backsplash.heightIn = Number(bsHeight.value||0); draw(); updateAside(); });
+    edgeSel?.addEventListener('change', ()=>{ state.edge = edgeSel.value; edgeReadout && (edgeReadout.textContent = edgeSel.options[edgeSel.selectedIndex].text); updateAside(); draw(); });
+    matSel?.addEventListener('change', ()=>{ state.mat.material = matSel.value; updateAside(); refreshSummary(); });
+    thickIn?.addEventListener('input', ()=>{ state.mat.thickness = Number(thickIn.value||0); updateAside(); refreshSummary(); });
+    finishSel?.addEventListener('change', ()=>{ state.mat.finish = finishSel.value; updateAside(); refreshSummary(); });
+    overhangIn?.addEventListener('input', ()=>{ state.mat.overhang = Number(overhangIn.value||0); draw(); updateAside(); refreshSummary(); });
+    sinkType?.addEventListener('change', ()=>{ state.sink.type = sinkType.value; draw(); updateAside(); refreshSummary(); });
+    sinkW?.addEventListener('input', ()=>{ state.sink.w = Math.max(0, Number(sinkW.value||0)); draw(); updateAside(); });
+    sinkH?.addEventListener('input', ()=>{ state.sink.h = Math.max(0, Number(sinkH.value||0)); draw(); updateAside(); });
+    sinkX?.addEventListener('input', ()=>{ state.sink.x = Math.max(0, Number(sinkX.value||0)); draw(); });
+    sinkY?.addEventListener('input', ()=>{ state.sink.y = Math.max(0, Number(sinkY.value||0)); draw(); });
+    sinkCentre?.addEventListener('change', ()=>{ state.sink.center = !!sinkCentre.checked; draw(); });
+    ctOn?.addEventListener('change', ()=>{ state.cooktop.on = !!ctOn.checked; draw(); updateAside(); refreshSummary(); });
+    ctW?.addEventListener('input', ()=>{ state.cooktop.w = Math.max(0, Number(ctW.value||0)); draw(); updateAside(); });
+    ctH?.addEventListener('input', ()=>{ state.cooktop.h = Math.max(0, Number(ctH.value||0)); draw(); updateAside(); });
+    ctX?.addEventListener('input', ()=>{ state.cooktop.x = Math.max(0, Number(ctX.value||0)); draw(); });
+    ctY?.addEventListener('input', ()=>{ state.cooktop.y = Math.max(0, Number(ctY.value||0)); draw(); });
+    ctCentre?.addEventListener('change', ()=>{ state.cooktop.center = !!ctCentre.checked; draw(); });
+    fhCount?.addEventListener('change', ()=>{ state.faucet.count = Number(fhCount.value||0); draw(); updateAside(); refreshSummary(); });
+    fhDia?.addEventListener('input', ()=>{ state.faucet.dia = Number(fhDia.value||0); draw(); updateAside(); });
+    fhCentre?.addEventListener('change', ()=>{ state.faucet.center = !!fhCentre.checked; draw(); });
+    fhX?.addEventListener('input', ()=>{ state.faucet.x = Number(fhX.value||0); draw(); });
+    fhBack?.addEventListener('input', ()=>{ state.faucet.fromBack = Number(fhBack.value||0); draw(); });
+    fhSpacing?.addEventListener('input', ()=>{ state.faucet.spacing = Number(fhSpacing.value||8); draw(); });
+    presetIsland?.addEventListener('click', presetIslandLayout);
+    presetGalley?.addEventListener('click', presetGalleyLayout);
+    presetU?.addEventListener('click', presetUShapeLayout);
+    swapBtn?.addEventListener('click', ()=>{ const segs = currentSelected(); if(!segs) return; segs.forEach(s=>{ const t=s.w; s.w=s.h; s.h=t; }); draw(); updateAside(); syncSelectedInputs(); });
+    sinkW?.addEventListener('input', ()=>{ state.sink.w = Math.max(0, Number(sinkW.value||0)); draw(); updateAside(); });
+    sinkH?.addEventListener('input', ()=>{ state.sink.h = Math.max(0, Number(sinkH.value||0)); draw(); updateAside(); });
+    sinkX?.addEventListener('input', ()=>{ state.sink.x = Math.max(0, Number(sinkX.value||0)); draw(); });
+    sinkY?.addEventListener('input', ()=>{ state.sink.y = Math.max(0, Number(sinkY.value||0)); draw(); });
+    sinkCentre?.addEventListener('change', ()=>{ state.sink.center = !!sinkCentre.checked; draw(); });
+    exportJsonBtn?.addEventListener('click', ()=>{
+      const data = { unit: state.unit, rooms: state.rooms, area_ft2: Number((totalAreaIn2()/144).toFixed(2)), notes: state.notes || '', options: {
         backsplash: state.backsplash,
         edge: state.edge,
         seam: state.seam,
-    sink: state.sink,
-    mat: state.mat,
-    cooktop: state.cooktop,
-    faucet: state.faucet,
+        sink: state.sink,
+        mat: state.mat,
+        cooktop: state.cooktop,
+        faucet: state.faucet,
         backsplash_area_ft2: Number((backsplashAreaIn2()/144).toFixed(2)),
         perimeter_lf: Number((perimeterIn()/12).toFixed(2)),
       } };
@@ -551,7 +573,7 @@
     });
     copyJsonBtn?.addEventListener('click', async ()=>{
       try{
-  const data = bindJsonEl?.value || JSON.stringify({ unit: state.unit, rooms: state.rooms, area_ft2: Number((totalAreaIn2()/144).toFixed(2)) });
+        const data = bindJsonEl?.value || JSON.stringify({ unit: state.unit, rooms: state.rooms, area_ft2: Number((totalAreaIn2()/144).toFixed(2)), notes: state.notes||'' });
         await navigator.clipboard.writeText(data);
         copyJsonBtn.textContent = 'Copied!'; setTimeout(()=> copyJsonBtn.textContent = 'Copy JSON', 1200);
       }catch(err){
@@ -582,6 +604,24 @@
       state.scale = saved.scale; state.zoom = saved.zoom;
       canvas.width = oldW; canvas.height = oldH; canvas.style.width = oldStyleW; canvas.style.height = oldStyleH; oldSet(dpr,0,0,dpr,0,0); draw();
       const a = document.createElement('a'); a.href = dataURL; a.download = 'kitchen-layout.png'; a.click();
+    });
+
+    // Import JSON
+    importJsonBtn?.addEventListener('click', ()=>{
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'application/json,.json';
+      inp.addEventListener('change', ()=>{
+        const f = inp.files && inp.files[0]; if (!f) return;
+        const reader = new FileReader();
+        reader.onload = ()=>{
+          try{
+            const data = JSON.parse(String(reader.result||'{}'));
+            applyPayload(data, { center:true });
+          }catch(err){ alert('Could not parse JSON.'); }
+        };
+        reader.readAsText(f);
+      });
+      inp.click();
     });
 
     // tabs
@@ -630,8 +670,10 @@
       // Move or create hidden inputs inside the form
       if (!bindJsonEl){ bindJsonEl = document.createElement('input'); bindJsonEl.type='hidden'; bindJsonEl.name='kc_layout_json'; }
       if (!bindAreaEl){ bindAreaEl = document.createElement('input'); bindAreaEl.type='hidden'; bindAreaEl.name='kc_area_ft2'; }
+      if (!bindNotesEl){ bindNotesEl = document.createElement('input'); bindNotesEl.type='hidden'; bindNotesEl.name='kc_notes'; }
       if (!form.contains(bindJsonEl)) form.appendChild(bindJsonEl);
       if (!form.contains(bindAreaEl)) form.appendChild(bindAreaEl);
+      if (!form.contains(bindNotesEl)) form.appendChild(bindNotesEl);
       updateAside();
     }
 
@@ -642,12 +684,13 @@
     }
     function syncSelectedInputs(){
       const segs = currentSelected();
-      if (!segs){ if (inputW) inputW.value=''; if (inputH) inputH.value=''; if (inputR) inputR.value='0'; return; }
+      if (!segs){ if (inputW) inputW.value=''; if (inputH) inputH.value=''; if (inputR) inputR.value='0'; if (inputLabel) inputLabel.value=''; return; }
       // use first segment as representative
-      const r = segs[0];
+      const r = segs.find(s=> s.type!=='seam') || segs[0];
       if (inputW) inputW.value = String(Math.round(Math.abs(r.w)));
       if (inputH) inputH.value = String(Math.round(Math.abs(r.h)));
       if (inputR) inputR.value = String(Math.round(r.radius||0));
+      if (inputLabel) inputLabel.value = r.label ? String(r.label) : '';
     }
     inputW?.addEventListener('input', ()=>{
       const segs = currentSelected(); if (!segs) return;
@@ -673,7 +716,56 @@
       state.selId = null; draw(); updateAside(); syncSelectedInputs();
     });
 
+    // Duplicate selected
+    dupBtn?.addEventListener('click', ()=>{
+      const segs = currentSelected(); if (!segs) return;
+      const dx = 6, dy = 6; // inches offset
+      if (segs.some(s=> s.parent)){
+        const newId = 'd' + Math.random().toString(36).slice(2,7);
+        for (const s of segs){
+          const c = { ...s, x: s.x+dx, y: s.y+dy };
+          if (c.type==='seam'){ c.id = 'seam-' + newId; c.parent = newId; }
+          else { c.id = newId; c.parent = newId; }
+          state.rooms.push(c);
+        }
+        state.selId = newId;
+      } else {
+        const o = segs[0];
+        const nid = 'r' + Math.random().toString(36).slice(2,7);
+        const c = { ...o, id: nid, x: o.x+dx, y: o.y+dy };
+        state.rooms.push(c);
+        state.selId = nid;
+      }
+      draw(); updateAside(); syncSelectedInputs();
+    });
+
+    // Label binding
+    inputLabel?.addEventListener('input', ()=>{
+      const segs = currentSelected(); if (!segs) return;
+      segs.forEach(s=>{ if (s.type!=='seam') s.label = inputLabel.value || ''; });
+      draw(); updateAside();
+    });
+
+    // Notes binding
+    if (notesEl){
+      notesEl.addEventListener('input', ()=>{ state.notes = String(notesEl.value||''); updateAside(); });
+    }
+
+    // Load/Clear autosave
+    loadAutosaveBtn?.addEventListener('click', ()=>{
+      try{
+        const raw = localStorage.getItem('kc_kitchen_autosave_v1');
+        if (!raw) return alert('No autosave found.');
+        const data = JSON.parse(raw);
+        applyPayload(data, { center:true });
+      }catch(e){ alert('Failed to load autosave.'); }
+    });
+    clearAutosaveBtn?.addEventListener('click', ()=>{
+      try{ localStorage.removeItem('kc_kitchen_autosave_v1'); alert('Autosave cleared.'); }catch(e){}
+    });
+
     fit(); updateAside(); ensureFormBindings(); syncSelectedInputs();
+    if (notesEl) notesEl.value = state.notes || '';
 
     function centerView(){
       // Fit all rooms into view
@@ -694,6 +786,25 @@
       const pt = worldToScreen(cx, cy);
       state.pan.x += (screenCenterX - pt.x);
       state.pan.y += (screenCenterY - pt.y);
+    }
+
+    // Apply payload into current state
+    function applyPayload(data, opts){
+      if (!data || typeof data!=='object') return;
+      if (Array.isArray(data.rooms)) state.rooms = data.rooms.map(r=> ({...r}));
+      if (data.unit) state.unit = data.unit;
+      const o = data.options || {};
+      if (o.backsplash) state.backsplash = { ...state.backsplash, ...o.backsplash };
+      if (o.edge) state.edge = o.edge;
+      if (o.seam) state.seam = { ...state.seam, ...o.seam };
+      if (o.sink) state.sink = { ...state.sink, ...o.sink };
+      if (o.mat) state.mat = { ...state.mat, ...o.mat };
+      if (o.cooktop) state.cooktop = { ...state.cooktop, ...o.cooktop };
+      if (o.faucet) state.faucet = { ...state.faucet, ...o.faucet };
+      if (typeof data.notes==='string') state.notes = data.notes; else if (typeof o.notes==='string') state.notes = o.notes;
+      draw(); updateAside(); refreshSummary(); syncSelectedInputs();
+      if (notesEl) notesEl.value = state.notes || '';
+      if (opts && opts.center) { centerView(); draw(); }
     }
   }
 
