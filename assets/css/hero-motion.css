@@ -43,7 +43,11 @@ body.has-hero .entry-content > .wp-block-cover.alignfull:first-child{ margin-top
 .kc-materials-card{background:linear-gradient(180deg,rgba(12,17,26,.70),rgba(6,8,15,.54));border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:20px;padding:24px;box-shadow:0 12px 45px rgba(0,0,0,.45);color:#fff;}
 .kc-materials-heading{margin:0 0 16px;font-weight:800;letter-spacing:.5px;text-align:center;background:linear-gradient(90deg,#fff,#e4edff);-webkit-background-clip:text;background-clip:text;color:transparent;}
 .kc-material-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+.kc-material-grid .wp-block-buttons{display:contents;}
+.kc-material-grid .wp-block-button{margin:0;}
 .kc-chip{display:flex;align-items:center;justify-content:center;padding:14px 16px;border-radius:12px;font-weight:600;text-decoration:none;color:#fff;background:linear-gradient(180deg,rgba(40,40,50,.85),rgba(20,20,28,.8));border:1px solid rgba(255,255,255,.1);position:relative;overflow:hidden;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;background-clip:padding-box;}
+.kc-chip .wp-block-button__link{display:block;width:100%;height:100%;padding:0;background:transparent;color:inherit;border:0;border-radius:inherit;box-shadow:none;text-decoration:none;}
+.kc-chip .wp-block-button__link:hover,.kc-chip .wp-block-button__link:focus{color:inherit;text-decoration:none;}
 .kc-chip:hover{transform:translateY(-4px) scale(1.05);box-shadow:0 14px 32px -6px rgba(0,0,0,.55),0 0 22px -4px rgba(120,160,255,.4);}
 /* Hero CTAs – vivid brand colors (overrideable by block controls) */
 .kc-hero-ultimate .kc-hero-ctas .wp-block-button__link{font-weight:800;padding:12px 18px;border-radius:14px;text-decoration:none;display:inline-block;box-shadow:0 10px 26px rgba(0,0,0,.35);} 

@@ -75,19 +75,36 @@
 
         <!-- wp:group {"className":"kc-hero-right","layout":{"type":"constrained"}} -->
         <div class="wp-block-group kc-hero-right">
-          <!-- wp:html -->
-          <div class="kc-materials-card">
-            <h3 class="kc-materials-heading"><?php esc_html_e( 'Shop by Material', 'kadence-child' ); ?></h3>
-            <div class="kc-material-grid">
-              <a class="kc-chip kc-chip-quartz" href="/products/quartz/">Quartz</a>
-              <a class="kc-chip kc-chip-stone" href="/products/natural-stone/">Natural Stone</a>
-              <a class="kc-chip kc-chip-solid" href="/products/solid-surface/">Solid Surface</a>
-              <a class="kc-chip kc-chip-ultra" href="/products/ultra-compact/">Ultra Compact</a>
-              <a class="kc-chip kc-chip-laminate" href="/products/laminate/">Laminate</a>
-              <a class="kc-chip kc-chip-sinks" href="/products/sinks/">Sinks</a>
+          <!-- wp:group {"className":"kc-materials-card","layout":{"type":"constrained"}} -->
+          <div class="wp-block-group kc-materials-card"><h3 class="kc-materials-heading"><?php esc_html_e( 'Shop by Material', 'kadence-child' ); ?></h3>
+            <!-- wp:group {"className":"kc-material-grid","layout":{"type":"constrained"}} -->
+            <div class="wp-block-group kc-material-grid">
+              <!-- wp:buttons -->
+              <div class="wp-block-buttons">
+                <!-- wp:button {"className":"kc-chip kc-chip-quartz"} -->
+                <div class="wp-block-button kc-chip kc-chip-quartz"><a class="wp-block-button__link wp-element-button" href="/products/quartz/">Quartz</a></div>
+                <!-- /wp:button -->
+                <!-- wp:button {"className":"kc-chip kc-chip-stone"} -->
+                <div class="wp-block-button kc-chip kc-chip-stone"><a class="wp-block-button__link wp-element-button" href="/products/natural-stone/">Natural Stone</a></div>
+                <!-- /wp:button -->
+                <!-- wp:button {"className":"kc-chip kc-chip-solid"} -->
+                <div class="wp-block-button kc-chip kc-chip-solid"><a class="wp-block-button__link wp-element-button" href="/products/solid-surface/">Solid Surface</a></div>
+                <!-- /wp:button -->
+                <!-- wp:button {"className":"kc-chip kc-chip-ultra"} -->
+                <div class="wp-block-button kc-chip kc-chip-ultra"><a class="wp-block-button__link wp-element-button" href="/products/ultra-compact/">Ultra Compact</a></div>
+                <!-- /wp:button -->
+                <!-- wp:button {"className":"kc-chip kc-chip-laminate"} -->
+                <div class="wp-block-button kc-chip kc-chip-laminate"><a class="wp-block-button__link wp-element-button" href="/products/laminate/">Laminate</a></div>
+                <!-- /wp:button -->
+                <!-- wp:button {"className":"kc-chip kc-chip-sinks"} -->
+                <div class="wp-block-button kc-chip kc-chip-sinks"><a class="wp-block-button__link wp-element-button" href="/products/sinks/">Sinks</a></div>
+                <!-- /wp:button -->
+              </div>
+              <!-- /wp:buttons -->
             </div>
+            <!-- /wp:group -->
           </div>
-          <!-- /wp:html -->
+          <!-- /wp:group -->
         </div>
         <!-- /wp:group -->
       </div>
