@@ -150,7 +150,7 @@ add_action( 'wp_enqueue_scripts', function() {
   wp_localize_script( 'kc-header', 'KC_HEADER', array( 'stickyOffset' => 64 ) );
   // Provide a flag to tone down hero motion without affecting carousel
   wp_localize_script( 'kc-hero-motion', 'KC_HERO', array( 'minimal' => true ) );
-}, 20 );
+}, 99 );
 
 /**
  * Theme setup: load translations, enable features.
@@ -267,16 +267,26 @@ add_action( 'wp_footer', function() {
   if ( empty( $_GET['kc_footer_diag'] ) ) { return; }
   $ts = gmdate( 'c' );
   // Emit multiple signals so minifiers/caches can't hide them all
-  echo "\n<!-- kc-footer-hook ok ts={$ts} -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
-  echo '<script>window.KC_FOOTER_HOOK_OK = ' . json_encode( $ts ) . '; console.log("[kc] footer hook ok", window.KC_FOOTER_HOOK_OK);</script>'; // phpcs:ignore WordPress.Security.EscapeOutput
-  echo '<div id="kc-footer-marker" data-ts="' . esc_attr( $ts ) . '" style="display:none"></div>' ; // phpcs:ignore WordPress.Security.EscapeOutput
+  $v_css = function_exists('kc_asset_ver') ? kc_asset_ver( 'assets/css/hero-motion.css' ) : 'n/a';
+  $v_js  = function_exists('kc_asset_ver') ? kc_asset_ver( 'assets/js/hero-ultimate-motion.js' ) : 'n/a';
+  $v_car_css = function_exists('kc_asset_ver') ? kc_asset_ver( 'assets/css/carousel-adv.css' ) : 'n/a';
+  echo "\n<!-- kc-footer-hook ok ts={$ts} hero_css_ver={$v_css} hero_js_ver={$v_js} carousel_css_ver={$v_car_css} -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+  echo '<script>window.KC_FOOTER_HOOK_OK = ' . json_encode( $ts ) . '; console.log("[kc] footer hook ok", window.KC_FOOTER_HOOK_OK, { hero_css_ver: ' . json_encode( $v_css ) . ', hero_js_ver: ' . json_encode( $v_js ) . ', carousel_css_ver: ' . json_encode( $v_car_css ) . ' });</script>'; // phpcs:ignore WordPress.Security.EscapeOutput
+  echo '<div id="kc-footer-marker" data-ts="' . esc_attr( $ts ) . '" data-hero-css="' . esc_attr( $v_css ) . '" data-hero-js="' . esc_attr( $v_js ) . '" style="display:none"></div>' ; // phpcs:ignore WordPress.Security.EscapeOutput
 }, 999 );
 
 // Add diagnostics header early to confirm child theme is active and hooks run.
 add_action( 'send_headers', function( $wp ) {
   if ( empty( $_GET['kc_footer_diag'] ) && empty( $_GET['kc_diag'] ) ) { return; }
   header( 'X-KC-Child: active' );
-  header( 'X-KC-Time: ' . gmdate( 'c' ) );
+  $now = gmdate( 'c' );
+  header( 'X-KC-Time: ' . $now );
+  // Report asset versions in headers for quick checks
+  if ( function_exists( 'kc_asset_ver' ) ) {
+    header( 'X-KC-Hero-CSS: ' . kc_asset_ver( 'assets/css/hero-motion.css' ) );
+    header( 'X-KC-Hero-JS: ' . kc_asset_ver( 'assets/js/hero-ultimate-motion.js' ) );
+    header( 'X-KC-Carousel-CSS: ' . kc_asset_ver( 'assets/css/carousel-adv.css' ) );
+  }
   // Strongly discourage caches when diagnosing
   header( 'Cache-Control: no-cache, no-store, must-revalidate, max-age=0' );
   header( 'Pragma: no-cache' );
@@ -339,13 +349,8 @@ add_action( 'wp_body_open', function() {
 | minimal visuals so JS doesn't flag missing CSS. Remove after fix.
 -------------------------------------------------------------- */
 add_action( 'wp_head', function() {
-  // Only output if hero likely present on this request (cheap check in post content or auto front injection on front page)
-  if ( is_admin() ) { return; }
-  $need = is_front_page();
-  if ( ! $need && is_singular() ) {
-    global $post; $need = $post && strpos( $post->post_content, 'kc-hero-ultimate' ) !== false;
-  }
-  if ( ! $need ) { return; }
+  // Failsafe critical CSS: only output when explicitly requested
+  if ( is_admin() || empty( $_GET['kc_critical'] ) ) { return; }
   echo '<style id="kc-hero-critical">.kc-hero-ultimate{position:relative;overflow:hidden;color:#fff;} .kc-hero-ultimate .wp-block-cover__image-background{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;z-index:0;filter:brightness(.72);} .kc-hero-ultimate .kc-colorwash{position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;background:radial-gradient(circle at 30% 40%,rgba(120,160,255,.55),transparent 60%),radial-gradient(circle at 75% 70%,rgba(125,226,209,.45),transparent 65%),linear-gradient(120deg,rgba(20,26,36,.4),rgba(12,16,26,.55));opacity:.45;z-index:1;} .kc-hero-ultimate .kc-hero-wrap{position:relative;z-index:2;} .kc-hero-ultimate .kc-float{position:absolute;border-radius:50%;filter:blur(38px) saturate(140%);opacity:.5;mix-blend-mode:screen;} .kc-hero-ultimate .kc-float.a{width:320px;height:320px;top:-80px;left:-100px;background:radial-gradient(circle at 30% 30%,rgba(185,156,255,.75),rgba(120,90,255,.28) 70%,transparent 74%);} .kc-hero-ultimate .kc-float.b{width:260px;height:260px;bottom:-40px;right:8%;background:radial-gradient(circle at 40% 40%,rgba(125,226,209,.75),rgba(60,170,150,.3) 68%,transparent 72%);} .kc-hero-ultimate .kc-float.c{width:220px;height:220px;top:12%;right:-4%;background:radial-gradient(circle at 45% 30%,rgba(255,212,121,.8),rgba(220,160,80,.25) 72%,transparent 76%);} .kc-hero-ultimate .kc-title{margin:.5em 0;font-weight:800;line-height:1.05;} .kc-hero-ultimate .kc-title .kc-gradient{background:linear-gradient(90deg,#fff,#dfe7ff);-webkit-background-clip:text;background-clip:text;color:transparent;} .kc-hero-ultimate .kc-materials-card{background:rgba(10,10,20,.6);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.4);} .kc-hero-ultimate .kc-chip{display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);padding:10px 14px;border-radius:12px;margin:4px;font-size:.85rem;color:#fff;text-decoration:none;} </style>';
 }, 5 );
 
