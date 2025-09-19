@@ -106,9 +106,10 @@ body.has-hero .entry-content > .wp-block-cover.alignfull:first-child{ margin-top
 /* Mobile-friendly adjustments */
 @media (max-width: 1160px){
    /* Force vertical stacking slightly earlier for large tablets */
-   .kc-hero-ultimate .kc-hero-flex{flex-direction:column;align-items:stretch;gap:22px;}
+   .kc-hero-ultimate .kc-hero-flex{flex-direction:column !important;align-items:stretch;gap:22px;}
    .kc-hero-ultimate .kc-hero-left,
    .kc-hero-ultimate .kc-hero-right{width:100%;min-width:0;flex-basis:100%;}
+   .kc-hero-ultimate .kc-hero-left{width:100%;min-width:0;flex-basis:100%;}
    /* Constrain materials card width and center it */
    .kc-materials-card{max-width:min(96%,760px);margin:8px auto 0;}
    /* Prevent awkward mid-word breaks and drop the forced line-break */
@@ -117,21 +118,30 @@ body.has-hero .entry-content > .wp-block-cover.alignfull:first-child{ margin-top
 }
 @media (max-width: 900px){
    /* Stack left/right columns */
-   .kc-hero-ultimate .kc-hero-flex{flex-wrap:wrap;gap:20px;}
+   .kc-hero-ultimate .kc-hero-flex{flex-wrap:wrap;gap:20px;flex-direction:column !important;}
    .kc-hero-ultimate .kc-hero-left,
    .kc-hero-ultimate .kc-hero-right{flex:1 1 100%;}
-   .kc-hero-ultimate .kc-hero-right{margin-top:6px;}
+   .kc-hero-ultimate .kc-hero-left{order:1;}
+   .kc-hero-ultimate .kc-hero-right{order:2;margin-top:6px;}
 }
 @media (max-width: 700px){
    /* Tighter hero padding on small screens – override inline cover padding */
    .kc-hero-ultimate{padding-top:36px !important;padding-bottom:42px !important;}
+   /* Darken overlay slightly for readability */
+   .kc-hero-ultimate .wp-block-cover__background{background-color:rgba(10,14,22,.58) !important;}
+   /* Make headings readable and avoid awkward breaks */
+   .kc-hero-ultimate .kc-title{font-size:clamp(30px,7.6vw,44px);line-height:1.12;word-break:normal;overflow-wrap:break-word;hyphens:none;}
+   .kc-hero-ultimate .kc-sub{font-size:clamp(16px,3vw,18px);line-height:1.5;}
    /* CTA buttons stack full width */
-   .kc-hero-ultimate .kc-hero-ctas{flex-wrap:wrap;gap:10px;}
-   .kc-hero-ultimate .kc-hero-ctas .wp-block-button{width:100%;}
+   .kc-hero-ultimate .kc-hero-ctas{display:flex;flex-direction:column;align-items:stretch;gap:12px;}
+   .kc-hero-ultimate .kc-hero-ctas .wp-block-button{width:100%;margin:0;}
    .kc-hero-ultimate .kc-hero-ctas .wp-block-button__link{width:100%;text-align:center;}
    /* Materials card padding */
    .kc-materials-card{padding:16px 14px;border-radius:16px;}
    .kc-chip{padding:12px 14px;}
+   /* Place the materials card below with comfy spacing */
+   .kc-hero-ultimate .kc-hero-right{margin-top:14px;}
+   .kc-material-grid{grid-template-columns:repeat(2,1fr);}
 }
 @media (max-width: 480px){
    /* One-column chips on extra small screens */
@@ -139,5 +149,7 @@ body.has-hero .entry-content > .wp-block-cover.alignfull:first-child{ margin-top
    /* Hide scroll cue to declutter */
    .kc-scroll-cue{display:none;}
    /* Allow hero to be a bit shorter on very small devices */
-   .kc-hero-ultimate{min-height:68vh !important;}
+   .kc-hero-ultimate{min-height:66vh !important;}
+   .kc-hero-ultimate .kc-title{font-size:clamp(28px,8.2vw,40px);}
+   .kc-hero-ultimate .kc-sub{font-size:15px;}
 }
