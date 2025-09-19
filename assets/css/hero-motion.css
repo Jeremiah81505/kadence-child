@@ -6,6 +6,8 @@
 .kc-hero-ultimate .wp-block-cover__image-background{filter:brightness(.72) saturate(1.05);transition:transform 1.2s cubic-bezier(.16,.72,.21,.99);will-change:transform;}
 .kc-hero-ultimate .kc-hero-wrap{position:relative;z-index:2;}
 .kc-hero-ultimate .kc-colorwash{position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;background:radial-gradient(circle at 30% 40%,hsla(var(--kc-wash-hue,260),85%,62%,.55),transparent 60%),radial-gradient(circle at 75% 70%,hsla(calc(var(--kc-wash-hue,260)+120),75%,55%,.45),transparent 65%),linear-gradient(120deg,rgba(20,26,36,.4),rgba(12,16,26,.55));filter:saturate(130%) brightness(105%);transition:opacity .6s ease,filter 1s linear;opacity:.42;z-index:1;}
+/* Enhanced variant: stronger wash and depth */
+.kc-hero-ultimate--v2 .kc-colorwash{opacity:.52; filter:saturate(140%) brightness(108%);} 
 /* Remove any hairline gap beneath the transparent header */
 .kc-hero-ultimate.alignfull{ margin-top:0 !important; }
 body.has-hero #masthead,
@@ -21,6 +23,7 @@ body.has-hero .entry-content > .wp-block-cover.alignfull:first-child{ margin-top
 @keyframes kcBlobRotate{0%{filter:hue-rotate(0deg);}100%{filter:hue-rotate(360deg);}}
 /* Title & gradient word */
 .kc-title{margin:6px 0 10px;font-size:clamp(36px,6vw,76px);line-height:1.05;font-weight:800;position:relative;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,.55),0 6px 18px rgba(0,0,0,.35);}
+.kc-hero-ultimate--v2 .kc-title{font-size:clamp(40px,6.8vw,84px);} 
 .kc-title .kc-gradient{--kc-grad-hue:0;background:linear-gradient(90deg,hsl(var(--kc-grad-hue) 92% 92%),hsl(calc(var(--kc-grad-hue)+50) 80% 70%),hsl(calc(var(--kc-grad-hue)+90) 90% 78%));background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:kcHeadingShift 8s ease-in-out infinite alternate;}
 @keyframes kcHeadingShift{0%{background-position:0% 50%;}100%{background-position:100% 50%;}}
 .kc-title .kc-underline{position:relative;display:inline-block;}
@@ -50,6 +53,16 @@ body.has-hero .entry-content > .wp-block-cover.alignfull:first-child{ margin-top
 .kc-hero-ultimate .wp-block-buttons .wp-block-button:nth-child(2) .wp-block-button__link{background:linear-gradient(180deg,#3b82f6,#2563eb) !important;color:#ffffff !important;border:1px solid rgba(255,255,255,.15) !important;}
 .kc-hero-ultimate .kc-hero-ctas .wp-block-button__link:hover{filter:brightness(1.06) saturate(1.05);} 
 .kc-hero-ultimate .kc-hero-ctas .wp-block-button__link:focus-visible{outline:2px solid #7de2d1;outline-offset:2px;}
+/* Enhanced variant: larger CTAs with glow "flare" */
+.kc-hero-ultimate--v2 .kc-hero-ctas .wp-block-button__link{padding:14px 22px;border-radius:16px;position:relative;}
+.kc-hero-ultimate--v2 .kc-hero-ctas .wp-block-button__link::after{content:"";position:absolute;inset:-2px;border-radius:inherit;pointer-events:none;box-shadow:0 0 0 2px rgba(125,226,209,.35),0 10px 28px rgba(0,0,0,.35),0 0 40px -8px rgba(125,226,209,.55);opacity:.0;transition:opacity .25s ease;}
+.kc-hero-ultimate--v2 .kc-cta-primary .wp-block-button__link:hover::after{opacity:1;}
+.kc-hero-ultimate--v2 .kc-cta-secondary .wp-block-button__link::after{box-shadow:0 0 0 2px rgba(59,130,246,.35),0 10px 28px rgba(0,0,0,.35),0 0 40px -8px rgba(59,130,246,.55);} 
+.kc-hero-ultimate--v2 .kc-cta-secondary .wp-block-button__link:hover::after{opacity:1;}
+
+/* Enhanced variant: carousel sizing bump */
+.kc-hero-ultimate--v2 .kc-adv-stage-wrap{--panel-h-min:200px;--panel-h-max:320px;--tile-min:96px;--tile-max:132px;--spin-seconds:24;}
+.kc-hero-ultimate--v2 .kc-adv-panel{outline-color:rgba(255,255,255,.12);} 
 /* Eyebrow and chips – letter polish */
 .kc-hero-ultimate .kc-eyebrow{letter-spacing:.18em;color:#f1f6ff;text-shadow:0 1px 2px rgba(0,0,0,.4);} 
 .kc-hero-ultimate .kc-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);} 
