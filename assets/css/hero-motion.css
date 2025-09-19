@@ -2,12 +2,15 @@
    Purpose: Ensure hero animations & visuals even if main style.css
    is cached, truncated, or not loaded. Safe to refine later. */
 .kc-hero-ultimate{position:relative;color:#fff;overflow:hidden;}
-.kc-hero-ultimate[data-enhanced=true]{--kc-wash-hue:260;}
+.kc-hero-ultimate[data-enhanced=true]{--kc-wash-hue:260; --kc-wash-opacity:.42;}
 .kc-hero-ultimate .wp-block-cover__image-background{filter:brightness(.72) saturate(1.05);transition:transform 1.2s cubic-bezier(.16,.72,.21,.99);will-change:transform;}
-.kc-hero-ultimate .kc-hero-wrap{position:relative;z-index:2;}
-.kc-hero-ultimate .kc-colorwash{position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;background:radial-gradient(circle at 30% 40%,hsla(var(--kc-wash-hue,260),85%,62%,.55),transparent 60%),radial-gradient(circle at 75% 70%,hsla(calc(var(--kc-wash-hue,260)+120),75%,55%,.45),transparent 65%),linear-gradient(120deg,rgba(20,26,36,.4),rgba(12,16,26,.55));filter:saturate(130%) brightness(105%);transition:opacity .6s ease,filter 1s linear;opacity:.42;z-index:1;}
+/* ensure overlay > wash > image, and content above all */
+.kc-hero-ultimate .wp-block-cover__background{z-index:2;}
+.kc-hero-ultimate .kc-hero-wrap{position:relative;z-index:3;}
+.kc-hero-ultimate .kc-colorwash{position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;background:radial-gradient(circle at 30% 40%,hsla(var(--kc-wash-hue,260),85%,62%,.55),transparent 60%),radial-gradient(circle at 75% 70%,hsla(calc(var(--kc-wash-hue,260)+120),75%,55%,.45),transparent 65%),linear-gradient(120deg,rgba(20,26,36,.4),rgba(12,16,26,.55));filter:saturate(130%) brightness(105%);transition:opacity .6s ease,filter 1s linear;opacity:var(--kc-wash-opacity,.42);z-index:1;}
 /* Enhanced variant: stronger wash and depth */
-.kc-hero-ultimate--v2 .kc-colorwash{opacity:.52; filter:saturate(140%) brightness(108%);} 
+.kc-hero-ultimate--v2 .kc-colorwash{filter:saturate(140%) brightness(108%);} 
+.kc-hero-ultimate--v2{ --kc-wash-opacity:.52; }
 /* Remove any hairline gap beneath the transparent header */
 .kc-hero-ultimate.alignfull{ margin-top:0 !important; }
 body.has-hero #masthead,
@@ -42,15 +45,15 @@ body.has-hero .entry-content > .wp-block-cover.alignfull:first-child{ margin-top
 .kc-material-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
 .kc-chip{display:flex;align-items:center;justify-content:center;padding:14px 16px;border-radius:12px;font-weight:600;text-decoration:none;color:#fff;background:linear-gradient(180deg,rgba(40,40,50,.85),rgba(20,20,28,.8));border:1px solid rgba(255,255,255,.1);position:relative;overflow:hidden;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;background-clip:padding-box;}
 .kc-chip:hover{transform:translateY(-4px) scale(1.05);box-shadow:0 14px 32px -6px rgba(0,0,0,.55),0 0 22px -4px rgba(120,160,255,.4);}
-/* Hero CTAs – vivid brand colors */
+/* Hero CTAs – vivid brand colors (overrideable by block controls) */
 .kc-hero-ultimate .kc-hero-ctas .wp-block-button__link{font-weight:800;padding:12px 18px;border-radius:14px;text-decoration:none;display:inline-block;box-shadow:0 10px 26px rgba(0,0,0,.35);} 
 /* Primary (classed) */
-.kc-hero-ultimate .kc-cta-primary .wp-block-button__link{background:linear-gradient(180deg,#10b981,#0ea5a3) !important;color:#001010 !important;border:1px solid rgba(0,0,0,.06) !important;} 
+.kc-hero-ultimate .kc-cta-primary .wp-block-button__link{background:linear-gradient(180deg,#10b981,#0ea5a3);color:#001010;border:1px solid rgba(0,0,0,.06);} 
 /* Secondary (classed) */
-.kc-hero-ultimate .kc-cta-secondary .wp-block-button__link{background:linear-gradient(180deg,#3b82f6,#2563eb) !important;color:#ffffff !important;border:1px solid rgba(255,255,255,.15) !important;} 
-/* Fallback when page content lacks kc-cta-* classes: style first/second buttons */
-.kc-hero-ultimate .wp-block-buttons .wp-block-button:first-child .wp-block-button__link{background:linear-gradient(180deg,#10b981,#0ea5a3) !important;color:#001010 !important;border:1px solid rgba(0,0,0,.06) !important;}
-.kc-hero-ultimate .wp-block-buttons .wp-block-button:nth-child(2) .wp-block-button__link{background:linear-gradient(180deg,#3b82f6,#2563eb) !important;color:#ffffff !important;border:1px solid rgba(255,255,255,.15) !important;}
+.kc-hero-ultimate .kc-cta-secondary .wp-block-button__link{background:linear-gradient(180deg,#3b82f6,#2563eb);color:#ffffff;border:1px solid rgba(255,255,255,.15);} 
+/* Fallback when page content lacks kc-cta-* classes: style first/second buttons (soft defaults) */
+.kc-hero-ultimate .wp-block-buttons .wp-block-button:first-child .wp-block-button__link{background:linear-gradient(180deg,#10b981,#0ea5a3);color:#001010;border:1px solid rgba(0,0,0,.06);}
+.kc-hero-ultimate .wp-block-buttons .wp-block-button:nth-child(2) .wp-block-button__link{background:linear-gradient(180deg,#3b82f6,#2563eb);color:#ffffff;border:1px solid rgba(255,255,255,.15);}
 .kc-hero-ultimate .kc-hero-ctas .wp-block-button__link:hover{filter:brightness(1.06) saturate(1.05);} 
 .kc-hero-ultimate .kc-hero-ctas .wp-block-button__link:focus-visible{outline:2px solid #7de2d1;outline-offset:2px;}
 /* Enhanced variant: larger CTAs with glow "flare" */

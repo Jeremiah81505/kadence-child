@@ -6,8 +6,8 @@
  * Description: Enhanced motion hero with colorwash, floating blobs, animated gradient headline, material chips, and rotating brand ring.
  */
 ?>
-<!-- wp:cover {"dimRatio":0,"isUserOverlayColor":true,"minHeight":78,"minHeightUnit":"vh","align":"full","className":"kc-hero-ultimate kc-hero-ultimate--v2","style":{"spacing":{"padding":{"top":"60px","bottom":"60px"}}}} -->
-<div class="wp-block-cover alignfull kc-hero-ultimate kc-hero-ultimate--v2" data-enhanced="true" style="padding-top:60px;padding-bottom:60px;min-height:78vh">
+<!-- wp:cover {"dimRatio":30,"isUserOverlayColor":true,"minHeight":78,"minHeightUnit":"vh","align":"full","className":"kc-hero-ultimate kc-hero-ultimate--v2","style":{"spacing":{"padding":{"top":"60px","bottom":"60px"}}}} -->
+<div class="wp-block-cover alignfull kc-hero-ultimate kc-hero-ultimate--v2" data-enhanced="true" style="padding-top:60px;padding-bottom:60px;min-height:78vh;--kc-wash-opacity:.52;">
   <span aria-hidden="true" class="wp-block-cover__background"></span>
   <img class="wp-block-cover__image-background" alt="" data-object-fit="cover" src="https://elevatedcountertopexperts.com/wp-content/uploads/2025/08/AdobeStock_884069741-scaled.jpeg" />
   <!-- wp:html -->

@@ -71,7 +71,8 @@
     if(wash){
       const hue = 200 + progress * 140; // 200 -> 340
       wash.style.setProperty('--kc-wash-hue', hue.toFixed(1));
-      wash.style.opacity = (0.35 + progress * 0.25).toFixed(3);
+      // write to variable so CSS can win or be overridden by editor inline style
+      wash.style.setProperty('--kc-wash-opacity', (0.35 + progress * 0.25).toFixed(3));
     }
   };
   onScroll();

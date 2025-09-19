@@ -304,8 +304,9 @@ add_filter( 'body_class', function( $classes ) {
 | on the front page without editing the page content. Remove or
 | disable (define KC_DISABLE_HERO_FRONT true) once resolved.
 -------------------------------------------------------------- */
+// Disabled by default: only inject when KC_ENABLE_HERO_FRONT is explicitly true.
 add_action( 'wp_body_open', function() {
-  if ( defined( 'KC_DISABLE_HERO_FRONT' ) && KC_DISABLE_HERO_FRONT ) { return; }
+  if ( ! ( defined( 'KC_ENABLE_HERO_FRONT' ) && KC_ENABLE_HERO_FRONT ) ) { return; }
   if ( ! is_front_page() ) { return; }
   $file = get_stylesheet_directory() . '/patterns/hero-ultimate-motion.php';
   if ( file_exists( $file ) ) {
