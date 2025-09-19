@@ -40,11 +40,15 @@ body.has-hero .entry-content > .wp-block-cover.alignfull:first-child{ margin-top
 .kc-chip{display:flex;align-items:center;justify-content:center;padding:14px 16px;border-radius:12px;font-weight:600;text-decoration:none;color:#fff;background:linear-gradient(180deg,rgba(40,40,50,.85),rgba(20,20,28,.8));border:1px solid rgba(255,255,255,.1);position:relative;overflow:hidden;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;background-clip:padding-box;}
 .kc-chip:hover{transform:translateY(-4px) scale(1.05);box-shadow:0 14px 32px -6px rgba(0,0,0,.55),0 0 22px -4px rgba(120,160,255,.4);}
 /* Hero CTAs – vivid brand colors */
-.kc-hero-ultimate .kc-hero-ctas .wp-block-button__link{font-weight:800;padding:12px 18px;border-radius:14px;text-decoration:none;display:inline-block;box-shadow:0 10px 26px rgba(0,0,0,.35);}
-.kc-hero-ultimate .kc-cta-primary .wp-block-button__link{background:linear-gradient(180deg,#10b981,#0ea5a3);color:#001010;border:1px solid rgba(0,0,0,.06);} 
-.kc-hero-ultimate .kc-cta-primary .wp-block-button__link:hover{filter:brightness(1.06) saturate(1.05);} 
-.kc-hero-ultimate .kc-cta-secondary .wp-block-button__link{background:linear-gradient(180deg,#3b82f6,#2563eb);color:#ffffff;border:1px solid rgba(255,255,255,.15);} 
-.kc-hero-ultimate .kc-cta-secondary .wp-block-button__link:hover{filter:brightness(1.06) saturate(1.05);} 
+.kc-hero-ultimate .kc-hero-ctas .wp-block-button__link{font-weight:800;padding:12px 18px;border-radius:14px;text-decoration:none;display:inline-block;box-shadow:0 10px 26px rgba(0,0,0,.35);} 
+/* Primary (classed) */
+.kc-hero-ultimate .kc-cta-primary .wp-block-button__link{background:linear-gradient(180deg,#10b981,#0ea5a3) !important;color:#001010 !important;border:1px solid rgba(0,0,0,.06) !important;} 
+/* Secondary (classed) */
+.kc-hero-ultimate .kc-cta-secondary .wp-block-button__link{background:linear-gradient(180deg,#3b82f6,#2563eb) !important;color:#ffffff !important;border:1px solid rgba(255,255,255,.15) !important;} 
+/* Fallback when page content lacks kc-cta-* classes: style first/second buttons */
+.kc-hero-ultimate .wp-block-buttons .wp-block-button:first-child .wp-block-button__link{background:linear-gradient(180deg,#10b981,#0ea5a3) !important;color:#001010 !important;border:1px solid rgba(0,0,0,.06) !important;}
+.kc-hero-ultimate .wp-block-buttons .wp-block-button:nth-child(2) .wp-block-button__link{background:linear-gradient(180deg,#3b82f6,#2563eb) !important;color:#ffffff !important;border:1px solid rgba(255,255,255,.15) !important;}
+.kc-hero-ultimate .kc-hero-ctas .wp-block-button__link:hover{filter:brightness(1.06) saturate(1.05);} 
 .kc-hero-ultimate .kc-hero-ctas .wp-block-button__link:focus-visible{outline:2px solid #7de2d1;outline-offset:2px;}
 /* Eyebrow and chips – letter polish */
 .kc-hero-ultimate .kc-eyebrow{letter-spacing:.18em;color:#f1f6ff;text-shadow:0 1px 2px rgba(0,0,0,.4);} 

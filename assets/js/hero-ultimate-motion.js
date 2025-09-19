@@ -165,6 +165,13 @@
         if (debug) console.log('[KC HERO] gradient animation started');
     }
   }
+  /* Backfill CTA classes if missing (ensures color styles apply) */
+  (function(){
+    const group = hero.querySelector('.kc-hero-ctas'); if(!group) return;
+    const btns = group.querySelectorAll('.wp-block-button'); if(!btns.length) return;
+    if(btns[0] && !btns[0].classList.contains('kc-cta-primary')) btns[0].classList.add('kc-cta-primary');
+    if(btns[1] && !btns[1].classList.contains('kc-cta-secondary')) btns[1].classList.add('kc-cta-secondary');
+  })();
     if (debug) {
       // Fallback visual if CSS file missing (no computed mix-blend-mode on colorwash)
       try {
