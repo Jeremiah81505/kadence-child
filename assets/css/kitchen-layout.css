@@ -1,5 +1,6 @@
 /* Kitchen Layout Designer styles */
 .kc-kitchen-designer{--kc-bg:#0e1116;--kc-surface:#141925;--kc-accent:#3ea6ff;--kc-accent-2:#7de2cf;--kc-danger:#ff6b6b;--kc-grid:#1e2535;--kc-grid-strong:#2a344d;--kc-text:#eaf2ff;color:var(--kc-text);background:linear-gradient(180deg,#0c111a,#0b0f16);border:1px solid rgba(255,255,255,.08);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25);overflow:hidden}
+.kc-kitchen-designer.is-contained{max-width:1200px;margin:0 auto}
 .kc-kd-wrap{display:grid;grid-template-columns:1fr 280px;gap:0;min-height:520px}
 .kc-kd-stage{position:relative;background:var(--kc-surface)}
 .kc-kd-canvas{position:absolute;inset:0}
@@ -15,6 +16,10 @@
 .kc-kd-aside dl{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0}
 .kc-kd-aside dt{opacity:.7}
 .kc-kd-aside dd{margin:0;font-weight:600}
+.kc-kd-aside .kc-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.kc-kd-aside label.kc-check{display:inline-flex;align-items:center;gap:8px;font-size:12px;opacity:.9}
+.kc-kd-aside select, .kc-kd-aside input[type=number], .kc-kd-aside input[type=text]{background:#0f1522;border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#eaf2ff;padding:8px 10px;font:500 13px/1.2 system-ui}
+.kc-kd-aside select:focus, .kc-kd-aside input:focus{outline:2px solid var(--kc-accent);outline-offset:1px}
 .kc-kd-footer{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 12px;background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.08)}
 .kc-kd-footer .kc-info{opacity:.75;font-size:12px}
 
@@ -26,3 +31,6 @@
 
 /* Accessibility focus ring */
 .kc-kd-toolbar .kc-btn:focus-visible{outline:2px solid var(--kc-accent);outline-offset:2px}
+
+/* Emphasis badges */
+.kc-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:4px 10px;font:700 11px/1 system-ui;opacity:.9}

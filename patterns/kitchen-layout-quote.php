@@ -6,8 +6,8 @@
  * Description: Interactive kitchen layout designer for quick countertop quote requests.
  */
 ?>
-<!-- wp:group {"align":"full","className":"kc-kitchen-designer"} -->
-<div class="wp-block-group alignfull kc-kitchen-designer">
+<!-- wp:group {"align":"wide","className":"kc-kitchen-designer is-contained"} -->
+<div class="wp-block-group alignwide kc-kitchen-designer is-contained">
   <!-- wp:html -->
   <div>
     <div class="kc-kd-toolbar">
@@ -15,6 +15,8 @@
         <button class="kc-btn is-primary" type="button" data-kc-add-rect>Add Rectangle</button>
         <button class="kc-btn" type="button" data-kc-add-l>Add L-Shape</button>
         <button class="kc-btn" type="button" data-kc-snap>Snap</button>
+  <button class="kc-btn" type="button" data-kc-zoom-in>Zoom +</button>
+  <button class="kc-btn" type="button" data-kc-zoom-out>Zoom -</button>
       </div>
       <div class="kc-group">
         <button class="kc-btn" type="button" data-kc-reset>Reset</button>
@@ -34,7 +36,12 @@
           <dl>
             <dt>Sections</dt><dd><span data-kc-room-count>0</span></dd>
             <dt>Total Area</dt><dd><span data-kc-area>0.00</span> ft²</dd>
+            <dt>Backsplash Area</dt><dd><span data-kc-bs-area>0.00</span> ft²</dd>
+            <dt>Edge Length</dt><dd><span data-kc-perim>0.00</span> lf</dd>
           </dl>
+          <div class="kc-row" style="margin-top:6px">
+            <span class="kc-badge">Options</span>
+          </div>
         </div>
         <div class="kc-card">
           <h3>Selected Section</h3>
@@ -54,6 +61,71 @@
           </div>
           <div style="margin-top:8px;display:flex;gap:8px">
             <button class="kc-btn" type="button" data-kc-delete>Delete Selected</button>
+          </div>
+        </div>
+        <div class="kc-card">
+          <h3>Backsplash & Edges</h3>
+          <div class="kc-row">
+            <label class="kc-check"><input type="checkbox" data-kc-bs-on checked> Include Backsplash</label>
+            <label style="display:flex;align-items:center;gap:8px">
+              <span style="opacity:.75;font-size:12px">Height (in)</span>
+              <input type="number" min="0" step="1" value="4" data-kc-bs-height>
+            </label>
+          </div>
+          <div class="kc-row">
+            <label style="display:flex;align-items:center;gap:8px">
+              <span style="opacity:.75;font-size:12px">Edge Profile</span>
+              <select data-kc-edge>
+                <option value="eased">Eased</option>
+                <option value="bevel">Bevel</option>
+                <option value="bullnose">Bullnose</option>
+                <option value="ogee">Ogee</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="kc-card">
+          <h3>90° Counter w/ Seam</h3>
+          <div class="kc-row" style="gap:10px">
+            <button class="kc-btn" type="button" data-kc-add-seam>Add 90° Layout</button>
+            <label class="kc-check"><input type="checkbox" data-kc-show-seam checked> Show Seam</label>
+          </div>
+        </div>
+        <div class="kc-card">
+          <h3>Sink Details</h3>
+          <div class="kc-row">
+            <label style="display:flex;align-items:center;gap:8px">
+              <span style="opacity:.75;font-size:12px">Type</span>
+              <select data-kc-sink-type>
+                <option value="none">None</option>
+                <option value="undermount" selected>Undermount</option>
+                <option value="topmount">Top-mount</option>
+                <option value="farmhouse">Farmhouse</option>
+              </select>
+            </label>
+          </div>
+          <div class="kc-row">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="opacity:.75;font-size:12px">Cutout Width (in)</span>
+              <input type="number" step="1" min="0" value="30" data-kc-sink-w>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="opacity:.75;font-size:12px">Cutout Depth (in)</span>
+              <input type="number" step="1" min="0" value="20" data-kc-sink-h>
+            </label>
+          </div>
+          <div class="kc-row">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="opacity:.75;font-size:12px">From Left Edge (in)</span>
+              <input type="number" step="1" min="0" value="12" data-kc-sink-x>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="opacity:.75;font-size:12px">From Front Edge (in)</span>
+              <input type="number" step="1" min="0" value="12" data-kc-sink-y>
+            </label>
+          </div>
+          <div class="kc-row">
+            <label class="kc-check"><input type="checkbox" data-kc-sink-centre> Center on Section</label>
           </div>
         </div>
         <div class="kc-card">

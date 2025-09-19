@@ -22,10 +22,14 @@
       pan: {x:0,y:0},
       drawing: false,
       dragStart: null,
-      rooms: [],         // { id, x, y, w, h, type: 'counter', radius }
+  rooms: [],         // { id, x, y, w, h, type: 'counter'|'seam', radius }
       selId: null,
       grid: { size: 6 },
-      snapping: true,
+  snapping: true,
+  backsplash: { on: true, heightIn: 4 },
+  edge: 'eased',
+  seam: { show: true },
+  sink: { type: 'undermount', w:30, h:20, x:12, y:12, center:false },
     };
 
     const aside = sel('.kc-kd-aside', root);
@@ -36,7 +40,9 @@
     const resetBtn = sel('[data-kc-reset]', root);
     const addRectBtn = sel('[data-kc-add-rect]', root);
     const addLBtn = sel('[data-kc-add-l]', root);
-    const snapBtn = sel('[data-kc-snap]', root);
+  const snapBtn = sel('[data-kc-snap]', root);
+  const zoomInBtn = sel('[data-kc-zoom-in]', root);
+  const zoomOutBtn = sel('[data-kc-zoom-out]', root);
   let bindJsonEl = sel('[data-kc-bind="layout-json"]', root);
   let bindAreaEl = sel('[data-kc-bind="area-ft2"]', root);
   const copyJsonBtn = sel('[data-kc-copy-json]', root);
@@ -45,6 +51,20 @@
   const inputH = sel('[data-kc-input-h]', root);
   const inputR = sel('[data-kc-input-radius]', root);
   const delBtn = sel('[data-kc-delete]', root);
+  const bsOn = sel('[data-kc-bs-on]', root);
+  const bsHeight = sel('[data-kc-bs-height]', root);
+  const edgeSel = sel('[data-kc-edge]', root);
+  const addSeamBtn = sel('[data-kc-add-seam]', root);
+  const showSeam = sel('[data-kc-show-seam]', root);
+  const sinkType = sel('[data-kc-sink-type]', root);
+  const sinkW = sel('[data-kc-sink-w]', root);
+  const sinkH = sel('[data-kc-sink-h]', root);
+  const sinkX = sel('[data-kc-sink-x]', root);
+  const sinkY = sel('[data-kc-sink-y]', root);
+  const sinkCentre = sel('[data-kc-sink-centre]', root);
+  const bsAreaEl = sel('[data-kc-bs-area]', aside);
+  const perimEl = sel('[data-kc-perim]', aside);
+  const edgeReadout = sel('[data-kc-edge-readout]', aside);
 
     // sync canvas size
     function fit(){
@@ -91,6 +111,13 @@
       state.rooms.push({ id, x: snap(0), y: snap(-12), w: snap(24), h: snap(36), type: 'counter', radius: 0, seg: 'b', parent: id });
       state.selId = id; draw(); updateAside();
     }
+    function addSeamLayout(){
+      const id = 'seam' + Math.random().toString(36).slice(2,6);
+      state.rooms.push({ id, x: snap(-30), y: snap(-12), w: snap(60), h: snap(24), type: 'counter', radius: 0, seg: 'a', parent: id });
+      state.rooms.push({ id, x: snap(0), y: snap(-12), w: snap(24), h: snap(48), type: 'counter', radius: 0, seg: 'b', parent: id });
+      state.rooms.push({ id: 'seam-'+id, x: 0, y: -12, w: 0.01, h: 48, type: 'seam', parent: id });
+      state.selId = id; draw(); updateAside();
+    }
 
   function updateAside(){
       const in2 = totalAreaIn2();
@@ -99,7 +126,14 @@
       areaEl.textContent = ft2.toFixed(2);
       snapBtn.classList.toggle('is-primary', state.snapping);
       // form binding
-      const payload = { unit: state.unit, rooms: state.rooms, area_ft2: Number(ft2.toFixed(2)) };
+      const payload = { unit: state.unit, rooms: state.rooms, area_ft2: Number(ft2.toFixed(2)), options: {
+        backsplash: state.backsplash,
+        edge: state.edge,
+        seam: state.seam,
+        sink: state.sink,
+        backsplash_area_ft2: Number((backsplashAreaIn2()/144).toFixed(2)),
+        perimeter_lf: Number((perimeterIn()/12).toFixed(2)),
+      } };
       if (bindJsonEl){ bindJsonEl.value = JSON.stringify(payload); bindJsonEl.dispatchEvent(new Event('input',{bubbles:true})); }
       if (bindAreaEl){ bindAreaEl.value = String(payload.area_ft2); bindAreaEl.dispatchEvent(new Event('input',{bubbles:true})); }
     }
@@ -170,8 +204,17 @@
 
       for (const r of state.rooms){
         const isSel = state.selId && (r.id===state.selId || r.parent===state.selId);
-  ctx.fillStyle = isSel ? 'rgba(62,166,255,.25)' : 'rgba(62,166,255,.16)';
-  ctx.strokeStyle = isSel ? '#3ea6ff' : 'rgba(255,255,255,.45)';
+        if (r.type==='seam'){
+          if (!state.seam.show) continue;
+          ctx.strokeStyle = '#ffd54a';
+          ctx.lineWidth = 2/(state.scale*state.zoom);
+          ctx.setLineDash([6/(state.scale*state.zoom), 6/(state.scale*state.zoom)]);
+          ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x + r.w, r.y + r.h); ctx.stroke();
+          ctx.setLineDash([]);
+          continue;
+        }
+        ctx.fillStyle = isSel ? 'rgba(62,166,255,.25)' : 'rgba(62,166,255,.16)';
+        ctx.strokeStyle = isSel ? '#3ea6ff' : (state.edge==='ogee' ? '#caa9ff' : 'rgba(255,255,255,.45)');
         ctx.lineWidth = 2/(state.scale*state.zoom);
         roundRect(ctx, r.x, r.y, r.w, r.h, (r.radius||0)/state.scale);
         ctx.fill(); ctx.stroke();
@@ -196,8 +239,56 @@
         ctx.fillText(label, p.x, p.y+1);
         ctx.restore();
       }
+
+      // Backsplash render
+      if (state.backsplash.on && Number(state.backsplash.heightIn||0)>0){
+        ctx.save();
+        ctx.fillStyle = 'rgba(125,226,209,.18)';
+        ctx.strokeStyle = 'rgba(125,226,209,.6)';
+        ctx.lineWidth = 1.5/(state.scale*state.zoom);
+        const bh = Number(state.backsplash.heightIn||0);
+        for (const r of state.rooms){ if (r.type!=='counter') continue; const rect = normalizeRect(r);
+          ctx.beginPath(); ctx.rect(rect.x, rect.y - bh, rect.w, bh); ctx.fill(); ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // Sink overlay on selected section
+      const selSegs = currentSelected();
+      if (selSegs && state.sink.type!=='none'){
+        const base = normalizeRect(selSegs[0]);
+        const sx = state.sink.center ? (base.x + base.w/2 - state.sink.w/2) : (base.x + Math.min(Math.max(0, state.sink.x), Math.max(0, base.w - state.sink.w)));
+        const sy = base.y + Math.min(Math.max(0, state.sink.y), Math.max(0, base.h - state.sink.h));
+        ctx.save();
+        ctx.strokeStyle = '#e57373';
+        ctx.setLineDash([4/(state.scale*state.zoom), 4/(state.scale*state.zoom)]);
+        ctx.lineWidth = 2/(state.scale*state.zoom);
+        ctx.strokeRect(sx, sy, state.sink.w, state.sink.h);
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
       ctx.restore();
     }
+
+  function normalizeRect(r){
+    const x = Math.min(r.x, r.x + r.w);
+    const y = Math.min(r.y, r.y + r.h);
+    const w = Math.abs(r.w); const h = Math.abs(r.h);
+    return { x, y, w, h };
+  }
+
+  function backsplashAreaIn2(){
+    if (!state.backsplash.on) return 0;
+    const h = Math.max(0, Number(state.backsplash.heightIn||0));
+    let sum = 0; for (const r of state.rooms){ if (r.type!=='counter') continue; const rect = normalizeRect(r); sum += rect.w * h; }
+    return sum;
+  }
+
+  function perimeterIn(){
+    let p = 0; const seen = new Set();
+    for (const r of state.rooms){ const key = r.parent || r.id; if (seen.has(key)) continue; seen.add(key); if (r.type!=='counter') continue; const rect = normalizeRect(r); p += 2*(rect.w + rect.h); }
+    return p;
+  }
 
     function roundRect(ctx, x, y, w, h, r){
       const rr = Math.min(Math.abs(w), Math.abs(h)) * r;
@@ -278,16 +369,41 @@
   addRectBtn?.addEventListener('click', addRect);
   addLBtn?.addEventListener('click', addL);
   snapBtn?.addEventListener('click', ()=>{ state.snapping = !state.snapping; updateAside(); });
+  zoomInBtn?.addEventListener('click', ()=>{ state.zoom = Math.min(4, state.zoom*1.1); draw(); });
+  zoomOutBtn?.addEventListener('click', ()=>{ state.zoom = Math.max(0.25, state.zoom/1.1); draw(); });
     resetBtn?.addEventListener('click', ()=>{ state.rooms = []; state.selId=null; draw(); updateAside(); });
+  addSeamBtn?.addEventListener('click', addSeamLayout);
+  showSeam?.addEventListener('change', ()=>{ state.seam.show = !!showSeam.checked; draw(); });
+  bsOn?.addEventListener('change', ()=>{ state.backsplash.on = !!bsOn.checked; draw(); updateAside(); });
+  bsHeight?.addEventListener('input', ()=>{ state.backsplash.heightIn = Number(bsHeight.value||0); draw(); updateAside(); });
+  edgeSel?.addEventListener('change', ()=>{ state.edge = edgeSel.value; edgeReadout && (edgeReadout.textContent = edgeSel.options[edgeSel.selectedIndex].text); updateAside(); draw(); });
+  sinkType?.addEventListener('change', ()=>{ state.sink.type = sinkType.value; draw(); updateAside(); });
+  sinkW?.addEventListener('input', ()=>{ state.sink.w = Math.max(0, Number(sinkW.value||0)); draw(); updateAside(); });
+  sinkH?.addEventListener('input', ()=>{ state.sink.h = Math.max(0, Number(sinkH.value||0)); draw(); updateAside(); });
+  sinkX?.addEventListener('input', ()=>{ state.sink.x = Math.max(0, Number(sinkX.value||0)); draw(); });
+  sinkY?.addEventListener('input', ()=>{ state.sink.y = Math.max(0, Number(sinkY.value||0)); draw(); });
+  sinkCentre?.addEventListener('change', ()=>{ state.sink.center = !!sinkCentre.checked; draw(); });
+  sinkW?.addEventListener('input', ()=>{ state.sink.w = Math.max(0, Number(sinkW.value||0)); draw(); updateAside(); });
+  sinkH?.addEventListener('input', ()=>{ state.sink.h = Math.max(0, Number(sinkH.value||0)); draw(); updateAside(); });
+  sinkX?.addEventListener('input', ()=>{ state.sink.x = Math.max(0, Number(sinkX.value||0)); draw(); });
+  sinkY?.addEventListener('input', ()=>{ state.sink.y = Math.max(0, Number(sinkY.value||0)); draw(); });
+  sinkCentre?.addEventListener('change', ()=>{ state.sink.center = !!sinkCentre.checked; draw(); });
     exportJsonBtn?.addEventListener('click', ()=>{
-      const data = { unit: state.unit, rooms: state.rooms, area_ft2: Number((totalAreaIn2()/144).toFixed(2)) };
+      const data = { unit: state.unit, rooms: state.rooms, area_ft2: Number((totalAreaIn2()/144).toFixed(2)), options: {
+        backsplash: state.backsplash,
+        edge: state.edge,
+        seam: state.seam,
+        sink: state.sink,
+        backsplash_area_ft2: Number((backsplashAreaIn2()/144).toFixed(2)),
+        perimeter_lf: Number((perimeterIn()/12).toFixed(2)),
+      } };
       const blob = new Blob([JSON.stringify(data,null,2)], { type:'application/json' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'kitchen-layout.json'; a.click();
       setTimeout(()=> URL.revokeObjectURL(a.href), 1500);
     });
     copyJsonBtn?.addEventListener('click', async ()=>{
       try{
-        const data = bindJsonEl?.value || JSON.stringify({ unit: state.unit, rooms: state.rooms, area_ft2: Number((totalAreaIn2()/144).toFixed(2)) });
+  const data = bindJsonEl?.value || JSON.stringify({ unit: state.unit, rooms: state.rooms, area_ft2: Number((totalAreaIn2()/144).toFixed(2)) });
         await navigator.clipboard.writeText(data);
         copyJsonBtn.textContent = 'Copied!'; setTimeout(()=> copyJsonBtn.textContent = 'Copy JSON', 1200);
       }catch(err){
