@@ -33,7 +33,7 @@
     <div class="kc-kd-wrap">
       <div class="kc-kd-stage" aria-label="Kitchen layout canvas"></div>
       <aside class="kc-kd-aside">
-        <div class="kc-card">
+        <div class="kc-card kc-span-2 kc-sticky">
           <h3>Summary</h3>
           <dl>
             <dt>Sections</dt><dd><span data-kc-room-count>0</span></dd>
@@ -45,7 +45,7 @@
             <span class="kc-badge">Options</span>
           </div>
         </div>
-        <div class="kc-card">
+  <div class="kc-card kc-span-2">
           <h3>Presets</h3>
           <div class="kc-row" style="gap:8px;margin-bottom:6px">
             <button class="kc-btn" type="button" data-kc-preset="island">Island</button>
@@ -105,6 +105,7 @@
                 <option value="quartz">Quartz</option>
                 <option value="marble">Marble</option>
                 <option value="quartzite">Quartzite</option>
+                <option value="laminate">Laminate</option>
               </select>
             </label>
           </div>
