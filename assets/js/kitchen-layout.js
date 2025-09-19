@@ -73,6 +73,7 @@
   const edgeReadout = sel('[data-kc-edge-readout]', aside);
   // Tabs & measurement summary fields
   const tabBtns = all('[data-kc-tab]', aside);
+  const accBtns = all('[data-kc-acc]', aside);
   const panels = all('[data-kc-panel]', aside);
   const msMat = sel('[data-kc-ms-material]', aside);
   const msThk = sel('[data-kc-ms-thickness]', aside);
@@ -586,8 +587,11 @@
     // tabs
     if (tabBtns.length){
       tabBtns.forEach(btn=> btn.addEventListener('click', ()=> showPanel(btn.getAttribute('data-kc-tab'))));
-      showPanel('basics');
     }
+    if (accBtns.length){
+      accBtns.forEach(btn=> btn.addEventListener('click', ()=> showPanel(btn.getAttribute('data-kc-acc'))));
+    }
+    showPanel('basics');
 
     function refreshSummary(){
       if (msMat) msMat.textContent = (state.mat?.material||'').replace(/^./,c=>c.toUpperCase());

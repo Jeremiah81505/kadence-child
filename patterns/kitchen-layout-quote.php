@@ -63,6 +63,12 @@
           <button class="kc-btn" type="button" data-kc-tab="finishes">Finishes</button>
           <button class="kc-btn" type="button" data-kc-tab="advanced">Advanced</button>
         </div>
+        <div class="kc-span-2 kc-acc-mobile" style="display:none;gap:8px">
+          <button class="kc-btn is-primary" type="button" data-kc-acc="basics">Basics</button>
+          <button class="kc-btn" type="button" data-kc-acc="cutouts">Cutouts</button>
+          <button class="kc-btn" type="button" data-kc-acc="finishes">Finishes</button>
+          <button class="kc-btn" type="button" data-kc-acc="advanced">Advanced</button>
+        </div>
   <div class="kc-card kc-span-2" data-kc-panel="basics">
           <h3>Presets</h3>
           <div class="kc-row" style="gap:8px;margin-bottom:6px">

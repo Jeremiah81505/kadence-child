@@ -16,6 +16,7 @@
 .kc-kd-aside .kc-card.kc-span-2{grid-column:1/-1}
 .kc-kd-aside .kc-sticky{position:sticky;top:10px}
 .kc-kd-aside .kc-tabs{margin-top:-4px;margin-bottom:4px}
+.kc-acc-mobile{display:none}
 .kc-kd-aside [data-kc-panel]{display:block}
 .kc-kd-aside [data-kc-panel].is-hidden{display:none}
 .kc-ms dt{opacity:.7}
@@ -36,6 +37,11 @@
 /* Responsive */
 @media (max-width: 1200px){.kc-kitchen-designer.is-contained{max-width:100%}}
 @media (max-width: 1024px){.kc-kd-wrap{grid-template-columns:1fr}}
+@media (max-width: 740px){
+	.kc-kd-aside{grid-template-columns:1fr}
+	.kc-kd-aside .kc-tabs{display:none}
+	.kc-acc-mobile{display:flex}
+}
 
 /* micro layout helpers */
 .kc-stack{display:flex;flex-direction:column;gap:8px}
