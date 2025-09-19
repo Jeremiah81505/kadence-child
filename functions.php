@@ -279,6 +279,24 @@ add_action( 'wp_head', function() {
   echo '<style>#colophon,.kc-footer{outline: 3px solid #e91e63 !important; outline-offset: -3px;}</style>'; // phpcs:ignore WordPress.Security.EscapeOutput
 }, 99 );
 
+/**
+ * Body class helper: add `has-hero` when the Ultimate Hero exists on the page.
+ * Enables header transparency and removes any hairline border gap above hero.
+ */
+add_filter( 'body_class', function( $classes ) {
+  $has = false;
+  if ( is_front_page() ) {
+    $has = true; // front page commonly hosts hero
+  } elseif ( is_singular() ) {
+    global $post;
+    $has = $post && ( false !== strpos( (string) $post->post_content, 'kc-hero-ultimate' ) );
+  }
+  if ( $has && ! in_array( 'has-hero', $classes, true ) ) {
+    $classes[] = 'has-hero';
+  }
+  return $classes;
+}, 20 );
+
 /* -------------------------------------------------------------
 | OPTIONAL AUTO FRONT PAGE HERO INJECTION (for debugging)
 | Purpose: User confusion around pattern reinsertion. This makes

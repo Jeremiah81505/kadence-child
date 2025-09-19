@@ -6,6 +6,12 @@
 .kc-hero-ultimate .wp-block-cover__image-background{filter:brightness(.72) saturate(1.05);transition:transform 1.2s cubic-bezier(.16,.72,.21,.99);will-change:transform;}
 .kc-hero-ultimate .kc-hero-wrap{position:relative;z-index:2;}
 .kc-hero-ultimate .kc-colorwash{position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;background:radial-gradient(circle at 30% 40%,hsla(var(--kc-wash-hue,260),85%,62%,.55),transparent 60%),radial-gradient(circle at 75% 70%,hsla(calc(var(--kc-wash-hue,260)+120),75%,55%,.45),transparent 65%),linear-gradient(120deg,rgba(20,26,36,.4),rgba(12,16,26,.55));filter:saturate(130%) brightness(105%);transition:opacity .6s ease,filter 1s linear;opacity:.42;z-index:1;}
+/* Remove any hairline gap beneath the transparent header */
+.kc-hero-ultimate.alignfull{ margin-top:0 !important; }
+body.has-hero #masthead,
+body.has-hero .site-header,
+body.has-hero .kc-header{ border-bottom:0 !important; box-shadow:none !important; }
+body.has-hero .entry-content > .wp-block-cover.alignfull:first-child{ margin-top:0 !important; }
 /* Floating blobs */
 .kc-hero-ultimate .kc-float{position:absolute;border-radius:999px;filter:blur(38px) saturate(140%);opacity:.55;mix-blend-mode:screen;animation:kcBlobFloat var(--fx-speed,14000ms) ease-in-out infinite alternate-reverse, kcBlobRotate calc(var(--fx-speed,14000ms)*1.6) linear infinite;}
 .kc-hero-ultimate .kc-float.a{width:380px;height:380px;top:-90px;left:-120px;background:radial-gradient(circle at 30% 30%,rgba(185,156,255,.75),rgba(120,90,255,.28) 70%,transparent 74%);}
@@ -33,6 +39,16 @@
 .kc-material-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
 .kc-chip{display:flex;align-items:center;justify-content:center;padding:14px 16px;border-radius:12px;font-weight:600;text-decoration:none;color:#fff;background:linear-gradient(180deg,rgba(40,40,50,.85),rgba(20,20,28,.8));border:1px solid rgba(255,255,255,.1);position:relative;overflow:hidden;transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;background-clip:padding-box;}
 .kc-chip:hover{transform:translateY(-4px) scale(1.05);box-shadow:0 14px 32px -6px rgba(0,0,0,.55),0 0 22px -4px rgba(120,160,255,.4);}
+/* Hero CTAs – vivid brand colors */
+.kc-hero-ultimate .kc-hero-ctas .wp-block-button__link{font-weight:800;padding:12px 18px;border-radius:14px;text-decoration:none;display:inline-block;box-shadow:0 10px 26px rgba(0,0,0,.35);}
+.kc-hero-ultimate .kc-cta-primary .wp-block-button__link{background:linear-gradient(180deg,#10b981,#0ea5a3);color:#001010;border:1px solid rgba(0,0,0,.06);} 
+.kc-hero-ultimate .kc-cta-primary .wp-block-button__link:hover{filter:brightness(1.06) saturate(1.05);} 
+.kc-hero-ultimate .kc-cta-secondary .wp-block-button__link{background:linear-gradient(180deg,#3b82f6,#2563eb);color:#ffffff;border:1px solid rgba(255,255,255,.15);} 
+.kc-hero-ultimate .kc-cta-secondary .wp-block-button__link:hover{filter:brightness(1.06) saturate(1.05);} 
+.kc-hero-ultimate .kc-hero-ctas .wp-block-button__link:focus-visible{outline:2px solid #7de2d1;outline-offset:2px;}
+/* Eyebrow and chips – letter polish */
+.kc-hero-ultimate .kc-eyebrow{letter-spacing:.18em;color:#f1f6ff;text-shadow:0 1px 2px rgba(0,0,0,.4);} 
+.kc-hero-ultimate .kc-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);} 
 /* Ripple / spark */
 .kc-ripple{position:absolute;border-radius:999px;pointer-events:none;transform:translate(-50%,-50%);opacity:.22;background:currentColor;filter:blur(.5px);animation:kcRipple .6s ease-out forwards;mix-blend-mode:screen;}
 @keyframes kcRipple{from{width:0;height:0;opacity:.35}to{width:380px;height:380px;opacity:0}}

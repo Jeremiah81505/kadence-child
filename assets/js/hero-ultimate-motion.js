@@ -10,6 +10,17 @@
   const hero = document.querySelector('.kc-hero-ultimate');
   if (!hero) return;
 
+  // Fix stray visible "\n" sequences that may leak from editor content
+  (()=>{
+    const walker = document.createTreeWalker(hero, NodeFilter.SHOW_TEXT);
+    const bad = [];
+    while(walker.nextNode()){
+      const t = walker.currentNode;
+      if(t && /\\n/.test(t.nodeValue||'')) bad.push(t);
+    }
+    bad.forEach(n=>{ n.nodeValue = (n.nodeValue||'').replace(/\\n/g,' ').replace(/\s{2,}/g,' '); });
+  })();
+
   /* Runtime upgrade: if legacy hero instance lacks data-enhanced + layers, add them */
   if (!hero.hasAttribute('data-enhanced')) {
     hero.setAttribute('data-enhanced', 'true');
