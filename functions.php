@@ -28,6 +28,11 @@ if ( ! function_exists( 'kc_asset_ver' ) ) {
   function kc_asset_ver( $rel_path ) {
     $file = get_stylesheet_directory() . '/' . ltrim( $rel_path, '/' );
     $mtime = file_exists( $file ) ? filemtime( $file ) : false;
+    // Dev override: append a fresh timestamp whenever ?kc_dev=1 or KC_DEV enabled
+    $dev = ( isset( $_GET['kc_dev'] ) && $_GET['kc_dev'] == '1' ) || ( defined( 'KC_DEV' ) && KC_DEV );
+    if ( $dev ) {
+      return (string) time();
+    }
     return $mtime ? (string) $mtime : kc_get_theme_version();
   }
 }
@@ -290,8 +295,10 @@ add_action( 'wp_footer', function() {
   $v_js  = function_exists('kc_asset_ver') ? kc_asset_ver( 'assets/js/hero-ultimate-motion.js' ) : 'n/a';
   $v_car_css = function_exists('kc_asset_ver') ? kc_asset_ver( 'assets/css/carousel-adv.css' ) : 'n/a';
   echo "\n<!-- kc-footer-hook ok ts={$ts} hero_css_ver={$v_css} hero_js_ver={$v_js} carousel_css_ver={$v_car_css} -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
-  echo '<script>window.KC_FOOTER_HOOK_OK = ' . json_encode( $ts ) . '; console.log("[kc] footer hook ok", window.KC_FOOTER_HOOK_OK, { hero_css_ver: ' . json_encode( $v_css ) . ', hero_js_ver: ' . json_encode( $v_js ) . ', carousel_css_ver: ' . json_encode( $v_car_css ) . ' });</script>'; // phpcs:ignore WordPress.Security.EscapeOutput
-  echo '<div id="kc-footer-marker" data-ts="' . esc_attr( $ts ) . '" data-hero-css="' . esc_attr( $v_css ) . '" data-hero-js="' . esc_attr( $v_js ) . '" style="display:none"></div>' ; // phpcs:ignore WordPress.Security.EscapeOutput
+  $v_ct_css = function_exists('kc_asset_ver') ? kc_asset_ver( 'assets/css/countertop-config.css' ) : 'n/a';
+  $v_ct_js  = function_exists('kc_asset_ver') ? kc_asset_ver( 'assets/js/countertop-config.js' ) : 'n/a';
+  echo '<script>window.KC_FOOTER_HOOK_OK = ' . json_encode( $ts ) . '; console.log("[kc] footer hook ok", window.KC_FOOTER_HOOK_OK, { hero_css_ver: ' . json_encode( $v_css ) . ', hero_js_ver: ' . json_encode( $v_js ) . ', carousel_css_ver: ' . json_encode( $v_car_css ) . ', ct_css_ver: ' . json_encode( $v_ct_css ) . ', ct_js_ver: ' . json_encode( $v_ct_js ) . ' });</script>'; // phpcs:ignore WordPress.Security.EscapeOutput
+  echo '<div id="kc-footer-marker" data-ts="' . esc_attr( $ts ) . '" data-hero-css="' . esc_attr( $v_css ) . '" data-hero-js="' . esc_attr( $v_js ) . '" data-ct-css="' . esc_attr( $v_ct_css ) . '" data-ct-js="' . esc_attr( $v_ct_js ) . '" style="display:none"></div>' ; // phpcs:ignore WordPress.Security.EscapeOutput
 }, 999 );
 
 // Add diagnostics header early to confirm child theme is active and hooks run.
