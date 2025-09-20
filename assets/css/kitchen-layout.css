@@ -1,10 +1,10 @@
 /* Kitchen Layout Designer styles */
 .kc-kitchen-designer{--kc-bg:#0f1420;--kc-surface:#182235;--kc-accent:#3ea6ff;--kc-accent-2:#7de2cf;--kc-danger:#ff6b6b;--kc-grid:#24324a;--kc-grid-strong:#2e3f5d;--kc-text:#f5f8ff;color:var(--kc-text);background:linear-gradient(180deg,#101622,#0f1420);border:1px solid rgba(255,255,255,.12);border-radius:16px;box-shadow:0 12px 36px rgba(0,0,0,.28);overflow:hidden}
-.kc-kitchen-designer.is-contained{max-width:1800px;margin:0 auto}
-.kc-kd-wrap{display:grid;grid-template-columns:1fr 480px;gap:0;min-height:720px}
-.kc-kd-stage{position:relative;background:var(--kc-surface)}
+.kc-kitchen-designer.is-contained{max-width:1850px;margin:0 auto}
+.kc-kd-wrap{display:grid;grid-template-columns:1fr 560px;gap:0;min-height:720px}
+.kc-kd-stage{position:relative;background:var(--kc-surface);overflow:hidden}
 .kc-kd-canvas{position:absolute;inset:0}
-.kc-kd-toolbar{display:flex;flex-wrap:nowrap;gap:10px 12px;align-items:center;padding:12px 14px;background:var(--kc-surface);border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;z-index:20;overflow-x:auto}
+.kc-kd-toolbar{display:flex;flex-wrap:nowrap;gap:10px 12px;align-items:center;padding:12px 14px;background:var(--kc-surface);border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;z-index:20;overflow-x:auto;scrollbar-gutter:stable both-edges}
 .kc-kd-toolbar .kc-btn{appearance:none;background:#172232;color:var(--kc-text);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:10px 14px;font:600 14px/1.25 system-ui,Segoe UI,Roboto,Arial;cursor:pointer;transition:all .18s ease;display:inline-flex;align-items:center;gap:10px}
 .kc-kd-toolbar .kc-btn{white-space:nowrap}
 .kc-kd-toolbar .kc-btn:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.28)}
@@ -29,7 +29,7 @@
 .kc-kd-aside dd{margin:0;font-weight:700}
 .kc-kd-aside .kc-row{display:flex;gap:10px;align-items:center;flex-wrap:nowrap}
 .kc-kd-aside .kc-row label{display:flex;align-items:center;gap:10px;flex:1;white-space:nowrap}
-.kc-kd-aside .kc-row label>span{display:inline-block;min-width:110px;white-space:nowrap}
+.kc-kd-aside .kc-row label>span{display:inline-block;min-width:130px;white-space:nowrap}
 .kc-kd-aside .kc-row label>input,.kc-kd-aside .kc-row label>select{flex:1;min-width:0}
 .kc-kd-aside label.kc-check{display:inline-flex;align-items:center;gap:8px;font-size:12px;opacity:.9}
 .kc-kd-aside select, .kc-kd-aside input[type=number], .kc-kd-aside input[type=text]{background:#121a28;border:1px solid rgba(255,255,255,.18);border-radius:10px;color:var(--kc-text);padding:10px 12px;font:500 14px/1.25 system-ui}
@@ -78,6 +78,6 @@
 .kc-section .kc-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px}
 .kc-step{padding:12px;background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.1);border-radius:12px}
 .kc-submit .kc-form-placeholder{margin-top:8px;padding:16px;border:1px dashed rgba(255,255,255,.14);border-radius:12px;opacity:.85}
-.kc-tabs{gap:10px;flex-wrap:nowrap;overflow-x:auto}
-.kc-tabs .kc-btn{min-width:110px;word-break:keep-all;overflow-wrap:normal;white-space:nowrap;writing-mode:horizontal-tb}
+.kc-tabs{display:flex;gap:10px;flex-wrap:nowrap;overflow-x:auto;scrollbar-gutter:stable;scroll-behavior:smooth}
+.kc-tabs .kc-btn{min-width:140px;word-break:keep-all;overflow-wrap:normal;white-space:nowrap;writing-mode:horizontal-tb;flex:0 0 auto}
 @media (max-width: 960px){.kc-steps-grid{grid-template-columns:1fr}.kc-grid{grid-template-columns:1fr}}
