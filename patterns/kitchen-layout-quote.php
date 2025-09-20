@@ -224,7 +224,7 @@
         </div>
   <div class="kc-card" data-kc-panel="basics">
           <h3>90° Counter w/ Seam</h3>
-          <div class="kc-row" style="gap:10px">
+          <div class="kc-row kc-btn-row" style="gap:10px">
             <button class="kc-btn" type="button" data-kc-add-seam>Add 90° Layout</button>
             <label class="kc-check"><input type="checkbox" data-kc-show-seam checked> Show Seam</label>
           </div>
