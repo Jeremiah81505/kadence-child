@@ -99,13 +99,12 @@
       const renderInlineInputs = () =>{
         if (!inlineHost) return;
         inlineHost.innerHTML = '';
-        if (active<0 || !shapes[active]) return;
+    if (active<0 || !shapes[active]) return;
   const s = shapes[active];
-  // hide inline inputs for polygons (vertex editing handles are used instead)
-  if (s.type==='poly') return;
+  // polygons now show per-edge inline inputs
         const {A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0} = s.len||{};
   // base margin to pull inputs slightly away from each side
-  const M = 28; // px in viewBox units
+    const M = 32; // px in viewBox units
         const toScreen = (x,y)=>{
           const hostRect = inlineHost.getBoundingClientRect();
           const pt = svg.createSVGPoint ? svg.createSVGPoint() : null;
@@ -142,7 +141,9 @@
   // B left center (always horizontal)
   { const p = locToWorld(-a/2 - (M+8), 0); add('B','B', p.x, p.y); }
         if (s.type==='rect'){
-          // Only A/B for rectangles
+          // Add C (bottom) and D (right) inputs mirroring A/B
+          { const p = locToWorld(0, b/2 + (M+4)); add('C','C', p.x, p.y); }
+          { const p = locToWorld(a/2 + (M+8), 0); add('D','D', p.x, p.y); }
         } else if (s.type==='l'){
           const dPx = D*2; const cPx=C*2;
           const innerTop = -b/2 + dPx;
@@ -150,7 +151,7 @@
           { const p = locToWorld(-a/2 + cPx/2, b/2 + (M+4)); add('C','C', p.x, p.y); }
           // D at inner vertical center (always horizontal)
           { const p = locToWorld(-a/2 + cPx - (M+2), (-b/2 + dPx)/2); add('D','D', p.x, p.y); }
-        } else if (s.type==='u'){
+  } else if (s.type==='u'){
           const dPx = D*2; const cPx=C*2; const ePx=E*2, hPx=H*2; const fPx=F*2, gPx=G*2;
           const innerTop = -b/2 + dPx;
           // C at inner top center (always horizontal)
@@ -165,11 +166,32 @@
           { const p = locToWorld(-a/2 + (a - cPx)/2 - (M+4), (innerTop + b/2)/2); add('F','F', p.x, p.y); }
           // G right inner vertical mid (always horizontal)
           { const p = locToWorld(a/2 - (a - cPx)/2 + (M+4), (innerTop + b/2)/2); add('G','G', p.x, p.y); }
+        } else if (s.type==='poly'){
+          // For each edge, place an input at midpoint labeled P{index}
+          const pts = Array.isArray(s.points)? s.points: [];
+          if (pts.length>=2){
+            const rad = (s.rot||0)*Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad);
+            const toWorld=(lx,ly)=>({ x: s.pos.x + (lx*2)*cos - (ly*2)*sin, y: s.pos.y + (lx*2)*sin + (ly*2)*cos });
+            for (let i=0;i<pts.length;i++){
+              const aP=pts[i], bP=pts[(i+1)%pts.length];
+              const mid={ x: (aP.x + bP.x)/2, y: (aP.y + bP.y)/2 };
+              const w=toWorld(mid.x, mid.y);
+              add(String.fromCharCode(65+i), `P${i}`, w.x, w.y - M);
+            }
+          }
         }
         // set values and wire
         all('[data-kc-inline]', inlineHost).forEach(inp=>{
           const k = inp.getAttribute('data-kc-inline');
-          inp.value = String(s.len[k]||0);
+          if (k && k.startsWith('P')){
+            // polygon edge length from points
+            const idx = parseInt(k.slice(1)||'0',10);
+            const pts = s.points||[]; if (pts.length>=2){ const a=pts[idx], b=pts[(idx+1)%pts.length]; const lenIn=Math.round(Math.hypot((b.x-a.x),(b.y-a.y))); inp.value = String(lenIn); }
+          } else if (s.type==='rect' && (k==='C' || k==='D')){
+            const map = (k==='C')?'A':'B'; inp.value = String(s.len[map]||0);
+          } else {
+            inp.value = String(s.len[k]||0);
+          }
           inp.addEventListener('input', ()=>{
             let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0; s.len[k]=v; draw(); updateOversize(); updateSummary(); save();
           });
@@ -268,6 +290,9 @@
             addHandle(idx, centerX + w/2, centerY, rotation, 'A-right');
             addHandle(idx, centerX - w/2, centerY, rotation, 'A-left');
             addHandle(idx, centerX, centerY + h/2, rotation, 'B-bottom');
+            // mirror handles for C (bottom) and D (right) to allow direct dragging
+            addHandle(idx, centerX, centerY + h/2, rotation, 'C');
+            addHandle(idx, centerX + w/2, centerY, rotation, 'D');
           }
 
   } else if (shape==='l'){
@@ -469,6 +494,16 @@
             const innerLeftX = centerX - (px(aIn))/2 + (px(aIn)-px(cIn))/2; // approx inner left x
             const innerMidY = centerY + (px(bIn)-px(dIn))/2 - px(bIn)/2 + px(dIn);
             addHandle(idx, innerLeftX, innerMidY, rotation, 'D');
+            // add handles for E–H
+            const innerRightX = centerX + (px(aIn))/2 - (px(aIn)-px(cIn))/2;
+            const bottomY = centerY + b/2;
+            // E mid of left bottom return
+            addHandle(idx, centerX - a/2 + px((aIn - cIn)/2)/2, bottomY, rotation, 'E');
+            // H mid of right bottom return
+            addHandle(idx, centerX + a/2 - px((aIn - cIn)/2)/2, bottomY, rotation, 'H');
+            // F/G inner vertical mids
+            addHandle(idx, innerLeftX, (yi + bottomY)/2, rotation, 'F');
+            addHandle(idx, innerRightX, (yi + bottomY)/2, rotation, 'G');
           }
         } else if (shape==='poly'){
           // Custom polygon defined by local-inch points: [{x,y}, ...] in inches
@@ -514,6 +549,12 @@
           // active highlight: draw small handles at vertices
           if (idx===active){
             ptsIn.forEach((p,i)=>{ const w = toWorld(p.x, p.y); addHandle(idx, w.x, w.y, rotation||0, `V-${i}`); });
+            // also midpoint handles per edge for resizing length
+            for (let i=0;i<ptsIn.length;i++){
+              const aP = ptsIn[i], bP = ptsIn[(i+1)%ptsIn.length];
+              const mid={ x:(aP.x+bP.x)/2, y:(aP.y+bP.y)/2 };
+              const w = toWorld(mid.x, mid.y); addHandle(idx, w.x, w.y, rotation||0, `P-${i}`);
+            }
           }
 
           // hit area: bounding box in local inches -> px, rotated like others
@@ -703,15 +744,29 @@
         all('[data-ct-shape]', root).forEach(btn=> btn.classList.remove('is-active'));
     const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
     if (rowC) rowC.style.display='none'; if (rowD) rowD.style.display='none';
+    const list = sel('[data-ct-meas-list]', root); if (list) list.innerHTML='';
       } else {
-        all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); inp.value = String(cur.len[k]||0); });
+        // Build dynamic per-side inputs
+        const list = sel('[data-ct-meas-list]', root);
+        if (list){
+          list.innerHTML = '';
+          const addRow=(label,key)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="${key}" /></label>`; list.appendChild(row); };
+          if (cur.type==='rect'){
+            addRow('Top (A)','A'); addRow('Left (B)','B'); addRow('Bottom (C)','C'); addRow('Right (D)','D');
+          } else if (cur.type==='l'){
+            addRow('Top (A)','A'); addRow('Left (B)','B'); addRow('Inner bottom run (C)','C'); addRow('Inner vertical (D)','D');
+          } else if (cur.type==='u'){
+            ['A','B','C','D','E','F','G','H'].forEach(k=> addRow(`${k}`, k));
+          } else if (cur.type==='poly'){
+            const n = (Array.isArray(cur.points)?cur.points.length:0); for(let i=0;i<n;i++){ const letter=String.fromCharCode(65+i); addRow(`Side ${letter}`, `P${i}`); }
+          }
+        }
+        all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); const v=(cur.len && k in cur.len) ? cur.len[k] : (k && k.startsWith('P') ? Math.round(0) : 0); inp.value = String(v||0); });
         all('[data-ct-wall]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-wall'); inp.checked = !!cur.wall[k]; });
         all('[data-ct-backsplash]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-backsplash'); inp.checked = !!cur.bs[k]; });
         all('[data-ct-shape]', root).forEach(btn=> btn.classList.toggle('is-active', btn.getAttribute('data-ct-shape')===cur.type));
     const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
-    const showInner = (cur.type==='u' || cur.type==='l');
-    if (rowC) rowC.style.display = showInner ? '' : 'none';
-    if (rowD) rowD.style.display = showInner ? '' : 'none';
+  if (rowC) rowC.style.display='none'; if (rowD) rowD.style.display='none';
       }
       const bsH = sel('[data-ct-bs-height]', root); if (bsH) bsH.value = String(opts.bsHeight||0);
     }
@@ -912,12 +967,41 @@
           } else if (resizeKey==='B-bottom'){
             s.len.B = Math.max(1, Math.round((oLen.B||0) + dyIn));
           } else if (resizeKey==='C'){
+            // bottom mirrors A for rect or is inner top center for U
+            if (s.type==='rect') s.len.A = Math.max(1, Math.round((oLen.A||0))); // noop, mirrored via input UI
+          } else if (resizeKey==='D'){
+            if (s.type==='rect') s.len.B = Math.max(1, Math.round((oLen.B||0)));
+          } else if (resizeKey==='C'){
             s.len.C = clamp(Math.round((oLen.C||0) + dxIn), 0, Math.max(0, (s.len.A||0)-1));
             // keep E/H in sync for U
             if (s.type==='u'){ const A=s.len.A||0; const C=s.len.C||0; const spare=Math.max(0, A - C); s.len.E = Math.round(spare/2); s.len.H = spare - s.len.E; }
           } else if (resizeKey==='D'){
             s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, (s.len.B||0)-1));
             if (s.type==='u'){ const B=s.len.B||0; const D=s.len.D||0; const inner=Math.max(0, B - D); s.len.F = inner; s.len.G = inner; }
+          } else if (['E','F','G','H'].includes(String(resizeKey)) && s.type==='u'){
+            // adjust corresponding return/inner verticals
+            if (resizeKey==='E' || resizeKey==='H'){
+              const side = resizeKey==='E'?'E':'H';
+              const other = side==='E'?'H':'E';
+              const newV = clamp(Math.round((oLen[side]||0) + (resizeKey==='E'? dxIn : -dxIn)), 0, Math.max(0,(s.len.A||0)-1));
+              s.len[side] = newV; const spare = Math.max(0,(s.len.A||0) - (s.len.C||0)); s.len[other] = Math.max(0, spare - newV);
+            } else {
+              const newInner = clamp(Math.round((oLen[resizeKey]||0) + dyIn), 0, Math.max(0,(s.len.B||0)-1));
+              s.len.F = newInner; s.len.G = newInner; s.len.D = Math.max(0, (s.len.B||0) - newInner);
+            }
+          } else if (resizeKey && String(resizeKey).startsWith('P-') && s.type==='poly'){
+            // edge midpoint drag: scale edge length by moving the far vertex along edge normal
+            const i = parseInt(String(resizeKey).split('-')[1]||'-1',10);
+            if (Array.isArray(s.points) && i>=0){
+              if (!orig.points) orig.points = s.points.map(p=> ({x:p.x, y:p.y}));
+              const a = orig.points[i]; const b = orig.points[(i+1)%orig.points.length];
+              const ax=a.x, ay=a.y, bx=b.x, by=b.y;
+              const vx=bx-ax, vy=by-ay; const len=Math.hypot(vx,vy)||1; const nx=vx/len, ny=vy/len; // unit along edge
+              // project movement along edge direction (dxIn,dyIn) in local inches
+              const t = (dxIn*nx + dyIn*ny);
+              const move = t; // inches along edge
+              s.points[(i+1)%s.points.length] = { x: Math.round(bx + move*nx), y: Math.round(by + move*ny) };
+            }
           } else if (resizeKey && String(resizeKey).startsWith('V-')){
             // polygon vertex drag
             const i = parseInt(String(resizeKey).split('-')[1]||'-1',10);

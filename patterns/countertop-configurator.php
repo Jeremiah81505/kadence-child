@@ -64,19 +64,8 @@
               </div>
               <section class="kc-section">
                 <h3>Measurements</h3>
-                <div class="kc-meas">
-                  <div class="row">
-                    <label><span>Width (A)</span><input type="number" min="0" step="1" data-ct-len="A" /></label>
-                  </div>
-                  <div class="row">
-                    <label><span>Depth (B)</span><input type="number" min="0" step="1" data-ct-len="B" /></label>
-                  </div>
-                  <div class="row" data-row-c>
-                    <label><span>Opening Width (C)</span><input type="number" min="0" step="1" data-ct-len="C" /></label>
-                  </div>
-                  <div class="row" data-row-d>
-                    <label><span>Opening Depth (D)</span><input type="number" min="0" step="1" data-ct-len="D" /></label>
-                  </div>
+                <div class="kc-meas" data-ct-meas-list>
+                  <!-- Dynamic per-side inputs injected by JS -->
                 </div>
               </section>
               <p class="kc-muted">Tip: For Custom Polygon, select and use the white handles to move vertices. Use Duplicate to copy; Rotate works too.</p>
