@@ -13,6 +13,7 @@
   let shapes = [];
   let active = -1;
   let hover = -1;
+  let handles = [];
   // Global options state (not per shape for now)
   const opts = {
     material: ['Laminate'], edge: 'Bevel',
@@ -36,6 +37,37 @@
 
       const px = (v)=> v * 2; // 2px per inch roughly
       hitAreas = [];
+      handles = [];
+
+      const addHandle=(idx, cx, cy, rot, key)=>{
+        handles.push({ idx, cx, cy, rot, key, r:8 });
+        // visual circle
+        const g=document.createElementNS(ns,'g');
+        g.setAttribute('transform', `rotate(${rot} ${cx} ${cy})`);
+        const c=document.createElementNS(ns,'circle');
+        c.setAttribute('cx', String(cx)); c.setAttribute('cy', String(cy)); c.setAttribute('r','6');
+        c.setAttribute('fill','#fff'); c.setAttribute('stroke','#4f6bd8'); c.setAttribute('stroke-width','2');
+        if (idx===active) gRoot.appendChild(g), g.appendChild(c);
+      };
+
+      const labelNumbers=(parent, cx, cy, cur, dims)=>{
+        const mk=(x,y,txt)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x',String(x)); t.setAttribute('y',String(y)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','14'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; parent.appendChild(t); };
+        const a=Number(dims.A||cur.len?.A||0), b=Number(dims.B||cur.len?.B||0), c=Number(dims.C||cur.len?.C||0), d=Number(dims.D||cur.len?.D||0);
+        // outer labels
+        mk(cx, cy - (px(b)/2) - 10, `${a}\"`);
+        mk(cx - (px(a)/2) - 16, cy, `${b}\"`);
+        // inner where applicable
+        if (cur.type==='u'){
+          const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
+          const innerTopY = cy - bPx/2 + dPx; const innerLeftX = cx - aPx/2 + px(26); // approx offset for readability
+          mk(cx, innerTopY - 6, `${c}\"`);
+          mk(innerLeftX - 20, cy + (bPx/2) - (bPx - dPx)/2, `${b-d}\"`);
+        }
+        if (cur.type==='l'){
+          // show inner legs
+          mk(cx - 30, cy + 14, `${d||0}\"`);
+        }
+      };
 
   shapes.forEach((cur, idx)=>{
   const centerX = cur.pos?.x ?? 300;
@@ -95,7 +127,15 @@
 
           gRoot.appendChild(rotG);
           labelDims(rotG, centerX, centerY, len.A, len.B);
+          labelNumbers(rotG, centerX, centerY, cur, {A:len.A,B:len.B});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation });
+          if (idx===active){
+            // resize handles for A and B
+            // top mid (A)
+            addHandle(idx, centerX, centerY - h/2, rotation, 'A');
+            // right mid (B)
+            addHandle(idx, centerX + w/2, centerY, rotation, 'B');
+          }
 
   } else if (shape==='l'){
           // L as outer A x B minus inner notch sized by C (width) and D (height)
@@ -142,7 +182,12 @@
 
           gRoot.appendChild(rotG);
           labelDims(rotG, centerX, centerY, aIn, bIn);
+          labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
+          if (idx===active){
+            addHandle(idx, centerX, centerY - b/2, rotation, 'A');
+            addHandle(idx, centerX + a/2, centerY, rotation, 'B');
+          }
 
   } else if (shape==='u'){
           // Use A (outer width), B (outer height), C (inner opening width), D (inner opening depth)
@@ -194,7 +239,21 @@
 
           gRoot.appendChild(rotG);
           labelDims(rotG, centerX, centerY, aIn, bIn);
+          labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn,C:cIn,D:dIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
+          if (idx===active){
+            // outer A/B
+            addHandle(idx, centerX, centerY - b/2, rotation, 'A');
+            addHandle(idx, centerX + a/2, centerY, rotation, 'B');
+            // inner C/D
+            const xi = centerX - (px(aIn))/2 + px((aIn - cIn)/2) + px(cIn)/2; // inner top center
+            const yi = centerY - (px(bIn))/2 + px(dIn);
+            addHandle(idx, centerX, yi, rotation, 'C');
+            // inner left mid for D depth (use left inner vertical center)
+            const innerLeftX = centerX - (px(aIn))/2 + (px(aIn)-px(cIn))/2; // approx inner left x
+            const innerMidY = centerY + (px(bIn)-px(dIn))/2 - px(bIn)/2 + px(dIn);
+            addHandle(idx, innerLeftX, innerMidY, rotation, 'D');
+          }
         }
 
         // end forEach
@@ -441,6 +500,7 @@
     let hitAreas = [];
     (function enableDrag(){
       let dragging=false, start={}, orig={}, dragIdx=-1;
+      let resizing=false, resizeKey=null, resizeIdx=-1, startLocal={};
       hover = -1;
   const svgEl = sel('[data-ct-svg]', root);
       function getPoint(ev){
@@ -463,8 +523,17 @@
         for (let i=hitAreas.length-1;i>=0;i--){ const h=hitAreas[i]; if (pointInRotRect(pt.x, pt.y, h.cx, h.cy, h.w, h.h, h.rot, pad)) return h.idx; }
         return -1;
       }
+      function pickHandle(pt){
+        for (let i=handles.length-1;i>=0;i--){ const h=handles[i]; const dx=pt.x-h.cx, dy=pt.y-h.cy; if ((dx*dx+dy*dy) <= Math.pow(h.r+6,2)) return {i, h}; }
+        return null;
+      }
+      function worldToLocal(pxv, pyv, cx, cy, rotDeg){ const rad=-rotDeg*Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad); const dx=pxv-cx, dy=pyv-cy; return { x: dx*cos - dy*sin, y: dx*sin + dy*cos }; }
     const onDown=(ev)=>{
         const pt=getPoint(ev);
+        if (toolMode==='resize'){
+          const ph = pickHandle(pt);
+          if (ph){ const {h}=ph; resizeIdx=h.idx; resizeKey=h.key; resizing=true; start=pt; const s=shapes[resizeIdx]; startLocal = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot); orig = JSON.parse(JSON.stringify(s.len)); ev.preventDefault(); return; }
+        }
         const idx=pickIndex(pt, 28);
         if (idx!==-1){
           if (idx!==active){ active=idx; shapeLabel.textContent=shapes[active].name; renderTabs(); syncInputs(); draw(); }
@@ -474,15 +543,28 @@
       const snapper = (val)=> opts.snap ? Math.round(val/10)*10 : val;
       const onMove=(ev)=>{
         const pt=getPoint(ev);
+        if(resizing){
+          const s=shapes[resizeIdx];
+          const curLocal = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot);
+          let dxIn = (curLocal.x - startLocal.x) / 2; // px->in
+          let dyIn = (curLocal.y - startLocal.y) / 2;
+          if (opts.snap){ dxIn = Math.round(dxIn); dyIn = Math.round(dyIn); }
+          const clamp=(v,min,max)=> Math.min(Math.max(v,min),max);
+          if (resizeKey==='A') s.len.A = Math.max(1, Math.round((orig.A||0) + dxIn));
+          if (resizeKey==='B') s.len.B = Math.max(1, Math.round((orig.B||0) + dyIn));
+          if (resizeKey==='C') s.len.C = clamp(Math.round((orig.C||0) + dxIn), 0, Math.max(0, (s.len.A||0)-1));
+          if (resizeKey==='D') s.len.D = clamp(Math.round((orig.D||0) + dyIn), 0, Math.max(0, (s.len.B||0)-1));
+          draw(); updateOversize(); updateSummary(); return;
+        }
         if(!dragging){
           const idx=pickIndex(pt, 28);
           if (hover!==idx){ hover=idx; draw(); }
-          svgEl.style.cursor = hover!==-1 ? 'move' : 'default';
+          if (toolMode==='resize' && pickHandle(pt)) svgEl.style.cursor='nwse-resize'; else svgEl.style.cursor = hover!==-1 ? 'move' : 'default';
           return;
         }
         const dx=pt.x-start.x, dy=pt.y-start.y; shapes[dragIdx].pos={x:snapper(orig.x+dx),y:snapper(orig.y+dy)}; draw();
       };
-  const onUp=()=>{ if(!dragging) return; dragging=false; dragIdx=-1; save(); };
+  const onUp=()=>{ if(resizing){ resizing=false; resizeIdx=-1; resizeKey=null; save(); return; } if(!dragging) return; dragging=false; dragIdx=-1; save(); };
       svgEl.addEventListener('mousedown', onDown);
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup', onUp);
