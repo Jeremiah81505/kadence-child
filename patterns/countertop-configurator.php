@@ -29,12 +29,24 @@
           <div class="kc-side-col">
             <button class="kc-tile is-active" type="button" data-ct-tool-mode="move"><span>Move</span></button>
             <button class="kc-tile" type="button" data-ct-tool-mode="resize"><span>Resize</span></button>
+            <button class="kc-tile" type="button" data-ct-panel="layouts"><span>Layouts</span></button>
             <button class="kc-tile" type="button" data-ct-panel="shapes"><span>Shapes</span></button>
             <button class="kc-tile" type="button" data-ct-panel="backsplash"><span>Backsplash</span></button>
             <button class="kc-tile" type="button" data-ct-panel="sinks"><span>Sinks</span></button>
             <button class="kc-tile" type="button" data-ct-panel="seams"><span>Seams</span></button>
           </div>
           <div class="kc-panels">
+            <div class="kc-panel kc-panel-layouts" hidden>
+              <div class="kc-panel-grid">
+                <button class="kc-tile" type="button" data-ct-layout="straight">Straight Run</button>
+                <button class="kc-tile" type="button" data-ct-layout="galley-island">Galley + Island</button>
+                <button class="kc-tile" type="button" data-ct-layout="l-standard">L Layout</button>
+                <button class="kc-tile" type="button" data-ct-layout="l-island">L + Island</button>
+                <button class="kc-tile" type="button" data-ct-layout="u-standard">U Layout</button>
+                <button class="kc-tile" type="button" data-ct-layout="peninsula">Peninsula</button>
+              </div>
+              <p class="kc-muted">Layouts add one or more shapes positioned for a quick start. You can move and resize every piece.</p>
+            </div>
             <div class="kc-panel kc-panel-shapes" hidden>
               <div class="kc-panel-grid">
                 <button class="kc-tile" type="button" data-ct-shape="rect" data-ct-len-a="60" data-ct-len-b="25">Rectangle</button>
@@ -43,6 +55,12 @@
                 <button class="kc-tile" type="button" data-ct-shape="rect" data-ct-len-a="72" data-ct-len-b="36">Island 36×72</button>
                 <button class="kc-tile" type="button" data-ct-shape="rect" data-ct-len-a="96" data-ct-len-b="26">Bar Top 26×96</button>
                 <button class="kc-tile" type="button" data-ct-shape="rect" data-ct-len-a="120" data-ct-len-b="25">Galley 25×120</button>
+                <button class="kc-tile" type="button" data-ct-shape="rect" data-ct-len-a="48" data-ct-len-b="48">Island 48×48</button>
+                <button class="kc-tile" type="button" data-ct-shape="rect" data-ct-len-a="84" data-ct-len-b="30">Rectangle 30×84</button>
+                <button class="kc-tile" type="button" data-ct-shape="l" data-ct-len-a="144" data-ct-len-b="96" data-ct-len-c="48" data-ct-len-d="26">L Wide</button>
+                <button class="kc-tile" type="button" data-ct-shape="u" data-ct-len-a="180" data-ct-len-b="100" data-ct-len-c="84" data-ct-len-d="26">U Wide</button>
+                <button class="kc-tile" type="button" data-ct-shape="poly" data-ct-poly="custom">Custom Polygon</button>
+                <button class="kc-tile" type="button" data-ct-poly="free">Free Draw</button>
               </div>
               <section class="kc-section">
                 <h3>Measurements</h3>
@@ -61,6 +79,7 @@
                   </div>
                 </div>
               </section>
+              <p class="kc-muted">Tip: For Custom Polygon, select and use the white handles to move vertices. Use Duplicate to copy; Rotate works too.</p>
             </div>
 
             <div class="kc-panel kc-panel-backsplash" hidden>
@@ -121,6 +140,7 @@
           <svg viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet" data-ct-svg>
             <!-- Drawing injected by JS -->
           </svg>
+          <div class="kc-ct-inline" data-ct-inline aria-live="polite" aria-label="Inline measurement inputs"></div>
           <div class="kc-ct-shape-label" data-ct-shape-label>No shape selected</div>
           <div class="kc-ct-legend" aria-hidden="true">
             <span class="lg lg-wall"></span> Wall side

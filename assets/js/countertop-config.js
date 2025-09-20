@@ -14,6 +14,10 @@
   let active = -1;
   let hover = -1;
   let handles = [];
+  let inlineHost = sel('[data-ct-inline]', root);
+  // Poly drawing state
+  let drawingPoly = false; // when true, clicks add vertices to the active poly
+  let drawingIdx = -1;
   // Global options state (not per shape for now)
   const opts = {
     material: ['Laminate'], edge: 'Bevel',
@@ -51,7 +55,7 @@
         if (idx===active) gRoot.appendChild(g), g.appendChild(c);
       };
 
-      const labelNumbers=(parent, cx, cy, cur, dims)=>{
+  const labelNumbers=(parent, cx, cy, cur, dims)=>{
         const mk=(x,y,txt)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x',String(x)); t.setAttribute('y',String(y)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','14'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; parent.appendChild(t); };
         const a=Number(dims.A||cur.len?.A||0), b=Number(dims.B||cur.len?.B||0), c=Number(dims.C||cur.len?.C||0), d=Number(dims.D||cur.len?.D||0);
         // outer labels
@@ -73,6 +77,47 @@
           // show inner legs
           mk(cx - 30, cy + 14, `${d||0}\"`);
         }
+      };
+
+      // Inline numeric inputs positioned near the active shape sides
+      const renderInlineInputs = () =>{
+        if (!inlineHost) return;
+        inlineHost.innerHTML = '';
+  if (active<0 || !shapes[active]) return;
+  const s = shapes[active];
+  // hide inline inputs for polygons (vertex editing handles are used instead)
+  if (s.type==='poly') return;
+        const {A=0,B=0,C=0,D=0} = s.len||{};
+        const toScreen = (x,y)=>{ const rect = svg.getBoundingClientRect(); const vb = svg.viewBox?.baseVal || {x:0,y:0,width:rect.width,height:rect.height}; return { left: rect.left + (x - vb.x)/vb.width * rect.width, top: rect.top + (y - vb.y)/vb.height * rect.height }; };
+        const add = (label, key, x, y)=>{
+          const pos = toScreen(x,y);
+          const wrap = document.createElement('div'); wrap.className = 'kc-inp'; wrap.style.position='fixed'; wrap.style.left = `${pos.left - 22}px`; wrap.style.top = `${pos.top - 16}px`;
+          wrap.innerHTML = `<label class="sr">${label}</label><input type="number" inputmode="numeric" step="1" class="kc-inp-num" data-kc-inline="${key}" />`;
+          inlineHost.appendChild(wrap);
+        };
+        const cx=s.pos.x, cy=s.pos.y; const a= A*2, b=B*2; // px
+        const rot = s.rot||0; const rad = rot*Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad);
+        const locToWorld=(lx,ly)=>({ x: cx + lx*cos - ly*sin, y: cy + lx*sin + ly*cos });
+        // A at top center
+        { const p = locToWorld(0, -b/2 - 14); add('A','A', p.x, p.y); }
+        // B left center
+        { const p = locToWorld(-a/2 - 24, 0); add('B','B', p.x, p.y); }
+        // D right center
+        { const p = locToWorld(a/2 + 24, 0); add('D','D', p.x, p.y); }
+        if (s.type==='u' || s.type==='l'){
+          const dPx = D*2; const cPx=C*2;
+          const innerTop = -b/2 + dPx; const innerX = 0;
+          { const p = locToWorld(innerX, innerTop - 18); add('C','C', p.x, p.y); }
+          { const p = locToWorld(-a/2 + (a - cPx)/2 - 22, -b/2 + dPx + (b - dPx)/2); add('D','D', p.x, p.y); }
+        }
+        // set values and wire
+        all('[data-kc-inline]', inlineHost).forEach(inp=>{
+          const k = inp.getAttribute('data-kc-inline');
+          inp.value = String(s.len[k]||0);
+          inp.addEventListener('input', ()=>{
+            let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0; s.len[k]=v; draw(); updateOversize(); updateSummary(); save();
+          });
+        });
       };
 
   shapes.forEach((cur, idx)=>{
@@ -157,10 +202,11 @@
           hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation });
           if (idx===active){
             // resize handles for A (width) and B (depth)
-            // top mid adjusts B
-            addHandle(idx, centerX, centerY - h/2, rotation, 'B');
-            // right mid adjusts A
-            addHandle(idx, centerX + w/2, centerY, rotation, 'A');
+            // top/bottom adjust B, left/right adjust A
+            addHandle(idx, centerX, centerY - h/2, rotation, 'B-top');
+            addHandle(idx, centerX + w/2, centerY, rotation, 'A-right');
+            addHandle(idx, centerX - w/2, centerY, rotation, 'A-left');
+            addHandle(idx, centerX, centerY + h/2, rotation, 'B-bottom');
           }
 
   } else if (shape==='l'){
@@ -230,9 +276,10 @@
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
           if (idx===active){
-            // top adjusts B, right adjusts A
-            addHandle(idx, centerX, centerY - b/2, rotation, 'B');
-            addHandle(idx, centerX + a/2, centerY, rotation, 'A');
+            addHandle(idx, centerX, centerY - b/2, rotation, 'B-top');
+            addHandle(idx, centerX + a/2, centerY, rotation, 'A-right');
+            addHandle(idx, centerX - a/2, centerY, rotation, 'A-left');
+            addHandle(idx, centerX, centerY + b/2, rotation, 'B-bottom');
           }
 
   } else if (shape==='u'){
@@ -307,9 +354,10 @@
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn,C:cIn,D:dIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
           if (idx===active){
-            // outer handles: top adjusts B, right adjusts A
-            addHandle(idx, centerX, centerY - b/2, rotation, 'B');
-            addHandle(idx, centerX + a/2, centerY, rotation, 'A');
+            addHandle(idx, centerX, centerY - b/2, rotation, 'B-top');
+            addHandle(idx, centerX + a/2, centerY, rotation, 'A-right');
+            addHandle(idx, centerX - a/2, centerY, rotation, 'A-left');
+            addHandle(idx, centerX, centerY + b/2, rotation, 'B-bottom');
             // inner C/D
             const xi = centerX - (px(aIn))/2 + px((aIn - cIn)/2) + px(cIn)/2; // inner top center
             const yi = centerY - (px(bIn))/2 + px(dIn);
@@ -319,12 +367,56 @@
             const innerMidY = centerY + (px(bIn)-px(dIn))/2 - px(bIn)/2 + px(dIn);
             addHandle(idx, innerLeftX, innerMidY, rotation, 'D');
           }
+        } else if (shape==='poly'){
+          // Custom polygon defined by local-inch points: [{x,y}, ...] in inches
+          const ptsIn = Array.isArray(cur.points) && cur.points.length>=3 ? cur.points : [
+            {x:-40,y:-30},{x:40,y:-30},{x:60,y:0},{x:10,y:40},{x:-30,y:20}
+          ];
+          // local inches -> viewBox units
+          const toWorld = (lx,ly)=>{
+            const rad = (rotation||0) * Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad);
+            const x = centerX + (lx*2)*cos - (ly*2)*sin; // 2 px per inch
+            const y = centerY + (lx*2)*sin + (ly*2)*cos;
+            return {x,y};
+          };
+          // build path
+          const polyPath = document.createElementNS(ns, 'path');
+          let dStr='';
+          ptsIn.forEach((p,i)=>{
+            const w = toWorld(p.x, p.y);
+            dStr += (i===0?`M ${w.x} ${w.y}`:` L ${w.x} ${w.y}`);
+          });
+          dStr += ' Z';
+          polyPath.setAttribute('d', dStr);
+          polyPath.setAttribute('fill', '#f8c4a0');
+          polyPath.setAttribute('stroke', '#ccc');
+          polyPath.setAttribute('stroke-width', '2');
+          gRoot.appendChild(polyPath);
+
+          // labels: edge lengths (inches) at midpoints
+          const labelEdge=(x1,y1,x2,y2,txt)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x', String((x1+x2)/2)); t.setAttribute('y', String((y1+y2)/2 - 6)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; gRoot.appendChild(t); };
+          for (let i=0;i<ptsIn.length;i++){
+            const aP = ptsIn[i]; const bP = ptsIn[(i+1)%ptsIn.length];
+            const lenIn = Math.round(Math.hypot(bP.x - aP.x, bP.y - aP.y));
+            const w1 = toWorld(aP.x, aP.y); const w2 = toWorld(bP.x, bP.y);
+            labelEdge(w1.x,w1.y,w2.x,w2.y, `${lenIn}\"`);
+          }
+
+          // active highlight: draw small handles at vertices
+          if (idx===active){
+            ptsIn.forEach((p,i)=>{ const w = toWorld(p.x, p.y); addHandle(idx, w.x, w.y, rotation||0, `V-${i}`); });
+          }
+
+          // hit area: bounding box in local inches -> px, rotated like others
+          let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity; ptsIn.forEach(p=>{ if(p.x<minX) minX=p.x; if(p.y<minY) minY=p.y; if(p.x>maxX) maxX=p.x; if(p.y>maxY) maxY=p.y; });
+          const w = (maxX - minX) * 2, h = (maxY - minY) * 2; // px
+          hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation||0 });
         }
 
         // end forEach
       });
 
-      // Draw hover highlight if any
+  // Draw hover highlight if any
       if (hover >= 0){
         const ha = hitAreas.find(h=> h.idx===hover);
         if (ha){
@@ -339,7 +431,9 @@
           rotG.appendChild(hi);
           gRoot.appendChild(rotG);
         }
-      }
+  }
+  // After drawing vectors, sync inline numeric inputs
+  renderInlineInputs();
     }
     // Tool mode and panels (left palette)
     root.querySelectorAll('[data-ct-tool-mode]').forEach(btn=>{
@@ -365,7 +459,7 @@
     });
 
     // Create shapes from panel
-  root.querySelectorAll('[data-ct-shape]').forEach(btn=>{
+    root.querySelectorAll('[data-ct-shape]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
   const type = btn.getAttribute('data-ct-shape')||'rect';
   const a = parseInt(btn.getAttribute('data-ct-len-a')||'60',10);
@@ -373,20 +467,47 @@
   const c = parseInt(btn.getAttribute('data-ct-len-c')|| (type==='rect'?'0':'20'),10);
   const d = parseInt(btn.getAttribute('data-ct-len-d')|| (type==='rect'?'0':'10'),10);
         const id='s'+(shapes.length+1);
-  shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len:{A:a,B:b,C:c,D:d}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
+        if (type==='poly'){
+          const pts=[{x:-40,y:-30},{x:40,y:-30},{x:60,y:0},{x:10,y:40},{x:-30,y:20}];
+          shapes.push({ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:pts, len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
+        } else {
+          shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len:{A:a,B:b,C:c,D:d}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
+        }
         active = shapes.length-1; shapeLabel.textContent = shapes[active].name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
       });
     });
 
+    // Free draw: click the tile to start adding vertices on canvas until Enter or double-click to finish
+    root.querySelectorAll('[data-ct-poly="free"]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id='s'+(shapes.length+1);
+        const s={ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:[], len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] };
+        shapes.push(s); active=shapes.length-1; drawingPoly=true; drawingIdx=active; shapeLabel.textContent=s.name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
+      });
+    });
+
     // Layout presets
-  root.querySelectorAll('[data-ct-layout]').forEach(btn=>{
+    root.querySelectorAll('[data-ct-layout]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const layout = btn.getAttribute('data-ct-layout');
-    const add = (type,len)=>{ const id='s'+(shapes.length+1); shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, oh:{A:false,B:false,C:false,D:false}, seams:[] }); active=shapes.length-1; };
-        if (layout==='straight') add('rect', {A:96,B:25,C:0,D:0});
-        if (layout==='l-standard') add('l', {A:120,B:96,C:26,D:26});
-        if (layout==='u-standard') add('u', {A:180,B:100,C:129,D:26});
-        shapeLabel.textContent = shapes[active].name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
+        const add = (type,len,pos)=>{ const id='s'+(shapes.length+1); shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:pos||{x:300,y:300}, len, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] }); active=shapes.length-1; };
+        if (layout==='straight'){
+          add('rect', {A:96,B:25,C:0,D:0}, {x:300,y:280});
+        } else if (layout==='galley-island'){
+          add('rect', {A:120,B:25,C:0,D:0}, {x:300,y:240});
+          add('rect', {A:72,B:36,C:0,D:0}, {x:300,y:360});
+        } else if (layout==='l-standard'){
+          add('l', {A:144,B:96,C:48,D:26}, {x:310,y:300});
+        } else if (layout==='l-island'){
+          add('l', {A:144,B:96,C:48,D:26}, {x:280,y:280});
+          add('rect', {A:60,B:36,C:0,D:0}, {x:420,y:360});
+        } else if (layout==='u-standard'){
+          add('u', {A:180,B:100,C:84,D:26}, {x:300,y:300});
+        } else if (layout==='peninsula'){
+          add('rect', {A:96,B:25,C:0,D:0}, {x:280,y:260});
+          add('rect', {A:60,B:25,C:0,D:0}, {x:360,y:340});
+        }
+        shapeLabel.textContent = shapes[active]?.name || 'Shape'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
       });
     });
 
@@ -461,7 +582,7 @@
     function renderTabs(){
       tabsWrap.innerHTML = '';
     shapes.forEach((sh, idx)=>{
-        const b=document.createElement('button'); b.className='kc-ct-tab' + (idx===active?' is-active':''); b.type='button'; b.textContent=sh.name; b.addEventListener('click', ()=>{ active=idx; shapeLabel.textContent=sh.name; syncInputs(); draw(); updateOversize(); renderTabs(); }); tabsWrap.appendChild(b);
+  const b=document.createElement('button'); b.className='kc-ct-tab' + (idx===active?' is-active':''); b.type='button'; b.textContent=sh.name; b.addEventListener('click', ()=>{ active=idx; shapeLabel.textContent=sh.name; syncInputs(); draw(); updateOversize(); renderTabs(); }); tabsWrap.appendChild(b);
       });
   const add=document.createElement('button'); add.className='kc-ct-tab add'; add.type='button'; add.textContent='Add A Shape'; add.addEventListener('click', ()=>{ const panelBtn = sel('[data-ct-panel="shapes"]', root); if (panelBtn) panelBtn.click(); }); tabsWrap.appendChild(add);
       updateActionStates();
@@ -494,14 +615,17 @@
       btn.addEventListener('click', ()=>{
         all('.kc-shape', root).forEach(b=> b.classList.remove('is-active'));
         btn.classList.add('is-active');
+        // avoid converting to poly via this older handler (poly creation handled above)
+        const btnType = btn.getAttribute('data-ct-shape')||'rect';
+        if (btnType==='poly') return;
         if (active<0){
           const id='s'+(shapes.length+1);
-          shapes.push({ id, name:'Shape '+(shapes.length+1), type:btn.getAttribute('data-ct-shape')||'rect', rot:0, pos:{x:300,y:300}, len:{A:60,B:25,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} });
+          shapes.push({ id, name:'Shape '+(shapes.length+1), type:btnType, rot:0, pos:{x:300,y:300}, len:{A:60,B:25,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} });
           active = shapes.length-1;
           shapeLabel.textContent = shapes[active].name;
           renderTabs();
         } else {
-          shapes[active].type = btn.getAttribute('data-ct-shape')||'rect';
+          shapes[active].type = btnType;
         }
         draw(); updateOversize();
       });
@@ -603,9 +727,9 @@
 
     // Select and drag shapes directly in the preview
     let hitAreas = [];
-    (function enableDrag(){
+  (function enableDrag(){
       let dragging=false, start={}, orig={}, dragIdx=-1;
-      let resizing=false, resizeKey=null, resizeIdx=-1, startLocal={};
+  let resizing=false, resizeKey=null, resizeIdx=-1, startLocal={};
       hover = -1;
   const svgEl = sel('[data-ct-svg]', root);
       function getPoint(ev){
@@ -635,9 +759,22 @@
       function worldToLocal(pxv, pyv, cx, cy, rotDeg){ const rad=-rotDeg*Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad); const dx=pxv-cx, dy=pyv-cy; return { x: dx*cos - dy*sin, y: dx*sin + dy*cos }; }
     const onDown=(ev)=>{
         const pt=getPoint(ev);
+        // Handle free-draw polygon creation clicks
+        if (drawingPoly && drawingIdx>=0 && shapes[drawingIdx] && shapes[drawingIdx].type==='poly'){
+          const s=shapes[drawingIdx];
+          if (s.points.length===0){
+            s.pos = { x: pt.x, y: pt.y };
+            s.points.push({x:0,y:0});
+          } else {
+            const loc = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot||0);
+            // convert viewBox units to inches
+            s.points.push({ x: Math.round(loc.x/2), y: Math.round(loc.y/2) });
+          }
+          active=drawingIdx; shapeLabel.textContent=s.name; draw(); save(); ev.preventDefault(); return;
+        }
         if (toolMode==='resize'){
           const ph = pickHandle(pt);
-          if (ph){ const {h}=ph; resizeIdx=h.idx; resizeKey=h.key; resizing=true; start=pt; const s=shapes[resizeIdx]; startLocal = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot); orig = JSON.parse(JSON.stringify(s.len)); ev.preventDefault(); return; }
+          if (ph){ const {h}=ph; resizeIdx=h.idx; resizeKey=h.key; resizing=true; start=pt; const s=shapes[resizeIdx]; startLocal = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot); orig = { len: JSON.parse(JSON.stringify(s.len)), pos: {x:s.pos.x,y:s.pos.y} }; ev.preventDefault(); return; }
         }
         const idx=pickIndex(pt, 28);
         if (idx!==-1){
@@ -655,10 +792,34 @@
           let dyIn = (curLocal.y - startLocal.y) / 2;
           if (opts.snap){ dxIn = Math.round(dxIn); dyIn = Math.round(dyIn); }
           const clamp=(v,min,max)=> Math.min(Math.max(v,min),max);
-          if (resizeKey==='A') s.len.A = Math.max(1, Math.round((orig.A||0) + dxIn));
-          if (resizeKey==='B') s.len.B = Math.max(1, Math.round((orig.B||0) + dyIn));
-          if (resizeKey==='C') s.len.C = clamp(Math.round((orig.C||0) + dxIn), 0, Math.max(0, (s.len.A||0)-1));
-          if (resizeKey==='D') s.len.D = clamp(Math.round((orig.D||0) + dyIn), 0, Math.max(0, (s.len.B||0)-1));
+          const oLen = orig.len || {}, oPos = orig.pos || {};
+          if (resizeKey==='A-right'){
+            s.len.A = Math.max(1, Math.round((oLen.A||0) + dxIn));
+          } else if (resizeKey==='A-left'){
+            const newA = Math.max(1, Math.round((oLen.A||0) - dxIn));
+            const delta = (newA - (oLen.A||0))/2 * 2; // px in inches then px? here inches
+            s.len.A = newA;
+            s.pos.x = oPos.x - dxIn; // move center left when dragging left side
+          } else if (resizeKey==='B-top'){
+            const newB = Math.max(1, Math.round((oLen.B||0) - dyIn));
+            s.len.B = newB; s.pos.y = oPos.y - dyIn;
+          } else if (resizeKey==='B-bottom'){
+            s.len.B = Math.max(1, Math.round((oLen.B||0) + dyIn));
+          } else if (resizeKey==='C'){
+            s.len.C = clamp(Math.round((oLen.C||0) + dxIn), 0, Math.max(0, (s.len.A||0)-1));
+          } else if (resizeKey==='D'){
+            s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, (s.len.B||0)-1));
+          } else if (resizeKey && String(resizeKey).startsWith('V-')){
+            // polygon vertex drag
+            const i = parseInt(String(resizeKey).split('-')[1]||'-1',10);
+            if (Array.isArray(s.points) && i>=0 && i<s.points.length){
+              if (!orig.points) orig.points = s.points.map(p=> ({x:p.x, y:p.y}));
+              const op = orig.points[i];
+              // move vertex by delta inches
+              const nx = (op.x||0) + dxIn; const ny = (op.y||0) + dyIn;
+              s.points[i] = { x: Math.round(nx), y: Math.round(ny) };
+            }
+          }
           draw(); updateOversize(); updateSummary(); return;
         }
         if(!dragging){
@@ -676,6 +837,8 @@
       svgEl.addEventListener('touchstart', onDown, {passive:false});
       window.addEventListener('touchmove', onMove, {passive:false});
       window.addEventListener('touchend', onUp);
+      // finish free draw on double click
+      svgEl.addEventListener('dblclick', ()=>{ if(drawingPoly){ drawingPoly=false; drawingIdx=-1; save(); draw(); } });
     })();
 
     // Toolbar bindings
@@ -718,6 +881,14 @@
 
     // keyboard nudging for active shape
     root.addEventListener('keydown', (e)=>{
+      if (drawingPoly){
+        if (e.key==='Enter'){ drawingPoly=false; drawingIdx=-1; draw(); save(); }
+        if (e.key==='Escape'){ // cancel drawing: remove empty poly
+          if (drawingIdx>=0 && shapes[drawingIdx] && Array.isArray(shapes[drawingIdx].points) && shapes[drawingIdx].points.length<3){ shapes.splice(drawingIdx,1); active=Math.max(-1, Math.min(active, shapes.length-1)); }
+          drawingPoly=false; drawingIdx=-1; draw(); save();
+        }
+        return;
+      }
       if (active<0) return;
       const step = opts.snap ? 10 : 2;
       if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
@@ -772,6 +943,10 @@
         const A=Number(s.len?.A||0), B=Number(s.len?.B||0), C=Number(s.len?.C||0), D=Number(s.len?.D||0);
         if (s.type==='u') return acc + (A*B - Math.max(0, C*Math.max(0, B-D)));
         if (s.type==='l') return acc + (A*B - Math.max(0, (A-C)*Math.max(0, B-D)));
+        if (s.type==='poly' && Array.isArray(s.points) && s.points.length>=3){
+          // shoelace formula (in^2) on local-inch points
+          let area=0; for (let i=0;i<s.points.length;i++){ const p1=s.points[i], p2=s.points[(i+1)%s.points.length]; area += (p1.x*p2.y - p2.x*p1.y); } area=Math.abs(area)/2; return acc + area;
+        }
         return acc + (A*B);
       }, 0);
       const sqFt = totalSqIn/144; if (areaEl) areaEl.textContent = (Math.round(sqFt*10)/10).toFixed(1);
