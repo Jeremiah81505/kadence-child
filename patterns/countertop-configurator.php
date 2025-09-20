@@ -32,71 +32,48 @@
 
     <div class="kc-ct-grid">
       <aside class="kc-ct-left">
-        <section class="kc-card">
-          <h3>Select a Shape</h3>
-          <div class="kc-ct-shapes">
-            <button class="kc-shape is-active" type="button" data-ct-shape="rect">
-              <span class="ico rect"></span>
-              <span>Rectangle</span>
-            </button>
-            <button class="kc-shape" type="button" data-ct-shape="l">
-              <span class="ico l"></span>
-              <span>L Shape</span>
-            </button>
-            <button class="kc-shape" type="button" data-ct-shape="u">
-              <span class="ico u"></span>
-              <span>U Shape</span>
-            </button>
+        <div class="kc-side">
+          <div class="kc-side-col">
+            <button class="kc-tile is-active" type="button" data-ct-tool-mode="move"><span>Move</span></button>
+            <button class="kc-tile" type="button" data-ct-tool-mode="resize"><span>Resize</span></button>
+            <button class="kc-tile" type="button" data-ct-panel="shapes"><span>Shapes</span></button>
+            <button class="kc-tile" type="button" data-ct-panel="layouts"><span>Layouts</span></button>
+            <button class="kc-tile" type="button" data-ct-duplicate><span>Duplicate</span></button>
+            <button class="kc-tile" type="button" data-ct-delete><span>Delete</span></button>
           </div>
-        </section>
-
-        <section class="kc-card">
-          <h3>Enter Measurements</h3>
-          <div class="kc-meas" data-ct-meas>
-            <div class="row" data-side="A">
-              <label>
-                <span>A Length (in.)</span>
-                <input type="number" min="1" step="1" value="60" data-ct-len="A" />
-              </label>
-              <label class="opt"><input type="checkbox" data-ct-wall="A" /> Side against wall</label>
-              <label class="opt"><input type="checkbox" data-ct-backsplash="A" /> Add same-material backsplash</label>
+          <div class="kc-panels">
+            <div class="kc-panel kc-panel-shapes" hidden>
+              <div class="kc-panel-grid">
+                <button class="kc-tile" type="button" data-ct-shape="rect">Rectangle</button>
+                <button class="kc-tile" type="button" data-ct-shape="l">L Shape</button>
+                <button class="kc-tile" type="button" data-ct-shape="u">U Shape</button>
+              </div>
             </div>
-            <div class="row" data-side="B">
-              <label>
-                <span>B Length (in.)</span>
-                <input type="number" min="1" step="1" value="25" data-ct-len="B" />
-              </label>
-              <label class="opt"><input type="checkbox" data-ct-wall="B" /> Side against wall</label>
-              <label class="opt"><input type="checkbox" data-ct-backsplash="B" /> Add same-material backsplash</label>
-            </div>
-            <div class="row" data-side="C">
-              <label>
-                <span>C Length (in.)</span>
-                <input type="number" min="0" step="1" value="0" data-ct-len="C" />
-              </label>
-              <label class="opt"><input type="checkbox" data-ct-wall="C" /> Side against wall</label>
-              <label class="opt"><input type="checkbox" data-ct-backsplash="C" /> Add same-material backsplash</label>
-            </div>
-            <div class="row" data-side="D">
-              <label>
-                <span>D Length (in.)</span>
-                <input type="number" min="0" step="1" value="0" data-ct-len="D" />
-              </label>
-              <label class="opt"><input type="checkbox" data-ct-wall="D" /> Side against wall</label>
-              <label class="opt"><input type="checkbox" data-ct-backsplash="D" /> Add same-material backsplash</label>
-            </div>
-            <div class="row">
-              <label>
-                <span>Backsplash Height (in.)</span>
-                <input type="number" min="0" step="1" value="4" data-ct-bs-height />
-              </label>
+            <div class="kc-panel kc-panel-layouts" hidden>
+              <div class="kc-panel-grid">
+                <button class="kc-tile" type="button" data-ct-layout="straight">Straight Run</button>
+                <button class="kc-tile" type="button" data-ct-layout="l-standard">L Standard</button>
+                <button class="kc-tile" type="button" data-ct-layout="u-standard">U Standard</button>
+              </div>
             </div>
           </div>
-        </section>
+        </div>
       </aside>
 
       <section class="kc-ct-right">
         <div class="kc-ct-preview" data-ct-preview>
+          <div class="kc-ct-toolbar" aria-label="Tools" role="toolbar">
+            <button type="button" class="kc-tool is-active" data-ct-tool="move" title="Move">Move</button>
+            <button type="button" class="kc-tool" data-ct-tool="resize" title="Resize">Resize</button>
+            <button type="button" class="kc-tool" data-ct-tool="shapes" title="Shapes">Shapes</button>
+            <button type="button" class="kc-tool" data-ct-rotate-left title="Rotate Left">⟲</button>
+            <button type="button" class="kc-tool" data-ct-rotate-right title="Rotate Right">⟳</button>
+            <button type="button" class="kc-tool" data-ct-duplicate title="Duplicate">Duplicate</button>
+            <button type="button" class="kc-tool danger" data-ct-delete title="Delete">Delete</button>
+            <div class="kc-tool-split"></div>
+            <button type="button" class="kc-tool" data-ct-zoom-in title="Zoom In">＋</button>
+            <button type="button" class="kc-tool" data-ct-zoom-out title="Zoom Out">－</button>
+          </div>
           <svg viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet" data-ct-svg>
             <!-- Drawing injected by JS -->
           </svg>

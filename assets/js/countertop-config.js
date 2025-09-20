@@ -6,7 +6,8 @@
     if (!root || root.__ctInit) return; root.__ctInit = true;
     const svg = sel('[data-ct-svg]', root);
     const shapeLabel = sel('[data-ct-shape-label]', root);
-    const actions = root;
+  const actions = root;
+  let mode = 'move'; // move | resize
 
   // Simple multi-shape state
   let shapes = [];
@@ -24,6 +25,8 @@
   snap: true
   };
   const STATE_KEY = 'kcCountertopConfig:v1';
+  let toolMode = 'move';
+  let zoom = 1;
 
     function draw(){
   svg.innerHTML = '';
@@ -214,6 +217,48 @@
         }
       }
     }
+    // Tool mode and panels
+    root.querySelectorAll('[data-ct-tool-mode]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        mode = btn.getAttribute('data-ct-tool-mode') || 'move';
+        root.querySelectorAll('[data-ct-tool-mode]').forEach(b=> b.classList.remove('is-active'));
+        btn.classList.add('is-active');
+      });
+    });
+    root.querySelectorAll('[data-ct-panel]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const p = btn.getAttribute('data-ct-panel');
+        root.querySelectorAll('.kc-panel').forEach(panel=> panel.hidden = true);
+        const pane = sel('.kc-panel-' + p, root); if (pane) pane.hidden = false;
+      });
+    });
+
+    // Create shapes from panel
+    root.querySelectorAll('[data-ct-shape]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const type = btn.getAttribute('data-ct-shape')||'rect';
+        const id='s'+(shapes.length+1);
+        shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len:{A:60,B:25,C:20,D:10}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} });
+        active = shapes.length-1; shapeLabel.textContent = shapes[active].name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
+      });
+    });
+
+    // Layout presets
+    root.querySelectorAll('[data-ct-layout]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const layout = btn.getAttribute('data-ct-layout');
+        const add = (type,len)=>{ const id='s'+(shapes.length+1); shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} }); active=shapes.length-1; };
+        if (layout==='straight') add('rect', {A:96,B:25,C:0,D:0});
+        if (layout==='l-standard') add('l', {A:120,B:96,C:26,D:26});
+        if (layout==='u-standard') add('u', {A:180,B:100,C:129,D:26});
+        shapeLabel.textContent = shapes[active].name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
+      });
+    });
+
+    // Duplicate
+    sel('[data-ct-duplicate]', root)?.addEventListener('click', ()=>{
+      if (active<0) return; const s=shapes[active]; const copy=JSON.parse(JSON.stringify(s)); copy.id='s'+(shapes.length+1); copy.name='Shape '+(shapes.length+1); copy.pos={x:s.pos.x+20,y:s.pos.y+20}; shapes.push(copy); active=shapes.length-1; shapeLabel.textContent=copy.name; renderTabs(); draw(); updateSummary(); save();
+    });
 
     // Measurement label guides around the shape
     function labelDims(parent, cx, cy, A, B){
@@ -397,7 +442,7 @@
     (function enableDrag(){
       let dragging=false, start={}, orig={}, dragIdx=-1;
       hover = -1;
-      const svgEl = sel('[data-ct-svg]', root);
+  const svgEl = sel('[data-ct-svg]', root);
       function getPoint(ev){
         const rect = svgEl.getBoundingClientRect();
         const vb = svgEl.viewBox?.baseVal || { x:0, y:0, width:rect.width, height:rect.height };
@@ -418,12 +463,12 @@
         for (let i=hitAreas.length-1;i>=0;i--){ const h=hitAreas[i]; if (pointInRotRect(pt.x, pt.y, h.cx, h.cy, h.w, h.h, h.rot, pad)) return h.idx; }
         return -1;
       }
-      const onDown=(ev)=>{
+    const onDown=(ev)=>{
         const pt=getPoint(ev);
         const idx=pickIndex(pt, 28);
         if (idx!==-1){
           if (idx!==active){ active=idx; shapeLabel.textContent=shapes[active].name; renderTabs(); syncInputs(); draw(); }
-          dragging=true; start=pt; orig={...shapes[active].pos}; dragIdx=active; ev.preventDefault();
+      if (toolMode==='move'){ dragging=true; start=pt; orig={...shapes[active].pos}; dragIdx=active; ev.preventDefault(); }
         }
       };
       const snapper = (val)=> opts.snap ? Math.round(val/10)*10 : val;
@@ -437,7 +482,7 @@
         }
         const dx=pt.x-start.x, dy=pt.y-start.y; shapes[dragIdx].pos={x:snapper(orig.x+dx),y:snapper(orig.y+dy)}; draw();
       };
-      const onUp=()=>{ if(!dragging) return; dragging=false; dragIdx=-1; save(); };
+  const onUp=()=>{ if(!dragging) return; dragging=false; dragIdx=-1; save(); };
       svgEl.addEventListener('mousedown', onDown);
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup', onUp);
@@ -445,6 +490,23 @@
       window.addEventListener('touchmove', onMove, {passive:false});
       window.addEventListener('touchend', onUp);
     })();
+
+    // Toolbar bindings
+    root.querySelectorAll('.kc-ct-toolbar [data-ct-tool]')?.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        root.querySelectorAll('.kc-ct-toolbar .kc-tool').forEach(b=> b.classList.remove('is-active'));
+        btn.classList.add('is-active');
+        toolMode = btn.getAttribute('data-ct-tool')||'move';
+      });
+    });
+    sel('[data-ct-duplicate]', root)?.addEventListener('click', ()=>{
+      if (active<0) return; const s=shapes[active]; const id='s'+(shapes.length+1);
+      const c=JSON.parse(JSON.stringify(s)); c.id=id; c.name='Shape '+(shapes.length+1); c.pos={x:s.pos.x+20,y:s.pos.y+20}; shapes.push(c); active=shapes.length-1; shapeLabel.textContent=c.name; renderTabs(); draw(); updateSummary(); save();
+    });
+    const svgEl = sel('[data-ct-svg]', root);
+    function applyZoom(){ svgEl.setAttribute('viewBox', `0 0 ${600/zoom} ${600/zoom}`); }
+    sel('[data-ct-zoom-in]', root)?.addEventListener('click', ()=>{ zoom=Math.min(3, zoom+0.2); applyZoom(); });
+    sel('[data-ct-zoom-out]', root)?.addEventListener('click', ()=>{ zoom=Math.max(0.4, zoom-0.2); applyZoom(); });
     root.querySelectorAll('[data-ct-counter]').forEach(box=>{
       const key = box.getAttribute('data-ct-counter');
       const valEl = box.querySelector('.kc-ctr-val');
