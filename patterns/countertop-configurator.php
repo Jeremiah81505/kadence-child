@@ -10,23 +10,16 @@
 <div class="wp-block-group alignwide kc-ct-configurator is-contained">
   <!-- wp:html -->
   <div>
-    <div class="kc-ct-tabs" data-ct-tabs role="tablist" aria-label="Shapes">
-      <button class="kc-ct-tab is-active" role="tab" aria-selected="true" type="button" data-ct-tab="shape-1">● Shape 1</button>
-      <button class="kc-ct-tab add" role="tab" aria-selected="false" type="button" data-ct-add-shape>Add A Shape</button>
-    </div>
+  <div class="kc-ct-tabs" data-ct-tabs role="tablist" aria-label="Shapes"></div>
 
     <div class="kc-ct-actions" data-ct-actions>
       <div class="kc-ct-actions-left">
-        <button class="kc-btn" type="button" data-ct-rotate-left>Rotate Left</button>
-        <button class="kc-btn" type="button" data-ct-rotate-right>Rotate Right</button>
-  <label class="kc-toggle"><input type="checkbox" data-ct-snap checked /> <span>Snap to grid</span></label>
+        <label class="kc-toggle"><input type="checkbox" data-ct-snap checked /> <span>Snap to grid</span></label>
       </div>
       <div class="kc-ct-actions-right">
-        <button class="kc-btn" type="button" data-ct-reset disabled>Reset</button>
-        <button class="kc-btn" type="button" data-ct-delete disabled>Delete</button>
-  <button class="kc-btn" type="button" data-ct-export title="Download JSON">Export</button>
-  <button class="kc-btn" type="button" data-ct-import title="Import JSON">Import</button>
-  <input type="file" accept="application/json" data-ct-import-input class="kc-visually-hidden" aria-hidden="true" />
+        <button class="kc-btn" type="button" data-ct-export title="Download JSON">Export</button>
+        <button class="kc-btn" type="button" data-ct-import title="Import JSON">Import</button>
+        <input type="file" accept="application/json" data-ct-import-input class="kc-visually-hidden" aria-hidden="true" />
       </div>
     </div>
 
@@ -37,9 +30,6 @@
             <button class="kc-tile is-active" type="button" data-ct-tool-mode="move"><span>Move</span></button>
             <button class="kc-tile" type="button" data-ct-tool-mode="resize"><span>Resize</span></button>
             <button class="kc-tile" type="button" data-ct-panel="shapes"><span>Shapes</span></button>
-            <button class="kc-tile" type="button" data-ct-panel="layouts"><span>Layouts</span></button>
-            <button class="kc-tile" type="button" data-ct-duplicate><span>Duplicate</span></button>
-            <button class="kc-tile" type="button" data-ct-delete><span>Delete</span></button>
           </div>
           <div class="kc-panels">
             <div class="kc-panel kc-panel-shapes" hidden>
@@ -49,13 +39,7 @@
                 <button class="kc-tile" type="button" data-ct-shape="u">U Shape</button>
               </div>
             </div>
-            <div class="kc-panel kc-panel-layouts" hidden>
-              <div class="kc-panel-grid">
-                <button class="kc-tile" type="button" data-ct-layout="straight">Straight Run</button>
-                <button class="kc-tile" type="button" data-ct-layout="l-standard">L Standard</button>
-                <button class="kc-tile" type="button" data-ct-layout="u-standard">U Standard</button>
-              </div>
-            </div>
+            
           </div>
         </div>
       </aside>
@@ -87,6 +71,37 @@
     </div>
 
     <div class="kc-ct-options" data-ct-options>
+      <section class="kc-section">
+        <h3>Measurements</h3>
+        <div class="kc-meas">
+          <div class="row">
+            <label><span>Width (A)</span><input type="number" min="0" step="1" data-ct-len="A" /></label>
+          </div>
+          <div class="row">
+            <label><span>Depth (B)</span><input type="number" min="0" step="1" data-ct-len="B" /></label>
+          </div>
+          <div class="row" data-row-c>
+            <label><span>Opening Width (C)</span><input type="number" min="0" step="1" data-ct-len="C" /></label>
+          </div>
+          <div class="row" data-row-d>
+            <label><span>Opening Depth (D)</span><input type="number" min="0" step="1" data-ct-len="D" /></label>
+          </div>
+        </div>
+      </section>
+
+      <section class="kc-section">
+        <h3>Backsplash</h3>
+        <div class="kc-option-grid">
+          <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="A" /> Top (A)</label>
+          <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="B" /> Left (B)</label>
+          <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="C" /> Bottom (C)</label>
+          <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="D" /> Right (D)</label>
+        </div>
+        <div class="kc-fieldset">
+          <div class="kc-field-label">Backsplash Height (inches)</div>
+          <input type="number" class="kc-input" min="0" max="24" step="1" data-ct-bs-height />
+        </div>
+      </section>
       <section class="kc-section">
         <h3>Material Quote Request options</h3>
         <div class="kc-option-grid" role="group" aria-label="Material Quote Request options">

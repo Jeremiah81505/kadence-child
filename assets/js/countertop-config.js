@@ -84,7 +84,7 @@
           const bh = px(Number(opts.bsHeight||0));
           if (bh>0){
             ['A','B','C','D'].forEach(side=>{
-              if (cur.wall[side] && cur.bs[side]){
+              if (cur.bs[side]){
                 const r = document.createElementNS(ns,'rect');
                 if (side==='A'){ r.setAttribute('x', String(centerX - w/2)); r.setAttribute('y', String(centerY - h/2 - bh)); r.setAttribute('width', String(w)); r.setAttribute('height', String(bh)); }
                 if (side==='B'){ r.setAttribute('x', String(centerX - w/2 - bh)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(h)); }
@@ -159,7 +159,7 @@
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
 
           // backsplash approx for L bounding box
-          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.wall[side] && cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
+          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
 
           rotG.appendChild(path);
           // wall sides (approx bounding box)
@@ -205,7 +205,7 @@
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
 
           // backsplash along outer bounding box
-          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.wall[side] && cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
+          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
 
           // U shape as outer rect minus inner notch (evenodd)
           const path = document.createElementNS(ns, 'path');
@@ -366,7 +366,7 @@
       inp.addEventListener('input', ()=>{
     if(active<0) return;
     const k = inp.getAttribute('data-ct-len');
-  let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0; shapes[active].len[k] = v; draw(); updateOversize(); updateSummary();
+  let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0; shapes[active].len[k] = v; draw(); updateOversize(); updateSummary(); save();
       });
     });
 
@@ -384,7 +384,7 @@
   function updateActionStates(){
   const del = sel('[data-ct-delete]', root);
   const rst = sel('[data-ct-reset]', root);
-  if (del) del.disabled = shapes.length <= 1;
+  if (del) del.disabled = shapes.length <= 0;
   if (rst) rst.disabled = (active<0);
     }
 
@@ -395,22 +395,28 @@
     shapes.forEach((sh, idx)=>{
         const b=document.createElement('button'); b.className='kc-ct-tab' + (idx===active?' is-active':''); b.type='button'; b.textContent=sh.name; b.addEventListener('click', ()=>{ active=idx; shapeLabel.textContent=sh.name; syncInputs(); draw(); updateOversize(); renderTabs(); }); tabsWrap.appendChild(b);
       });
-  const add=document.createElement('button'); add.className='kc-ct-tab add'; add.type='button'; add.textContent='Add A Shape'; add.addEventListener('click', ()=>{ const id='s'+(shapes.length+1); shapes.push({ id, name:'Shape '+(shapes.length+1), type:'rect', rot:0, pos:{x:300,y:300}, len:{A:60,B:25,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} }); active=shapes.length-1; shapeLabel.textContent=shapes[active].name; syncInputs(); draw(); updateOversize(); renderTabs(); updateActionStates(); updateSummary(); }); tabsWrap.appendChild(add);
+  const add=document.createElement('button'); add.className='kc-ct-tab add'; add.type='button'; add.textContent='Add A Shape'; add.addEventListener('click', ()=>{ const panelBtn = sel('[data-ct-panel="shapes"]', root); if (panelBtn) panelBtn.click(); }); tabsWrap.appendChild(add);
       updateActionStates();
     }
 
-    function syncInputs(){
+  function syncInputs(){
       const cur = shapes[active];
       if (active<0 || !cur){
         all('[data-ct-len]', root).forEach(inp=>{ inp.value = '0'; inp.disabled = true; });
         all('[data-ct-wall]', root).forEach(inp=>{ inp.checked = false; inp.disabled = true; });
         all('[data-ct-backsplash]', root).forEach(inp=>{ inp.checked = false; inp.disabled = true; });
         all('[data-ct-shape]', root).forEach(btn=> btn.classList.remove('is-active'));
+    const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
+    if (rowC) rowC.style.display='none'; if (rowD) rowD.style.display='none';
       } else {
         all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); inp.value = String(cur.len[k]||0); });
         all('[data-ct-wall]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-wall'); inp.checked = !!cur.wall[k]; });
         all('[data-ct-backsplash]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-backsplash'); inp.checked = !!cur.bs[k]; });
         all('[data-ct-shape]', root).forEach(btn=> btn.classList.toggle('is-active', btn.getAttribute('data-ct-shape')===cur.type));
+    const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
+    const showInner = (cur.type==='u' || cur.type==='l');
+    if (rowC) rowC.style.display = showInner ? '' : 'none';
+    if (rowD) rowD.style.display = showInner ? '' : 'none';
       }
       const bsH = sel('[data-ct-bs-height]', root); if (bsH) bsH.value = String(opts.bsHeight||0);
     }
@@ -463,12 +469,12 @@
       syncInputs(); draw(); updateOversize(); updateSummary();
     }));
     all('[data-ct-delete]', root).forEach(el=> el.addEventListener('click', ()=>{
-      if (shapes.length <= 1) { shapes = []; active=-1; shapeLabel.textContent='No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary(); return; }
+      if (shapes.length <= 1) { shapes = []; active=-1; shapeLabel.textContent='No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary(); save(); return; }
       shapes.splice(active, 1);
       if (active >= shapes.length) active = shapes.length - 1;
       shapes.forEach((s,i)=> s.name = 'Shape ' + (i+1));
       shapeLabel.textContent = shapes[active].name;
-      renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
+      renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary(); save();
     }));
 
   // Initial draw
@@ -592,9 +598,19 @@
     // Toolbar bindings
     root.querySelectorAll('.kc-ct-toolbar [data-ct-tool]')?.forEach(btn=>{
       btn.addEventListener('click', ()=>{
+        const type = btn.getAttribute('data-ct-tool')||'move';
+        if (type==='shapes'){
+          const panelBtn = sel('[data-ct-panel="shapes"]', root); if (panelBtn) panelBtn.click();
+          // restore Move active
+          root.querySelectorAll('.kc-ct-toolbar .kc-tool').forEach(b=> b.classList.remove('is-active'));
+          const mv = sel('.kc-ct-toolbar [data-ct-tool="move"]', root); if (mv){ mv.classList.add('is-active'); }
+          toolMode='move'; mode='move';
+          root.querySelectorAll('[data-ct-tool-mode]').forEach(b=> b.classList.toggle('is-active', (b.getAttribute('data-ct-tool-mode')||'move')==='move'));
+          return;
+        }
         root.querySelectorAll('.kc-ct-toolbar .kc-tool').forEach(b=> b.classList.remove('is-active'));
         btn.classList.add('is-active');
-        toolMode = btn.getAttribute('data-ct-tool')||'move';
+        toolMode = type;
         // sync left palette
         root.querySelectorAll('[data-ct-tool-mode]').forEach(b=>{
           const name = b.getAttribute('data-ct-tool-mode') || 'move';
