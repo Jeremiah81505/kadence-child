@@ -24,82 +24,153 @@
   const STATE_KEY = 'kcCountertopConfig:v1';
 
     function draw(){
-  svg.innerHTML = '';
-    const ns = 'http://www.w3.org/2000/svg';
-  const g = document.createElementNS(ns, 'g');
-  svg.appendChild(g);
+      svg.innerHTML = '';
+      const ns = 'http://www.w3.org/2000/svg';
+      const gRoot = document.createElementNS(ns, 'g');
+      svg.appendChild(gRoot);
 
-      // convert inches to pixels (just for preview scale)
       const px = (v)=> v * 2; // 2px per inch roughly
-  const centerX = shapes[active].pos?.x ?? 300, centerY = shapes[active].pos?.y ?? 180;
+      hitAreas = [];
 
-      const cur = shapes[active];
-      const len = cur.len; const shape = cur.type; const rotation = cur.rot;
-      if (shape==='rect'){
-        const w = px(len.A || 60);
-        const h = px(len.B || 25);
-  const rect = document.createElementNS(ns, 'rect');
-        rect.setAttribute('x', String(centerX - w/2));
-        rect.setAttribute('y', String(centerY - h/2));
-        rect.setAttribute('width', String(w));
-        rect.setAttribute('height', String(h));
-        rect.setAttribute('fill', '#f8c4a0');
-        rect.setAttribute('stroke', '#ccc');
-        rect.setAttribute('stroke-width', '2');
-  const rot = document.createElementNS(ns, 'g');
-        rot.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
-        // backsplash bands per side
-        const bh = px(Number(opts.bsHeight||0));
-        if (bh>0){
-          ['A','B','C','D'].forEach(side=>{
-            if (cur.wall[side] && cur.bs[side]){
-              const r = document.createElementNS(ns,'rect');
-              if (side==='A'){ r.setAttribute('x', String(centerX - w/2)); r.setAttribute('y', String(centerY - h/2 - bh)); r.setAttribute('width', String(w)); r.setAttribute('height', String(bh)); }
-              if (side==='B'){ r.setAttribute('x', String(centerX - w/2 - bh)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(h)); }
-              if (side==='C'){ r.setAttribute('x', String(centerX - w/2)); r.setAttribute('y', String(centerY + h/2)); r.setAttribute('width', String(w)); r.setAttribute('height', String(bh)); }
-              if (side==='D'){ r.setAttribute('x', String(centerX + w/2)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(h)); }
-              r.setAttribute('fill', '#ffd8a6'); r.setAttribute('stroke','none'); rot.appendChild(r);
-            }
-          });
+      shapes.forEach((cur, idx)=>{
+        const centerX = cur.pos?.x ?? 300;
+        const centerY = cur.pos?.y ?? 180;
+        const len = cur.len; const shape = cur.type; const rotation = cur.rot;
+
+        if (shape==='rect'){
+          const w = px(len.A || 60);
+          const h = px(len.B || 25);
+          const rotG = document.createElementNS(ns, 'g');
+          rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
+
+          // backsplash per side
+          const bh = px(Number(opts.bsHeight||0));
+          if (bh>0){
+            ['A','B','C','D'].forEach(side=>{
+              if (cur.wall[side] && cur.bs[side]){
+                const r = document.createElementNS(ns,'rect');
+                if (side==='A'){ r.setAttribute('x', String(centerX - w/2)); r.setAttribute('y', String(centerY - h/2 - bh)); r.setAttribute('width', String(w)); r.setAttribute('height', String(bh)); }
+                if (side==='B'){ r.setAttribute('x', String(centerX - w/2 - bh)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(h)); }
+                if (side==='C'){ r.setAttribute('x', String(centerX - w/2)); r.setAttribute('y', String(centerY + h/2)); r.setAttribute('width', String(w)); r.setAttribute('height', String(bh)); }
+                if (side==='D'){ r.setAttribute('x', String(centerX + w/2)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(h)); }
+                r.setAttribute('fill', '#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r);
+              }
+            });
+          }
+
+          // main top surface
+          const rect = document.createElementNS(ns, 'rect');
+          rect.setAttribute('x', String(centerX - w/2));
+          rect.setAttribute('y', String(centerY - h/2));
+          rect.setAttribute('width', String(w));
+          rect.setAttribute('height', String(h));
+          rect.setAttribute('fill', '#f8c4a0');
+          rect.setAttribute('stroke', '#ccc');
+          rect.setAttribute('stroke-width', '2');
+          rotG.appendChild(rect);
+
+          // wall side overlays (red if against wall)
+          const sideColor = '#d32f2f';
+          const mkLine = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke', sideColor); l.setAttribute('stroke-width','3'); return l; };
+          if (cur.wall.A) rotG.appendChild(mkLine(centerX - w/2, centerY - h/2, centerX + w/2, centerY - h/2));
+          if (cur.wall.B) rotG.appendChild(mkLine(centerX - w/2, centerY - h/2, centerX - w/2, centerY + h/2));
+          if (cur.wall.C) rotG.appendChild(mkLine(centerX - w/2, centerY + h/2, centerX + w/2, centerY + h/2));
+          if (cur.wall.D) rotG.appendChild(mkLine(centerX + w/2, centerY - h/2, centerX + w/2, centerY + h/2));
+
+          // active highlight
+          if (idx===active){
+            const hi = document.createElementNS(ns,'rect');
+            hi.setAttribute('x', String(centerX - w/2 - 4));
+            hi.setAttribute('y', String(centerY - h/2 - 4));
+            hi.setAttribute('width', String(w + 8));
+            hi.setAttribute('height', String(h + 8));
+            hi.setAttribute('fill','none'); hi.setAttribute('stroke','#4f6bd8'); hi.setAttribute('stroke-width','2'); hi.setAttribute('stroke-dasharray','6 4');
+            rotG.appendChild(hi);
+          }
+
+          gRoot.appendChild(rotG);
+          labelDims(rotG, centerX, centerY, len.A, len.B);
+          hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation });
+
+        } else if (shape==='l'){
+          const a = px(len.A||60), b = px(len.B||25);
+          const t = 40; // thickness for L leg visual only
+          const x = centerX - a/2, y = centerY - b/2;
+          const path = document.createElementNS(ns, 'path');
+          const d = `M ${x} ${y} h ${a} v ${t} h ${-a+t} v ${b-t} h ${-t} Z`;
+          path.setAttribute('d', d);
+          path.setAttribute('fill', '#f8c4a0');
+          path.setAttribute('stroke', '#ccc');
+          path.setAttribute('stroke-width', '2');
+          const rotG = document.createElementNS(ns, 'g');
+          rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
+
+          // backsplash approx for L bounding box
+          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.wall[side] && cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
+
+          rotG.appendChild(path);
+          // wall sides (approx bounding box)
+          const sideColor = '#d32f2f';
+          const mkLine = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke', sideColor); l.setAttribute('stroke-width','3'); return l; };
+          if (cur.wall.A) rotG.appendChild(mkLine(centerX - a/2, centerY - b/2, centerX + a/2, centerY - b/2));
+          if (cur.wall.B) rotG.appendChild(mkLine(centerX - a/2, centerY - b/2, centerX - a/2, centerY + b/2));
+          if (cur.wall.C) rotG.appendChild(mkLine(centerX - a/2, centerY + b/2, centerX + a/2, centerY + b/2));
+          if (cur.wall.D) rotG.appendChild(mkLine(centerX + a/2, centerY - b/2, centerX + a/2, centerY + b/2));
+
+          if (idx===active){
+            const hi = document.createElementNS(ns,'rect');
+            hi.setAttribute('x', String(centerX - a/2 - 4));
+            hi.setAttribute('y', String(centerY - b/2 - 4));
+            hi.setAttribute('width', String(a + 8));
+            hi.setAttribute('height', String(b + 8));
+            hi.setAttribute('fill','none'); hi.setAttribute('stroke','#4f6bd8'); hi.setAttribute('stroke-width','2'); hi.setAttribute('stroke-dasharray','6 4');
+            rotG.appendChild(hi);
+          }
+
+          gRoot.appendChild(rotG);
+          labelDims(rotG, centerX, centerY, len.A, len.B);
+          hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
+
+        } else if (shape==='u'){
+          const a = px(len.A||60), b = px(len.B||25);
+          const t = 40; // side thickness for U visual only
+          const x = centerX - a/2, y = centerY - b/2;
+          const path = document.createElementNS(ns, 'path');
+          const d = `M ${x} ${y} h ${a} v ${t} h ${-a/2 + t/2} v ${b-t} h ${-t} v ${-(b-t)} h ${-a/2 + t/2} Z`;
+          path.setAttribute('d', d);
+          path.setAttribute('fill', '#f8c4a0');
+          path.setAttribute('stroke', '#ccc');
+          path.setAttribute('stroke-width', '2');
+          const rotG = document.createElementNS(ns, 'g');
+          rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
+
+          // backsplash approx for U bounding box
+          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.wall[side] && cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
+
+          rotG.appendChild(path);
+          // wall sides (approx bounding box)
+          const sideColor = '#d32f2f';
+          const mkLine = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke', sideColor); l.setAttribute('stroke-width','3'); return l; };
+          if (cur.wall.A) rotG.appendChild(mkLine(centerX - a/2, centerY - b/2, centerX + a/2, centerY - b/2));
+          if (cur.wall.B) rotG.appendChild(mkLine(centerX - a/2, centerY - b/2, centerX - a/2, centerY + b/2));
+          if (cur.wall.C) rotG.appendChild(mkLine(centerX - a/2, centerY + b/2, centerX + a/2, centerY + b/2));
+          if (cur.wall.D) rotG.appendChild(mkLine(centerX + a/2, centerY - b/2, centerX + a/2, centerY + b/2));
+
+          if (idx===active){
+            const hi = document.createElementNS(ns,'rect');
+            hi.setAttribute('x', String(centerX - a/2 - 4));
+            hi.setAttribute('y', String(centerY - b/2 - 4));
+            hi.setAttribute('width', String(a + 8));
+            hi.setAttribute('height', String(b + 8));
+            hi.setAttribute('fill','none'); hi.setAttribute('stroke','#4f6bd8'); hi.setAttribute('stroke-width','2'); hi.setAttribute('stroke-dasharray','6 4');
+            rotG.appendChild(hi);
+          }
+
+          gRoot.appendChild(rotG);
+          labelDims(rotG, centerX, centerY, len.A, len.B);
+          hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
         }
-        rot.appendChild(rect);
-  g.appendChild(rot);
-  labelDims(rot, centerX, centerY, len.A, len.B);
-  } else if (shape==='l'){
-        const a = px(len.A||60), b = px(len.B||25);
-        const t = 40; // thickness for L leg visual only
-        const path = document.createElementNS(ns, 'path');
-        const x = centerX - a/2, y = centerY - b/2;
-        const d = `M ${x} ${y} h ${a} v ${t} h ${-a+t} v ${b-t} h ${-t} Z`;
-        path.setAttribute('d', d);
-        path.setAttribute('fill', '#f8c4a0');
-        path.setAttribute('stroke', '#ccc');
-        path.setAttribute('stroke-width', '2');
-  const rot = document.createElementNS(ns, 'g');
-  rot.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
-  // backsplash approx for L bounding box
-  { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.wall[side] && cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rot.appendChild(r); } }); } }
-  rot.appendChild(path);
-  g.appendChild(rot);
-  labelDims(rot, centerX, centerY, len.A, len.B);
-  } else if (shape==='u'){
-        const a = px(len.A||60), b = px(len.B||25);
-        const t = 40; // side thickness for U visual only
-        const path = document.createElementNS(ns, 'path');
-        const x = centerX - a/2, y = centerY - b/2;
-        const d = `M ${x} ${y} h ${a} v ${t} h ${-a/2 + t/2} v ${b-t} h ${-t} v ${-(b-t)} h ${-a/2 + t/2} Z`;
-        path.setAttribute('d', d);
-        path.setAttribute('fill', '#f8c4a0');
-        path.setAttribute('stroke', '#ccc');
-        path.setAttribute('stroke-width', '2');
-  const rot = document.createElementNS(ns, 'g');
-  rot.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
-  // backsplash approx for U bounding box
-  { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.wall[side] && cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rot.appendChild(r); } }); } }
-  rot.appendChild(path);
-  g.appendChild(rot);
-  labelDims(rot, centerX, centerY, len.A, len.B);
-      }
+      });
     }
 
   function labelDims(parent, cx, cy, a, b){
@@ -135,10 +206,12 @@
     });
 
     function updateOversize(){
-      // Simple heuristic: any span over 120 inches is oversized
+      // Any piece with any side over 120 inches triggers the alert
       const limit = 120;
-      const cur = shapes[active]; const len = cur.len;
-      const over = (len.A>limit) || (len.B>limit) || (len.C>limit) || (len.D>limit);
+      const over = shapes.some(s=>{
+        const len = s.len||{};
+        return (Number(len.A||0)>limit) || (Number(len.B||0)>limit) || (Number(len.C||0)>limit) || (Number(len.D||0)>limit);
+      });
       const alertEl = sel('[data-ct-alert]', root);
       if (alertEl) alertEl.hidden = !over;
     }
@@ -246,16 +319,33 @@
     // Color preference input
     sel('[data-ct-color]', root)?.addEventListener('input', (e)=>{ opts.color = e.target.value||''; updateSummary(); save(); });
 
-    // Dragging the active shape in the preview
+    // Select and drag shapes directly in the preview
+    let hitAreas = [];
     (function enableDrag(){
-      let dragging=false, start={}, orig={};
-      const onDown=(ev)=>{
-        dragging=true; const pt=getPoint(ev); start=pt; orig={...shapes[active].pos}; ev.preventDefault();
-      };
-      const onMove=(ev)=>{ if(!dragging) return; const pt=getPoint(ev); const dx=pt.x-start.x, dy=pt.y-start.y; shapes[active].pos={x:orig.x+dx,y:orig.y+dy}; draw(); };
-      const onUp=()=>{ if(!dragging) return; dragging=false; save(); };
+      let dragging=false, start={}, orig={}, dragIdx=-1;
       const svgEl = sel('[data-ct-svg]', root);
       function getPoint(ev){ const rect=svgEl.getBoundingClientRect(); const x=('touches' in ev? ev.touches[0].clientX:ev.clientX)-rect.left; const y=('touches' in ev? ev.touches[0].clientY:ev.clientY)-rect.top; return {x,y}; }
+      function pointInRotRect(px, py, cx, cy, w, h, rotDeg){
+        const rad = -rotDeg * Math.PI/180; // inverse rotate
+        const cos = Math.cos(rad), sin = Math.sin(rad);
+        const dx = px - cx, dy = py - cy;
+        const lx = dx*cos - dy*sin; const ly = dx*sin + dy*cos;
+        return Math.abs(lx) <= w/2 && Math.abs(ly) <= h/2;
+      }
+      function pickIndex(pt){
+        for (let i=hitAreas.length-1;i>=0;i--){ const h=hitAreas[i]; if (pointInRotRect(pt.x, pt.y, h.cx, h.cy, h.w, h.h, h.rot)) return h.idx; }
+        return -1;
+      }
+      const onDown=(ev)=>{
+        const pt=getPoint(ev);
+        const idx=pickIndex(pt);
+        if (idx!==-1){
+          if (idx!==active){ active=idx; shapeLabel.textContent=shapes[active].name; renderTabs(); syncInputs(); draw(); }
+          dragging=true; start=pt; orig={...shapes[active].pos}; dragIdx=active; ev.preventDefault();
+        }
+      };
+      const onMove=(ev)=>{ if(!dragging) return; const pt=getPoint(ev); const dx=pt.x-start.x, dy=pt.y-start.y; shapes[dragIdx].pos={x:orig.x+dx,y:orig.y+dy}; draw(); };
+      const onUp=()=>{ if(!dragging) return; dragging=false; dragIdx=-1; save(); };
       svgEl.addEventListener('mousedown', onDown);
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup', onUp);
