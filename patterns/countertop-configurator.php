@@ -65,15 +65,27 @@
               <label class="opt"><input type="checkbox" data-ct-wall="B" /> Side against wall</label>
               <label class="opt"><input type="checkbox" data-ct-backsplash="B" /> Add same-material backsplash</label>
             </div>
-            <div class="row disabled" data-side="C">
-              <div class="note">C <em>No length needed.</em></div>
+            <div class="row" data-side="C">
+              <label>
+                <span>C Length (in.)</span>
+                <input type="number" min="0" step="1" value="0" data-ct-len="C" />
+              </label>
               <label class="opt"><input type="checkbox" data-ct-wall="C" /> Side against wall</label>
               <label class="opt"><input type="checkbox" data-ct-backsplash="C" /> Add same-material backsplash</label>
             </div>
-            <div class="row disabled" data-side="D">
-              <div class="note">D <em>No length needed.</em></div>
+            <div class="row" data-side="D">
+              <label>
+                <span>D Length (in.)</span>
+                <input type="number" min="0" step="1" value="0" data-ct-len="D" />
+              </label>
               <label class="opt"><input type="checkbox" data-ct-wall="D" /> Side against wall</label>
               <label class="opt"><input type="checkbox" data-ct-backsplash="D" /> Add same-material backsplash</label>
+            </div>
+            <div class="row">
+              <label>
+                <span>Backsplash Height (in.)</span>
+                <input type="number" min="0" step="1" value="4" data-ct-bs-height />
+              </label>
             </div>
           </div>
         </section>
@@ -91,10 +103,12 @@
 
     <div class="kc-ct-options" data-ct-options>
       <section class="kc-section">
-        <h3>Surface Thickness <a href="#" class="kc-help">Go details</a></h3>
-        <div class="kc-option-grid" role="group" aria-label="Surface Thickness">
-          <button class="kc-opt is-active" type="button" data-ct-opt="thickness" data-value="3cm">3 cm</button>
-          <button class="kc-opt" type="button" data-ct-opt="thickness" data-value="2cm">2 cm</button>
+        <h3>Material</h3>
+        <div class="kc-option-grid" role="radiogroup" aria-label="Material">
+          <button class="kc-opt is-active" type="button" data-ct-radio="material" data-value="Laminate">Laminate</button>
+          <button class="kc-opt" type="button" data-ct-radio="material" data-value="Solid Surface">Solid Surface</button>
+          <button class="kc-opt" type="button" data-ct-radio="material" data-value="Quartz">Quartz</button>
+          <button class="kc-opt" type="button" data-ct-radio="material" data-value="Granite">Granite</button>
         </div>
       </section>
 
@@ -107,6 +121,13 @@
           <button class="kc-opt" type="button" data-ct-opt="edge" data-value="Basic">Basic</button>
           <button class="kc-opt" type="button" data-ct-opt="edge" data-value="Half Bullnose">Half Bullnose</button>
           <button class="kc-opt" type="button" data-ct-opt="edge" data-value="Ogee">Ogee</button>
+        </div>
+      </section>
+
+      <section class="kc-section">
+        <h3>Color Preference</h3>
+        <div>
+          <input type="text" class="kc-input" placeholder="e.g. light gray with subtle veining" data-ct-color />
         </div>
       </section>
 
@@ -137,24 +158,6 @@
       </section>
 
       <section class="kc-section">
-        <h3>Plumbing Services</h3>
-        <div class="kc-fieldset">
-          <div class="kc-field-label">Who will disconnect existing plumbing fixtures?</div>
-          <div class="kc-option-grid" role="radiogroup" aria-label="Disconnect Plumbing">
-            <button class="kc-opt is-active" type="button" data-ct-radio="plumb-disconnect" data-value="Customer">DIY (By Customer)</button>
-            <button class="kc-opt" type="button" data-ct-radio="plumb-disconnect" data-value="Pro">By Pro (Added Service)</button>
-          </div>
-        </div>
-        <div class="kc-fieldset">
-          <div class="kc-field-label">Who will connect new plumbing fixtures at your existing pipes?</div>
-          <div class="kc-option-grid" role="radiogroup" aria-label="Connect Plumbing">
-            <button class="kc-opt is-active" type="button" data-ct-radio="plumb-connect" data-value="Customer">DIY (By Customer)</button>
-            <button class="kc-opt" type="button" data-ct-radio="plumb-connect" data-value="Pro">By Pro (Added Service)</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="kc-section">
         <h3>Cutouts</h3>
         <div class="kc-option-grid kc-cutouts">
           <div class="kc-cut">
@@ -180,16 +183,15 @@
         </div>
       </section>
       
-      <section class="kc-section kc-summary">
+    <section class="kc-section kc-summary">
         <h3>Summary</h3>
         <div class="kc-summary-grid">
           <div><strong>Pieces</strong><div data-ct-sum-pieces>1</div></div>
           <div><strong>Area (sq ft)</strong><div data-ct-sum-area>10.4</div></div>
-          <div><strong>Thickness</strong><div data-ct-sum-thickness>3 cm</div></div>
+      <div><strong>Material</strong><div data-ct-sum-material>Laminate</div></div>
           <div><strong>Edge</strong><div data-ct-sum-edge>Bevel</div></div>
           <div><strong>Sinks</strong><div data-ct-sum-sinks>No</div></div>
-          <div><strong>Plumbing (Disconnect)</strong><div data-ct-sum-plumb-disconnect>Customer</div></div>
-          <div><strong>Plumbing (Connect)</strong><div data-ct-sum-plumb-connect>Customer</div></div>
+      <div><strong>Color Preference</strong><div data-ct-sum-color>-</div></div>
           <div><strong>Cutouts (Cooktop)</strong><div data-ct-sum-cut-cooktop>0</div></div>
           <div><strong>Cutouts (Faucet)</strong><div data-ct-sum-cut-faucet>0</div></div>
           <div><strong>Cutouts (Other)</strong><div data-ct-sum-cut-other>0</div></div>

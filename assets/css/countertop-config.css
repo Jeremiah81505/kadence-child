@@ -55,6 +55,7 @@
 .kc-opt.is-active{border-color:#f78f1e;box-shadow:0 0 0 2px rgba(247,143,30,.15) inset;color:#d35f00}
 .kc-fieldset{margin:10px 0}
 .kc-field-label{font:600 14px system-ui;color:#333;margin:6px 0}
+.kc-input{display:inline-block;width:100%;max-width:520px;padding:8px 10px;border:1px solid #ccc;border-radius:3px;font:14px system-ui}
 .kc-round-grid,.kc-cutouts{display:grid;grid-template-columns:repeat(3, minmax(200px, 1fr));gap:12px}
 .kc-round,.kc-cut{border:1px solid #ddd;padding:10px;background:#fff}
 .kc-round-title,.kc-cut-title{font:600 14px system-ui;color:#333;margin-bottom:8px}
