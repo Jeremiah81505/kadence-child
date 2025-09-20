@@ -93,10 +93,10 @@
 
       <section class="kc-ct-right">
         <div class="kc-ct-preview" data-ct-preview>
-          <svg viewBox="0 0 600 360" preserveAspectRatio="xMidYMid meet" data-ct-svg>
+          <svg viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet" data-ct-svg>
             <!-- Drawing injected by JS -->
           </svg>
-          <div class="kc-ct-shape-label" data-ct-shape-label>Shape 1</div>
+          <div class="kc-ct-shape-label" data-ct-shape-label>No shape selected</div>
           <div class="kc-ct-legend" aria-hidden="true">
             <span class="lg lg-wall"></span> Wall side
             <span class="lg lg-bs"></span> Backsplash

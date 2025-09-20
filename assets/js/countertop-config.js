@@ -244,7 +244,7 @@
     shapes.forEach((sh, idx)=>{
         const b=document.createElement('button'); b.className='kc-ct-tab' + (idx===active?' is-active':''); b.type='button'; b.textContent=sh.name; b.addEventListener('click', ()=>{ active=idx; shapeLabel.textContent=sh.name; syncInputs(); draw(); updateOversize(); renderTabs(); }); tabsWrap.appendChild(b);
       });
-  const add=document.createElement('button'); add.className='kc-ct-tab add'; add.type='button'; add.textContent='Add A Shape'; add.addEventListener('click', ()=>{ const id='s'+(shapes.length+1); shapes.push({ id, name:'Shape '+(shapes.length+1), type:'rect', rot:0, pos:{x:300,y:180}, len:{A:60,B:25,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} }); active=shapes.length-1; shapeLabel.textContent=shapes[active].name; syncInputs(); draw(); updateOversize(); renderTabs(); updateActionStates(); updateSummary(); }); tabsWrap.appendChild(add);
+  const add=document.createElement('button'); add.className='kc-ct-tab add'; add.type='button'; add.textContent='Add A Shape'; add.addEventListener('click', ()=>{ const id='s'+(shapes.length+1); shapes.push({ id, name:'Shape '+(shapes.length+1), type:'rect', rot:0, pos:{x:300,y:300}, len:{A:60,B:25,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} }); active=shapes.length-1; shapeLabel.textContent=shapes[active].name; syncInputs(); draw(); updateOversize(); renderTabs(); updateActionStates(); updateSummary(); }); tabsWrap.appendChild(add);
       updateActionStates();
     }
 
@@ -271,7 +271,7 @@
         btn.classList.add('is-active');
         if (active<0){
           const id='s'+(shapes.length+1);
-          shapes.push({ id, name:'Shape '+(shapes.length+1), type:btn.getAttribute('data-ct-shape')||'rect', rot:0, pos:{x:300,y:180}, len:{A:60,B:25,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} });
+          shapes.push({ id, name:'Shape '+(shapes.length+1), type:btn.getAttribute('data-ct-shape')||'rect', rot:0, pos:{x:300,y:300}, len:{A:60,B:25,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} });
           active = shapes.length-1;
           shapeLabel.textContent = shapes[active].name;
           renderTabs();
