@@ -104,43 +104,49 @@
           const top  = (y - vb.y)/vb.height * svgRect.height + (svgRect.top - hostRect.top);
           return { left, top };
         };
-        const add = (label, key, x, y)=>{
+        const add = (label, key, x, y, angleDeg=0)=>{
           const pos = toScreen(x,y);
-          const wrap = document.createElement('div'); wrap.className = 'kc-inp'; wrap.style.left = `${pos.left}px`; wrap.style.top = `${pos.top}px`;
+          const wrap = document.createElement('div');
+          wrap.className = 'kc-inp';
+          wrap.style.left = `${pos.left}px`;
+          wrap.style.top = `${pos.top}px`;
+          // rotate wrapper so input visually follows side orientation
+          wrap.style.transform = `translate(-50%, -50%) rotate(${angleDeg}deg)`;
+          wrap.setAttribute('data-orient', String(Math.round(((angleDeg%360)+360)%360)));
           wrap.innerHTML = `<label class="sr">${label}</label><input type="number" inputmode="numeric" step="1" class="kc-inp-num" data-kc-inline="${key}" />`;
           inlineHost.appendChild(wrap);
         };
         const cx=s.pos.x, cy=s.pos.y; const a= A*2, b=B*2; // px
         const rot = s.rot||0; const rad = rot*Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad);
         const locToWorld=(lx,ly)=>({ x: cx + lx*cos - ly*sin, y: cy + lx*sin + ly*cos });
-        // A at top center
-        { const p = locToWorld(0, -b/2 - 14); add('A','A', p.x, p.y); }
-        // B left center
-        { const p = locToWorld(-a/2 - 24, 0); add('B','B', p.x, p.y); }
+        // A at top center (horizontal along top)
+        { const p = locToWorld(0, -b/2 - 14); add('A','A', p.x, p.y, rot); }
+        // B left center (vertical)
+        { const p = locToWorld(-a/2 - 24, 0); add('B','B', p.x, p.y, rot + 90); }
         if (s.type==='rect'){
           // Only A/B for rectangles
         } else if (s.type==='l'){
           const dPx = D*2; const cPx=C*2;
           const innerTop = -b/2 + dPx;
-          // C at bottom inner run center
-          { const p = locToWorld(-a/2 + cPx/2, b/2 + 18); add('C','C', p.x, p.y); }
-          // D at inner vertical center (left side of notch)
-          { const p = locToWorld(-a/2 + cPx - 18, (-b/2 + dPx)/2); add('D','D', p.x, p.y); }
+          // C at bottom inner run center (horizontal)
+          { const p = locToWorld(-a/2 + cPx/2, b/2 + 18); add('C','C', p.x, p.y, rot); }
+          // D at inner vertical center (left side of notch) (vertical)
+          { const p = locToWorld(-a/2 + cPx - 18, (-b/2 + dPx)/2); add('D','D', p.x, p.y, rot + 90); }
         } else if (s.type==='u'){
           const dPx = D*2; const cPx=C*2; const ePx=E*2, hPx=H*2; const fPx=F*2, gPx=G*2;
           const innerTop = -b/2 + dPx;
-          // C at inner top center
-          { const p = locToWorld(0, innerTop - 18); add('C','C', p.x, p.y); }
-          // D top offset input (depth)
-          { const p = locToWorld(-a/2 + (a - cPx)/2, innerTop - 42); add('D','D', p.x, p.y); }
-          // E left bottom return mid
-          { const p = locToWorld(-a/2 + ePx/2, b/2 + 18); add('E','E', p.x, p.y); }
-          // H right bottom return mid
-          { const p = locToWorld(a/2 - hPx/2, b/2 + 18); add('H','H', p.x, p.y); }
-          // F left inner vertical mid
-          { const p = locToWorld(-a/2 + (a - cPx)/2 - 22, (innerTop + b/2)/2); add('F','F', p.x, p.y); }
-          // G right inner vertical mid
-          { const p = locToWorld(a/2 - (a - cPx)/2 + 22, (innerTop + b/2)/2); add('G','G', p.x, p.y); }
+          // C at inner top center (horizontal)
+          { const p = locToWorld(0, innerTop - 18); add('C','C', p.x, p.y, rot); }
+          // D top offset input (depth, vertical)
+          { const p = locToWorld(-a/2 + (a - cPx)/2, innerTop - 42); add('D','D', p.x, p.y, rot + 90); }
+          // E left bottom return mid (horizontal)
+          { const p = locToWorld(-a/2 + ePx/2, b/2 + 18); add('E','E', p.x, p.y, rot); }
+          // H right bottom return mid (horizontal)
+          { const p = locToWorld(a/2 - hPx/2, b/2 + 18); add('H','H', p.x, p.y, rot); }
+          // F left inner vertical mid (vertical)
+          { const p = locToWorld(-a/2 + (a - cPx)/2 - 22, (innerTop + b/2)/2); add('F','F', p.x, p.y, rot + 90); }
+          // G right inner vertical mid (vertical)
+          { const p = locToWorld(a/2 - (a - cPx)/2 + 22, (innerTop + b/2)/2); add('G','G', p.x, p.y, rot + 90); }
         }
         // set values and wire
         all('[data-kc-inline]', inlineHost).forEach(inp=>{
