@@ -591,18 +591,16 @@
     function labelDims(parent, cx, cy, A, B, rotDeg){
       const ns='http://www.w3.org/2000/svg';
       const px=(v)=> v*2; const w=px(Number(A||0)), h=px(Number(B||0));
-      const rad=(rotDeg||0)*Math.PI/180, cos=Math.cos(rad), sin=Math.sin(rad);
-      const locToWorld=(lx,ly)=>({ x: cx + lx*cos - ly*sin, y: cy + lx*sin + ly*cos });
-      const m=28; // outward offset
+      const m=28; // outward offset (parent group handles rotation)
       const label=(x,y,txt)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x',String(x)); t.setAttribute('y',String(y)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=txt; parent.appendChild(t); };
       // A top
-      { const p=locToWorld(0, -h/2 - m); label(p.x, p.y, 'A'); }
+      label(cx + 0, cy - h/2 - m, 'A');
       // B left
-      { const p=locToWorld(-w/2 - m, 0); label(p.x, p.y, 'B'); }
+      label(cx - w/2 - m, cy + 0, 'B');
       // C bottom
-      { const p=locToWorld(0, h/2 + m); label(p.x, p.y, 'C'); }
+      label(cx + 0, cy + h/2 + m, 'C');
       // D right
-      { const p=locToWorld(w/2 + m, 0); label(p.x, p.y, 'D'); }
+      label(cx + w/2 + m, cy + 0, 'D');
     }
 
   // (shape selection handled below in a single place)
@@ -934,8 +932,8 @@
     // Duplicate already bound to all matching buttons above
     const svgEl = sel('[data-ct-svg]', root);
     function applyZoom(){ svgEl.setAttribute('viewBox', `0 0 ${600/zoom} ${600/zoom}`); }
-    sel('[data-ct-zoom-in]', root)?.addEventListener('click', ()=>{ zoom=Math.min(3, zoom+0.2); applyZoom(); });
-    sel('[data-ct-zoom-out]', root)?.addEventListener('click', ()=>{ zoom=Math.max(0.4, zoom-0.2); applyZoom(); });
+  sel('[data-ct-zoom-in]', root)?.addEventListener('click', ()=>{ zoom=Math.min(3, zoom+0.2); applyZoom(); draw(); });
+  sel('[data-ct-zoom-out]', root)?.addEventListener('click', ()=>{ zoom=Math.max(0.4, zoom-0.2); applyZoom(); draw(); });
     root.querySelectorAll('[data-ct-counter]').forEach(box=>{
       const key = box.getAttribute('data-ct-counter');
       const valEl = box.querySelector('.kc-ctr-val');
