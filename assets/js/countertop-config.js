@@ -130,11 +130,11 @@
           labelNumbers(rotG, centerX, centerY, cur, {A:len.A,B:len.B});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation });
           if (idx===active){
-            // resize handles for A and B
-            // top mid (A)
-            addHandle(idx, centerX, centerY - h/2, rotation, 'A');
-            // right mid (B)
-            addHandle(idx, centerX + w/2, centerY, rotation, 'B');
+            // resize handles for A (width) and B (depth)
+            // top mid adjusts B
+            addHandle(idx, centerX, centerY - h/2, rotation, 'B');
+            // right mid adjusts A
+            addHandle(idx, centerX + w/2, centerY, rotation, 'A');
           }
 
   } else if (shape==='l'){
@@ -185,8 +185,9 @@
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
           if (idx===active){
-            addHandle(idx, centerX, centerY - b/2, rotation, 'A');
-            addHandle(idx, centerX + a/2, centerY, rotation, 'B');
+            // top adjusts B, right adjusts A
+            addHandle(idx, centerX, centerY - b/2, rotation, 'B');
+            addHandle(idx, centerX + a/2, centerY, rotation, 'A');
           }
 
   } else if (shape==='u'){
@@ -242,9 +243,9 @@
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn,C:cIn,D:dIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
           if (idx===active){
-            // outer A/B
-            addHandle(idx, centerX, centerY - b/2, rotation, 'A');
-            addHandle(idx, centerX + a/2, centerY, rotation, 'B');
+            // outer handles: top adjusts B, right adjusts A
+            addHandle(idx, centerX, centerY - b/2, rotation, 'B');
+            addHandle(idx, centerX + a/2, centerY, rotation, 'A');
             // inner C/D
             const xi = centerX - (px(aIn))/2 + px((aIn - cIn)/2) + px(cIn)/2; // inner top center
             const yi = centerY - (px(bIn))/2 + px(dIn);
@@ -276,12 +277,19 @@
         }
       }
     }
-    // Tool mode and panels
+    // Tool mode and panels (left palette)
     root.querySelectorAll('[data-ct-tool-mode]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         mode = btn.getAttribute('data-ct-tool-mode') || 'move';
+        // keep toolbar toolMode in sync so resize works regardless of control used
+        toolMode = mode;
         root.querySelectorAll('[data-ct-tool-mode]').forEach(b=> b.classList.remove('is-active'));
         btn.classList.add('is-active');
+        // mirror active state to toolbar buttons
+        root.querySelectorAll('.kc-ct-toolbar [data-ct-tool]').forEach(b=>{
+          const name = b.getAttribute('data-ct-tool') || 'move';
+          b.classList.toggle('is-active', name === toolMode);
+        });
       });
     });
     root.querySelectorAll('[data-ct-panel]').forEach(btn=>{
@@ -314,10 +322,18 @@
       });
     });
 
-    // Duplicate
-    sel('[data-ct-duplicate]', root)?.addEventListener('click', ()=>{
-      if (active<0) return; const s=shapes[active]; const copy=JSON.parse(JSON.stringify(s)); copy.id='s'+(shapes.length+1); copy.name='Shape '+(shapes.length+1); copy.pos={x:s.pos.x+20,y:s.pos.y+20}; shapes.push(copy); active=shapes.length-1; shapeLabel.textContent=copy.name; renderTabs(); draw(); updateSummary(); save();
-    });
+    // Duplicate handler (reused for toolbar + sidebar)
+    const onDuplicate = ()=>{
+      if (active<0) return;
+      const s=shapes[active];
+      const copy=JSON.parse(JSON.stringify(s));
+      copy.id='s'+(shapes.length+1);
+      copy.name='Shape '+(shapes.length+1);
+      copy.pos={x:s.pos.x+20,y:s.pos.y+20};
+      shapes.push(copy); active=shapes.length-1;
+      shapeLabel.textContent=copy.name; renderTabs(); draw(); updateSummary(); save();
+    };
+    all('[data-ct-duplicate]', root).forEach(el=> el.addEventListener('click', onDuplicate));
 
     // Measurement label guides around the shape
     function labelDims(parent, cx, cy, A, B){
@@ -342,8 +358,9 @@
 
   // (shape selection handled below in a single place)
 
-  sel('[data-ct-rotate-left]', root)?.addEventListener('click', ()=>{ if(active<0) return; shapes[active].rot = (shapes[active].rot + 270)%360; draw(); });
-  sel('[data-ct-rotate-right]', root)?.addEventListener('click', ()=>{ if(active<0) return; shapes[active].rot = (shapes[active].rot + 90)%360; draw(); });
+  // Bind rotate controls across toolbar/sidebar
+  all('[data-ct-rotate-left]', root).forEach(el=> el.addEventListener('click', ()=>{ if(active<0) return; shapes[active].rot = (shapes[active].rot + 270)%360; draw(); }));
+  all('[data-ct-rotate-right]', root).forEach(el=> el.addEventListener('click', ()=>{ if(active<0) return; shapes[active].rot = (shapes[active].rot + 90)%360; draw(); }));
 
   all('[data-ct-len]', root).forEach(inp=>{
       inp.addEventListener('input', ()=>{
@@ -437,23 +454,22 @@
       let v = parseInt(e.target.value||'0',10); if(!isFinite(v)||v<0) v=0; if (v>24) v=24; opts.bsHeight = v; updateSummary(); save(); draw();
     });
 
-    // Reset/Delete actions
-    sel('[data-ct-reset]', root)?.addEventListener('click', ()=>{
+    // Reset/Delete actions (bind to all matching buttons)
+    all('[data-ct-reset]', root).forEach(el=> el.addEventListener('click', ()=>{
       if(active<0) return;
       const cur = shapes[active];
       cur.len = {A:60,B:25,C:0,D:0};
       cur.rot = 0;
-      // keep current type
-  syncInputs(); draw(); updateOversize(); updateSummary();
-    });
-    sel('[data-ct-delete]', root)?.addEventListener('click', ()=>{
+      syncInputs(); draw(); updateOversize(); updateSummary();
+    }));
+    all('[data-ct-delete]', root).forEach(el=> el.addEventListener('click', ()=>{
       if (shapes.length <= 1) { shapes = []; active=-1; shapeLabel.textContent='No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary(); return; }
       shapes.splice(active, 1);
       if (active >= shapes.length) active = shapes.length - 1;
       shapes.forEach((s,i)=> s.name = 'Shape ' + (i+1));
       shapeLabel.textContent = shapes[active].name;
-  renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
-    });
+      renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
+    }));
 
   // Initial draw
   // Options bindings
@@ -579,12 +595,15 @@
         root.querySelectorAll('.kc-ct-toolbar .kc-tool').forEach(b=> b.classList.remove('is-active'));
         btn.classList.add('is-active');
         toolMode = btn.getAttribute('data-ct-tool')||'move';
+        // sync left palette
+        root.querySelectorAll('[data-ct-tool-mode]').forEach(b=>{
+          const name = b.getAttribute('data-ct-tool-mode') || 'move';
+          b.classList.toggle('is-active', name===toolMode);
+        });
+        mode = toolMode;
       });
     });
-    sel('[data-ct-duplicate]', root)?.addEventListener('click', ()=>{
-      if (active<0) return; const s=shapes[active]; const id='s'+(shapes.length+1);
-      const c=JSON.parse(JSON.stringify(s)); c.id=id; c.name='Shape '+(shapes.length+1); c.pos={x:s.pos.x+20,y:s.pos.y+20}; shapes.push(c); active=shapes.length-1; shapeLabel.textContent=c.name; renderTabs(); draw(); updateSummary(); save();
-    });
+    // Duplicate already bound to all matching buttons above
     const svgEl = sel('[data-ct-svg]', root);
     function applyZoom(){ svgEl.setAttribute('viewBox', `0 0 ${600/zoom} ${600/zoom}`); }
     sel('[data-ct-zoom-in]', root)?.addEventListener('click', ()=>{ zoom=Math.min(3, zoom+0.2); applyZoom(); });
