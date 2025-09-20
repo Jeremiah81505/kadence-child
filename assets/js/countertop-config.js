@@ -20,7 +20,8 @@
     'corner-small': 0, 'corner-medium': 0, 'corner-large': 0,
     removal: 'Countertops Only',
     color: '',
-    bsHeight: 4
+  bsHeight: 4,
+  snap: true
   };
   const STATE_KEY = 'kcCountertopConfig:v1';
 
@@ -94,13 +95,21 @@
           hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation });
 
   } else if (shape==='l'){
-          const a = px(len.A||60), b = px(len.B||25);
-          const t = 40; // thickness for L leg visual only
+          // L as outer A x B minus inner notch sized by C (width) and D (height)
+          let aIn = Number(len.A||60), bIn = Number(len.B||25), cIn = Number(len.C||20), dIn = Number(len.D||10);
+          if (cIn >= aIn) cIn = Math.max(0, aIn - 1);
+          if (dIn >= bIn) dIn = Math.max(0, bIn - 1);
+          const a = px(aIn), b = px(bIn), c = px(cIn), d = px(dIn);
           const x = centerX - a/2, y = centerY - b/2;
+          const xi = centerX - a/2 + c, yi = centerY - b/2 + d, wi = a - c, hi = b - d;
           const path = document.createElementNS(ns, 'path');
-          const d = `M ${x} ${y} h ${a} v ${t} h ${-a+t} v ${b-t} h ${-t} Z`;
-          path.setAttribute('d', d);
+          const dPath = [
+            `M ${x} ${y} h ${a} v ${b} h ${-a} Z`,
+            `M ${xi} ${yi} h ${wi} v ${hi} h ${-wi} Z`
+          ].join(' ');
+          path.setAttribute('d', dPath);
           path.setAttribute('fill', '#f8c4a0');
+          path.setAttribute('fill-rule', 'evenodd');
           path.setAttribute('stroke', '#ccc');
           path.setAttribute('stroke-width', '2');
           const rotG = document.createElementNS(ns, 'g');
@@ -129,7 +138,7 @@
           }
 
           gRoot.appendChild(rotG);
-          labelDims(rotG, centerX, centerY, len.A, len.B);
+          labelDims(rotG, centerX, centerY, aIn, bIn);
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
 
   } else if (shape==='u'){
@@ -417,6 +426,7 @@
           dragging=true; start=pt; orig={...shapes[active].pos}; dragIdx=active; ev.preventDefault();
         }
       };
+      const snapper = (val)=> opts.snap ? Math.round(val/10)*10 : val;
       const onMove=(ev)=>{
         const pt=getPoint(ev);
         if(!dragging){
@@ -425,7 +435,7 @@
           svgEl.style.cursor = hover!==-1 ? 'move' : 'default';
           return;
         }
-        const dx=pt.x-start.x, dy=pt.y-start.y; shapes[dragIdx].pos={x:orig.x+dx,y:orig.y+dy}; draw();
+        const dx=pt.x-start.x, dy=pt.y-start.y; shapes[dragIdx].pos={x:snapper(orig.x+dx),y:snapper(orig.y+dy)}; draw();
       };
       const onUp=()=>{ if(!dragging) return; dragging=false; dragIdx=-1; save(); };
       svgEl.addEventListener('mousedown', onDown);
@@ -442,6 +452,21 @@
       box.querySelector('.kc-ctr-inc')?.addEventListener('click', ()=>{ opts[key] = (opts[key]||0)+1; sync(); updateSummary(); save(); });
       box.querySelector('.kc-ctr-dec')?.addEventListener('click', ()=>{ opts[key] = Math.max(0,(opts[key]||0)-1); sync(); updateSummary(); save(); });
       sync();
+    });
+
+    // keyboard nudging for active shape
+    root.addEventListener('keydown', (e)=>{
+      if (active<0) return;
+      const step = opts.snap ? 10 : 2;
+      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
+        e.preventDefault();
+        const p = shapes[active].pos;
+        if (e.key==='ArrowLeft') p.x -= step;
+        if (e.key==='ArrowRight') p.x += step;
+        if (e.key==='ArrowUp') p.y -= step;
+        if (e.key==='ArrowDown') p.y += step;
+        draw(); save();
+      }
     });
 
     function syncOptionsUI(){
@@ -476,8 +501,13 @@
       const cutOtherEl = sel('[data-ct-sum-cut-other]', root);
       const removalEl = sel('[data-ct-sum-removal]', root);
       if (piecesEl) piecesEl.textContent = String(shapes.length);
-      // rough area: sum A*B for each shape (in sq ft)
-      const totalSqIn = shapes.reduce((acc,s)=> acc + (Number(s.len?.A||0)*Number(s.len?.B||0)), 0);
+      // area: rect A*B, U: A*B - C*(B-D), L: A*B - (A-C)*(B-D)
+      const totalSqIn = shapes.reduce((acc,s)=>{
+        const A=Number(s.len?.A||0), B=Number(s.len?.B||0), C=Number(s.len?.C||0), D=Number(s.len?.D||0);
+        if (s.type==='u') return acc + (A*B - Math.max(0, C*Math.max(0, B-D)));
+        if (s.type==='l') return acc + (A*B - Math.max(0, (A-C)*Math.max(0, B-D)));
+        return acc + (A*B);
+      }, 0);
       const sqFt = totalSqIn/144; if (areaEl) areaEl.textContent = (Math.round(sqFt*10)/10).toFixed(1);
   if (matEl) matEl.textContent = Array.isArray(opts.material)? (opts.material.join(', ')||'') : (opts.material||'');
       if (edgeEl) edgeEl.textContent = opts.edge||'';
@@ -516,7 +546,30 @@
     const origRenderTabs = renderTabs; renderTabs = saveAnd(renderTabs);
     const origSyncInputs = syncInputs; syncInputs = saveAnd(syncInputs);
 
-  shapeLabel.textContent = (active>=0 && shapes[active]) ? shapes[active].name : 'No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); syncOptionsUI(); updateSummary(); save();
+    // Snap toggle
+    const snapEl = sel('[data-ct-snap]', root); if (snapEl){ snapEl.checked = !!opts.snap; snapEl.addEventListener('change', ()=>{ opts.snap = !!snapEl.checked; save(); }); }
+
+    // Export current config
+    sel('[data-ct-export]', root)?.addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify({shapes,active,opts}, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='countertop-config.json'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+    });
+    // Import config
+    sel('[data-ct-import]', root)?.addEventListener('click', ()=> sel('[data-ct-import-input]', root)?.click());
+    sel('[data-ct-import-input]', root)?.addEventListener('change', (e)=>{
+      const f=e.target.files?.[0]; if(!f) return; const reader=new FileReader(); reader.onload=()=>{
+        try{
+          const data=JSON.parse(String(reader.result||'{}'));
+          if (data && Array.isArray(data.shapes) && data.opts){
+            shapes=data.shapes; active=Math.max(-1, Math.min(data.active??-1, shapes.length-1)); Object.assign(opts, data.opts);
+            renderTabs(); syncInputs(); syncOptionsUI(); draw(); updateOversize(); updateActionStates(); updateSummary(); save();
+          }
+        }catch(err){}
+      }; reader.readAsText(f);
+    });
+
+    shapeLabel.textContent = (active>=0 && shapes[active]) ? shapes[active].name : 'No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); syncOptionsUI(); updateSummary(); save();
   }
 
   function boot(){

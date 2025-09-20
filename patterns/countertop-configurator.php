@@ -19,10 +19,14 @@
       <div class="kc-ct-actions-left">
         <button class="kc-btn" type="button" data-ct-rotate-left>Rotate Left</button>
         <button class="kc-btn" type="button" data-ct-rotate-right>Rotate Right</button>
+  <label class="kc-toggle"><input type="checkbox" data-ct-snap checked /> <span>Snap to grid</span></label>
       </div>
       <div class="kc-ct-actions-right">
         <button class="kc-btn" type="button" data-ct-reset disabled>Reset</button>
         <button class="kc-btn" type="button" data-ct-delete disabled>Delete</button>
+  <button class="kc-btn" type="button" data-ct-export title="Download JSON">Export</button>
+  <button class="kc-btn" type="button" data-ct-import title="Import JSON">Import</button>
+  <input type="file" accept="application/json" data-ct-import-input class="kc-visually-hidden" aria-hidden="true" />
       </div>
     </div>
 

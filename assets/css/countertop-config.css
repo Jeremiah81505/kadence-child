@@ -8,6 +8,8 @@
 .kc-ct-actions{display:flex;justify-content:space-between;gap:10px;padding:10px 16px;border-bottom:1px dashed #c7d3e8;background:#ffffff}
 .kc-ct-actions .kc-btn{appearance:none;background:#eef2ff;border:1px solid #c7d3e8;color:#21306a;border-radius:6px;padding:8px 12px;font:600 13px/1.2 system-ui;cursor:pointer}
 .kc-ct-actions .kc-btn[disabled]{opacity:.4;cursor:not-allowed}
+.kc-ct-actions .kc-toggle{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:#334}
+.kc-ct-actions [data-ct-export],.kc-ct-actions [data-ct-import]{background:#fff;border:1px solid #ccd;}
 
 .kc-ct-grid{display:grid;grid-template-columns:1fr 380px;grid-template-areas:'preview side';gap:16px;padding:16px}
 .kc-ct-right{grid-area:preview}
@@ -43,6 +45,9 @@
 .kc-ct-legend .lg{display:inline-block;width:16px;height:8px;border-radius:2px;margin-right:6px}
 .kc-ct-legend .lg-wall{background:#d32f2f}
 .kc-ct-legend .lg-bs{background:#ffd8a6;border:1px solid #ffbf6a}
+
+/* resize handles (future) */
+.kc-ct-handle{position:absolute;width:10px;height:10px;border:2px solid #4f6bd8;background:#fff;border-radius:50%;box-shadow:0 1px 2px rgba(0,0,0,.2);z-index:3}
 
 .kc-ct-alert{display:flex;gap:10px;border-top:0;margin:0 16px 16px;padding:12px;color:#23356f;background:#fff7ec;border:1px solid #ffd49c;border-radius:8px}
 .kc-ct-alert .ico{width:22px;height:22px;border-radius:6px;background:#ff9f43;color:#fff;font:700 14px/22px system-ui;text-align:center}
