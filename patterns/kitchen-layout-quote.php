@@ -6,8 +6,8 @@
  * Description: Interactive kitchen layout designer for quick countertop quote requests.
  */
 ?>
-<!-- wp:group {"align":"wide","className":"kc-kitchen-designer is-contained"} -->
-<div class="wp-block-group alignwide kc-kitchen-designer is-contained">
+<!-- wp:group {"align":"full","className":"kc-kitchen-designer is-contained"} -->
+<div class="wp-block-group alignfull kc-kitchen-designer is-contained">
   <!-- wp:html -->
   <div>
     <div class="kc-kd-toolbar">

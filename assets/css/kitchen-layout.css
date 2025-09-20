@@ -1,6 +1,8 @@
 /* Kitchen Layout Designer styles */
 .kc-kitchen-designer{--kc-bg:#0f1420;--kc-surface:#182235;--kc-accent:#3ea6ff;--kc-accent-2:#7de2cf;--kc-danger:#ff6b6b;--kc-grid:#24324a;--kc-grid-strong:#2e3f5d;--kc-text:#f5f8ff;color:var(--kc-text);background:linear-gradient(180deg,#101622,#0f1420);border:1px solid rgba(255,255,255,.12);border-radius:16px;box-shadow:0 12px 36px rgba(0,0,0,.28);overflow:hidden}
 .kc-kitchen-designer.is-contained{max-width:1850px;margin:0 auto}
+/* Ensure Gutenberg alignfull wrapper respects our max width and centers */
+.wp-block-group.alignfull.kc-kitchen-designer.is-contained{width:auto;max-width:1850px;margin-left:auto;margin-right:auto}
 .kc-kd-wrap{display:grid;grid-template-columns:1fr 560px;gap:0;min-height:720px}
 .kc-kd-stage{position:relative;background:var(--kc-surface);overflow:hidden}
 .kc-kd-canvas{position:absolute;inset:0}
