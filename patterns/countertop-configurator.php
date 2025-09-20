@@ -10,9 +10,9 @@
 <div class="wp-block-group alignwide kc-ct-configurator is-contained">
   <!-- wp:html -->
   <div>
-    <div class="kc-ct-tabs" data-ct-tabs>
-      <button class="kc-ct-tab is-active" type="button" data-ct-tab="shape-1">Shape 1</button>
-      <button class="kc-ct-tab add" type="button" data-ct-add-shape>Add A Shape</button>
+    <div class="kc-ct-tabs" data-ct-tabs role="tablist" aria-label="Shapes">
+      <button class="kc-ct-tab is-active" role="tab" aria-selected="true" type="button" data-ct-tab="shape-1">● Shape 1</button>
+      <button class="kc-ct-tab add" role="tab" aria-selected="false" type="button" data-ct-add-shape>Add A Shape</button>
     </div>
 
     <div class="kc-ct-actions" data-ct-actions>
@@ -97,6 +97,10 @@
             <!-- Drawing injected by JS -->
           </svg>
           <div class="kc-ct-shape-label" data-ct-shape-label>Shape 1</div>
+          <div class="kc-ct-legend" aria-hidden="true">
+            <span class="lg lg-wall"></span> Wall side
+            <span class="lg lg-bs"></span> Backsplash
+          </div>
         </div>
       </section>
     </div>
