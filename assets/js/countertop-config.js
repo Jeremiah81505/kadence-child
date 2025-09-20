@@ -96,10 +96,17 @@
   // hide inline inputs for polygons (vertex editing handles are used instead)
   if (s.type==='poly') return;
         const {A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0} = s.len||{};
-        const toScreen = (x,y)=>{ const rect = svg.getBoundingClientRect(); const vb = svg.viewBox?.baseVal || {x:0,y:0,width:rect.width,height:rect.height}; return { left: rect.left + (x - vb.x)/vb.width * rect.width, top: rect.top + (y - vb.y)/vb.height * rect.height }; };
+        const toScreen = (x,y)=>{
+          const svgRect = svg.getBoundingClientRect();
+          const hostRect = inlineHost.getBoundingClientRect(); // within .kc-ct-preview
+          const vb = svg.viewBox?.baseVal || {x:0,y:0,width:svgRect.width,height:svgRect.height};
+          const left = (x - vb.x)/vb.width * svgRect.width + (svgRect.left - hostRect.left);
+          const top  = (y - vb.y)/vb.height * svgRect.height + (svgRect.top - hostRect.top);
+          return { left, top };
+        };
         const add = (label, key, x, y)=>{
           const pos = toScreen(x,y);
-          const wrap = document.createElement('div'); wrap.className = 'kc-inp'; wrap.style.position='fixed'; wrap.style.left = `${pos.left - 22}px`; wrap.style.top = `${pos.top - 16}px`;
+          const wrap = document.createElement('div'); wrap.className = 'kc-inp'; wrap.style.left = `${pos.left}px`; wrap.style.top = `${pos.top}px`;
           wrap.innerHTML = `<label class="sr">${label}</label><input type="number" inputmode="numeric" step="1" class="kc-inp-num" data-kc-inline="${key}" />`;
           inlineHost.appendChild(wrap);
         };
@@ -883,6 +890,9 @@
       // finish free draw on double click
       svgEl.addEventListener('dblclick', ()=>{ if(drawingPoly){ drawingPoly=false; drawingIdx=-1; save(); draw(); } });
     })();
+  // Reposition inline inputs on resize/scroll
+  window.addEventListener('resize', ()=>{ if (inlineHost) { try{ renderInlineInputs(); }catch(e){} } });
+  window.addEventListener('scroll', ()=>{ if (inlineHost) { try{ renderInlineInputs(); }catch(e){} } }, true);
 
     // Toolbar bindings
     root.querySelectorAll('.kc-ct-toolbar [data-ct-tool]')?.forEach(btn=>{

@@ -59,6 +59,14 @@
 .kc-ct-legend .lg-wall{background:#d32f2f}
 .kc-ct-legend .lg-bs{background:#ffd8a6;border:1px solid #ffbf6a}
 
+/* Inline measurement inputs (compact) */
+.kc-ct-inline{position:absolute;inset:0;pointer-events:none}
+.kc-ct-inline .kc-inp{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;background:#fff;border:1px solid #c7d3e8;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.07);padding:1px;z-index:3}
+.kc-ct-inline .kc-inp input{width:48px;padding:2px 4px;border:0;outline:none;font:700 11px system-ui;color:#21306a}
+.kc-ct-inline .kc-inp input::-webkit-outer-spin-button,.kc-ct-inline .kc-inp input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.kc-ct-inline .kc-inp input[type=number]{appearance:textfield;-moz-appearance:textfield}
+.kc-ct-inline .sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
 /* resize handles (future) */
 .kc-ct-handle{position:absolute;width:10px;height:10px;border:2px solid #4f6bd8;background:#fff;border-radius:50%;box-shadow:0 1px 2px rgba(0,0,0,.2);z-index:3}
 
