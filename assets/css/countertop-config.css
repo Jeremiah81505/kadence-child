@@ -33,7 +33,7 @@
 
 .kc-ct-right{border-left:0}
 .kc-ct-preview{position:relative;padding:16px;background:#fff;border-radius:10px;box-shadow:inset 0 0 0 1px #e7ecf7}
-.kc-ct-preview svg{width:100%;height:360px;background:
+.kc-ct-preview svg{width:100%;height:360px;cursor:move;background:
     linear-gradient(0deg, rgba(33,48,106,0.03) 1px, transparent 1px) 0 0/20px 20px,
     linear-gradient(90deg, rgba(33,48,106,0.03) 1px, transparent 1px) 0 0/20px 20px,
     #fff}

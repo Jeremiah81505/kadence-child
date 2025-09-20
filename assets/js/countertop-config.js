@@ -351,7 +351,15 @@
     (function enableDrag(){
       let dragging=false, start={}, orig={}, dragIdx=-1;
       const svgEl = sel('[data-ct-svg]', root);
-      function getPoint(ev){ const rect=svgEl.getBoundingClientRect(); const x=('touches' in ev? ev.touches[0].clientX:ev.clientX)-rect.left; const y=('touches' in ev? ev.touches[0].clientY:ev.clientY)-rect.top; return {x,y}; }
+      function getPoint(ev){
+        const rect = svgEl.getBoundingClientRect();
+        const vb = svgEl.viewBox?.baseVal || { x:0, y:0, width:rect.width, height:rect.height };
+        const cX = ('touches' in ev ? ev.touches[0].clientX : ev.clientX);
+        const cY = ('touches' in ev ? ev.touches[0].clientY : ev.clientY);
+        const nx = (cX - rect.left) / rect.width; // 0..1
+        const ny = (cY - rect.top) / rect.height; // 0..1
+        return { x: vb.x + nx * vb.width, y: vb.y + ny * vb.height };
+      }
       function pointInRotRect(px, py, cx, cy, w, h, rotDeg){
         const rad = -rotDeg * Math.PI/180; // inverse rotate
         const cos = Math.cos(rad), sin = Math.sin(rad);
