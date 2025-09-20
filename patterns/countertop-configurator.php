@@ -69,6 +69,29 @@
                   <input type="number" class="kc-input" min="0" max="24" step="1" data-ct-bs-height />
                 </div>
               </section>
+
+              <section class="kc-section">
+                <h3>Overhang</h3>
+                <div class="kc-option-grid">
+                  <label class="kc-meas opt"><input type="checkbox" data-ct-overhang="A" /> Top (A)</label>
+                  <label class="kc-meas opt"><input type="checkbox" data-ct-overhang="B" /> Left (B)</label>
+                  <label class="kc-meas opt"><input type="checkbox" data-ct-overhang="C" /> Bottom (C)</label>
+                  <label class="kc-meas opt"><input type="checkbox" data-ct-overhang="D" /> Right (D)</label>
+                </div>
+                <div class="kc-fieldset">
+                  <div class="kc-field-label">Overhang (inches)</div>
+                  <input type="number" class="kc-input" min="0" max="6" step="0.5" data-ct-oh-height />
+                </div>
+              </section>
+
+              <section class="kc-section">
+                <h3>Seams</h3>
+                <div class="kc-option-grid">
+                  <button class="kc-btn" type="button" data-ct-seam-suggest>Suggest Seams</button>
+                  <button class="kc-btn" type="button" data-ct-seam-clear>Clear Seams</button>
+                  <label class="kc-toggle"><input type="checkbox" data-ct-seam-show /> <span>Show Seams</span></label>
+                </div>
+              </section>
             </div>
             
           </div>
@@ -196,6 +219,7 @@
           <div><strong>Cutouts (Faucet)</strong><div data-ct-sum-cut-faucet>0</div></div>
           <div><strong>Cutouts (Other)</strong><div data-ct-sum-cut-other>0</div></div>
           <div><strong>Removal</strong><div data-ct-sum-removal>Countertops Only</div></div>
+          <div><strong>Seams</strong><div data-ct-sum-seams>0</div></div>
         </div>
       </section>
     </div>

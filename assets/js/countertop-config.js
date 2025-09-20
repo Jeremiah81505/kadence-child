@@ -23,7 +23,9 @@
     removal: 'Countertops Only',
     color: '',
   bsHeight: 4,
-  snap: true
+  snap: true,
+  ohHeight: 1.5,
+  showSeams: false
   };
   const STATE_KEY = 'kcCountertopConfig:v1';
   let toolMode = 'move';
@@ -39,7 +41,7 @@
       hitAreas = [];
       handles = [];
 
-      const addHandle=(idx, cx, cy, rot, key)=>{
+  const addHandle=(idx, cx, cy, rot, key)=>{
         handles.push({ idx, cx, cy, rot, key, r:8 });
         // visual circle
         const g=document.createElementNS(ns,'g');
@@ -80,6 +82,21 @@
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
 
+          // overhang per side (outside the slab)
+          const oh = px(Number(opts.ohHeight||0));
+          if (oh>0 && cur.oh){
+            ['A','B','C','D'].forEach(side=>{
+              if (cur.oh[side]){
+                const r = document.createElementNS(ns,'rect');
+                if (side==='A'){ r.setAttribute('x', String(centerX - w/2)); r.setAttribute('y', String(centerY - h/2 - oh)); r.setAttribute('width', String(w)); r.setAttribute('height', String(oh)); }
+                if (side==='B'){ r.setAttribute('x', String(centerX - w/2 - oh)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(oh)); r.setAttribute('height', String(h)); }
+                if (side==='C'){ r.setAttribute('x', String(centerX - w/2)); r.setAttribute('y', String(centerY + h/2)); r.setAttribute('width', String(w)); r.setAttribute('height', String(oh)); }
+                if (side==='D'){ r.setAttribute('x', String(centerX + w/2)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(oh)); r.setAttribute('height', String(h)); }
+                r.setAttribute('fill', '#cbe4ff'); r.setAttribute('stroke','none'); rotG.appendChild(r);
+              }
+            });
+          }
+
           // backsplash per side
           const bh = px(Number(opts.bsHeight||0));
           if (bh>0){
@@ -113,6 +130,24 @@
           if (cur.wall.B) rotG.appendChild(mkLine(centerX - w/2, centerY - h/2, centerX - w/2, centerY + h/2));
           if (cur.wall.C) rotG.appendChild(mkLine(centerX - w/2, centerY + h/2, centerX + w/2, centerY + h/2));
           if (cur.wall.D) rotG.appendChild(mkLine(centerX + w/2, centerY - h/2, centerX + w/2, centerY + h/2));
+
+          // seams (draw before highlight)
+          if (opts.showSeams && Array.isArray(cur.seams)){
+            cur.seams.forEach(seam=>{
+              const line=document.createElementNS(ns,'line');
+              if (seam.type==='v'){
+                const x = centerX + px(seam.atIn||0);
+                line.setAttribute('x1', String(x)); line.setAttribute('y1', String(centerY - h/2));
+                line.setAttribute('x2', String(x)); line.setAttribute('y2', String(centerY + h/2));
+              } else { // 'h'
+                const y = centerY + px(seam.atIn||0);
+                line.setAttribute('x1', String(centerX - w/2)); line.setAttribute('y1', String(y));
+                line.setAttribute('x2', String(centerX + w/2)); line.setAttribute('y2', String(y));
+              }
+              line.setAttribute('stroke','#666'); line.setAttribute('stroke-width','2'); line.setAttribute('stroke-dasharray','6 6');
+              rotG.appendChild(line);
+            });
+          }
 
           // active highlight
           if (idx===active){
@@ -158,8 +193,28 @@
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
 
+          // overhang approx for L bounding box
+          { const aBox=a, bBox=b; const oh = px(Number(opts.ohHeight||0)); if (oh>0 && cur.oh){ ['A','B','C','D'].forEach(side=>{ if (cur.oh[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - oh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(oh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - oh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(oh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(oh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(oh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#cbe4ff'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
+
           // backsplash approx for L bounding box
           { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
+          // seams for L (bounding-box approximation)
+          if (opts.showSeams && Array.isArray(cur.seams)){
+            cur.seams.forEach(seam=>{
+              const line=document.createElementNS(ns,'line');
+              if (seam.type==='v'){
+                const x = centerX + px(seam.atIn||0);
+                line.setAttribute('x1', String(x)); line.setAttribute('y1', String(centerY - b/2));
+                line.setAttribute('x2', String(x)); line.setAttribute('y2', String(centerY + b/2));
+              } else {
+                const y = centerY + px(seam.atIn||0);
+                line.setAttribute('x1', String(centerX - a/2)); line.setAttribute('y1', String(y));
+                line.setAttribute('x2', String(centerX + a/2)); line.setAttribute('y2', String(y));
+              }
+              line.setAttribute('stroke','#666'); line.setAttribute('stroke-width','2'); line.setAttribute('stroke-dasharray','6 6');
+              rotG.appendChild(line);
+            });
+          }
 
           rotG.appendChild(path);
           // wall sides (approx bounding box)
@@ -204,8 +259,28 @@
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
 
+          // overhang along outer bounding box
+          { const aBox=a, bBox=b; const oh = px(Number(opts.ohHeight||0)); if (oh>0 && cur.oh){ ['A','B','C','D'].forEach(side=>{ if (cur.oh[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - oh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(oh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - oh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(oh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(oh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(oh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#cbe4ff'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
+
           // backsplash along outer bounding box
           { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
+          // seams for U (bounding-box approximation)
+          if (opts.showSeams && Array.isArray(cur.seams)){
+            cur.seams.forEach(seam=>{
+              const line=document.createElementNS(ns,'line');
+              if (seam.type==='v'){
+                const x = centerX + px(seam.atIn||0);
+                line.setAttribute('x1', String(x)); line.setAttribute('y1', String(centerY - b/2));
+                line.setAttribute('x2', String(x)); line.setAttribute('y2', String(centerY + b/2));
+              } else {
+                const y = centerY + px(seam.atIn||0);
+                line.setAttribute('x1', String(centerX - a/2)); line.setAttribute('y1', String(y));
+                line.setAttribute('x2', String(centerX + a/2)); line.setAttribute('y2', String(y));
+              }
+              line.setAttribute('stroke','#666'); line.setAttribute('stroke-width','2'); line.setAttribute('stroke-dasharray','6 6');
+              rotG.appendChild(line);
+            });
+          }
 
           // U shape as outer rect minus inner notch (evenodd)
           const path = document.createElementNS(ns, 'path');
@@ -301,20 +376,20 @@
     });
 
     // Create shapes from panel
-    root.querySelectorAll('[data-ct-shape]').forEach(btn=>{
+  root.querySelectorAll('[data-ct-shape]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const type = btn.getAttribute('data-ct-shape')||'rect';
         const id='s'+(shapes.length+1);
-        shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len:{A:60,B:25,C:20,D:10}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} });
+    shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len:{A:60,B:25,C:20,D:10}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, oh:{A:false,B:false,C:false,D:false}, seams:[] });
         active = shapes.length-1; shapeLabel.textContent = shapes[active].name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
       });
     });
 
     // Layout presets
-    root.querySelectorAll('[data-ct-layout]').forEach(btn=>{
+  root.querySelectorAll('[data-ct-layout]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const layout = btn.getAttribute('data-ct-layout');
-        const add = (type,len)=>{ const id='s'+(shapes.length+1); shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} }); active=shapes.length-1; };
+    const add = (type,len)=>{ const id='s'+(shapes.length+1); shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, oh:{A:false,B:false,C:false,D:false}, seams:[] }); active=shapes.length-1; };
         if (layout==='straight') add('rect', {A:96,B:25,C:0,D:0});
         if (layout==='l-standard') add('l', {A:120,B:96,C:26,D:26});
         if (layout==='u-standard') add('u', {A:180,B:100,C:129,D:26});
@@ -457,6 +532,33 @@
     });
     // Backsplash height input
     sel('[data-ct-bs-height]', root)?.addEventListener('input', (e)=>{
+    // Overhang per side
+    all('[data-ct-overhang]', root).forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        if (active<0) return; const k = inp.getAttribute('data-ct-overhang');
+        if (!shapes[active].oh) shapes[active].oh = {A:false,B:false,C:false,D:false};
+        shapes[active].oh[k] = !!inp.checked;
+        save(); draw();
+      });
+    });
+    // Overhang height
+    sel('[data-ct-oh-height]', root)?.addEventListener('input', (e)=>{
+      let v = parseFloat(e.target.value||'0'); if(!isFinite(v)||v<0) v=0; if (v>6) v=6; opts.ohHeight = v; save(); draw();
+    });
+
+    // Seams
+    sel('[data-ct-seam-show]', root)?.addEventListener('change', (e)=>{ opts.showSeams = !!e.target.checked; save(); draw(); });
+    sel('[data-ct-seam-clear]', root)?.addEventListener('click', ()=>{ shapes.forEach(s=> s.seams=[]); save(); draw(); });
+    sel('[data-ct-seam-suggest]', root)?.addEventListener('click', ()=>{
+      // simple suggestion: add vertical seams every 96 inches if A > 120
+      shapes.forEach(s=>{
+        const A = Number(s.len?.A||0);
+        const seams=[];
+        if (A>120){ const span=96; for(let x=span; x<A; x+=span){ seams.push({type:'v', atIn: x - A/2}); } }
+        s.seams = seams;
+      });
+      save(); draw();
+    });
       let v = parseInt(e.target.value||'0',10); if(!isFinite(v)||v<0) v=0; if (v>24) v=24; opts.bsHeight = v; updateSummary(); save(); draw();
     });
 
@@ -666,6 +768,10 @@
         const key = box.getAttribute('data-ct-counter'); const valEl = box.querySelector('.kc-ctr-val');
         if (valEl) valEl.textContent = String(opts[key]||0);
       });
+  // Overhang/Seams UI state
+  all('[data-ct-overhang]', root).forEach(inp=>{ const k=inp.getAttribute('data-ct-overhang'); const cur=shapes[active]; inp.checked = !!(cur && cur.oh && cur.oh[k]); inp.disabled = (active<0); });
+  const ohH = sel('[data-ct-oh-height]', root); if (ohH){ ohH.value = String(opts.ohHeight||0); }
+  const seamShow = sel('[data-ct-seam-show]', root); if (seamShow){ seamShow.checked = !!opts.showSeams; }
     }
 
     function updateSummary(){
@@ -679,6 +785,7 @@
       const cutFaucEl = sel('[data-ct-sum-cut-faucet]', root);
       const cutOtherEl = sel('[data-ct-sum-cut-other]', root);
       const removalEl = sel('[data-ct-sum-removal]', root);
+  const seamsEl = sel('[data-ct-sum-seams]', root);
       if (piecesEl) piecesEl.textContent = String(shapes.length);
       // area: rect A*B, U: A*B - C*(B-D), L: A*B - (A-C)*(B-D)
       const totalSqIn = shapes.reduce((acc,s)=>{
@@ -695,7 +802,8 @@
       if (cutCookEl) cutCookEl.textContent = String(opts['cutout-cooktop']||0);
       if (cutFaucEl) cutFaucEl.textContent = String(opts['cutout-faucet']||0);
       if (cutOtherEl) cutOtherEl.textContent = String(opts['cutout-other']||0);
-      if (removalEl) removalEl.textContent = opts.removal||'';
+  if (removalEl) removalEl.textContent = opts.removal||'';
+  if (seamsEl){ const seamCount = shapes.reduce((acc,s)=> acc + (Array.isArray(s.seams)? s.seams.length:0), 0); seamsEl.textContent = String(seamCount); }
     }
 
     // Load saved state if present
@@ -707,12 +815,12 @@
         if (parsed && parsed.opts) Object.assign(opts, parsed.opts);
         // migrate material to array if stored as string
         if (typeof opts.material === 'string') opts.material = opts.material ? [opts.material] : [];
-      }
+  }
     } catch(e){}
 
     const stateEl = sel('[data-ct-state]', root);
     const save = ()=>{
-      const data = { shapes, active, opts };
+  const data = { shapes, active, opts };
       try{ localStorage.setItem(STATE_KEY, JSON.stringify(data)); }catch(e){}
       if (stateEl) stateEl.value = JSON.stringify(data);
       updateSummary();
@@ -748,7 +856,9 @@
       }; reader.readAsText(f);
     });
 
-    shapeLabel.textContent = (active>=0 && shapes[active]) ? shapes[active].name : 'No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); syncOptionsUI(); updateSummary(); save();
+  // default open Shapes panel
+  const panelBtn = sel('[data-ct-panel="shapes"]', root); if (panelBtn) panelBtn.click();
+  shapeLabel.textContent = (active>=0 && shapes[active]) ? shapes[active].name : 'No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); syncOptionsUI(); updateSummary(); save();
   }
 
   function boot(){
