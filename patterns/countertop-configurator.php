@@ -1,9 +1,9 @@
 <?php
 /**
- * Title: Countertop Configurator (HD-style)
+ * Title: Countertop Configurator
  * Slug: kadence-child/countertop-configurator
  * Categories: kadence-child, featured
- * Description: Simple countertop configurator patterned after Home Depot's tool.
+ * Description: Interactive countertop configurator with shapes, per-side backsplash, and summary.
  */
 ?>
 <!-- wp:group {"align":"wide","className":"kc-ct-configurator is-contained"} -->
