@@ -31,9 +31,9 @@
   <button class="kc-btn" type="button" data-kc-import-json>Import JSON</button>
       </div>
     </div>
-    <div class="kc-kd-wrap">
+  <div class="kc-kd-wrap" data-aside-collapsed="false">
       <div class="kc-kd-stage" aria-label="Kitchen layout canvas"></div>
-      <aside class="kc-kd-aside">
+  <aside class="kc-kd-aside">
         <div class="kc-card kc-span-2 kc-sticky">
           <h3>Summary</h3>
           <dl>
@@ -296,7 +296,8 @@
       </aside>
     </div>
     <div class="kc-kd-footer">
-      <div class="kc-info">Estimate only. Final quote requires on-site measurement.</div>
+  <div class="kc-info">Estimate only. Final quote requires on-site measurement.</div>
+  <button class="kc-btn" type="button" onclick="this.closest('.kc-kitchen-designer').querySelector('.kc-kd-wrap').setAttribute('data-aside-collapsed', this.getAttribute('aria-pressed')==='true' ? 'false' : 'true'); this.setAttribute('aria-pressed', this.getAttribute('aria-pressed')==='true' ? 'false' : 'true');" aria-pressed="false">Toggle Sidebar</button>
     </div>
   </div>
   <!-- /wp:html -->

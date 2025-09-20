@@ -3,7 +3,7 @@
 .kc-kitchen-designer.is-contained{max-width:1850px;margin:0 auto}
 /* Ensure Gutenberg alignfull wrapper respects our max width and centers */
 .wp-block-group.alignfull.kc-kitchen-designer.is-contained{width:auto;max-width:1850px;margin-left:auto;margin-right:auto}
-.kc-kd-wrap{display:grid;grid-template-columns:1fr 640px;gap:0;min-height:720px}
+.kc-kd-wrap{display:grid;grid-template-columns:1fr 380px;gap:0;min-height:900px}
 .kc-kd-stage{position:relative;background:var(--kc-surface);overflow:hidden}
 .kc-kd-canvas{position:absolute;inset:0}
 .kc-kd-toolbar{display:flex;flex-wrap:nowrap;gap:10px 12px;align-items:center;padding:12px 14px;background:var(--kc-surface);border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;z-index:20;overflow-x:auto;scrollbar-gutter:stable both-edges;-ms-overflow-style:none;scrollbar-width:none}
@@ -47,6 +47,10 @@
 
 /* Canvas overlays */
 .kc-kd-stage .kc-label{position:absolute;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:4px 6px;font:600 12px/1 system-ui;pointer-events:none;transform:translate(-50%,-140%)}
+
+/* CSS-only aside collapse via a hidden checkbox in markup */
+.kc-kd-wrap[data-aside-collapsed="true"]{grid-template-columns:1fr 0}
+.kc-kd-wrap[data-aside-collapsed="true"] .kc-kd-aside{display:none}
 
 /* Responsive */
 @media (max-width: 1200px){.kc-kitchen-designer.is-contained{max-width:100%}}
