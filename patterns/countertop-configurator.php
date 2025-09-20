@@ -30,13 +30,19 @@
             <button class="kc-tile is-active" type="button" data-ct-tool-mode="move"><span>Move</span></button>
             <button class="kc-tile" type="button" data-ct-tool-mode="resize"><span>Resize</span></button>
             <button class="kc-tile" type="button" data-ct-panel="shapes"><span>Shapes</span></button>
+            <button class="kc-tile" type="button" data-ct-panel="backsplash"><span>Backsplash</span></button>
+            <button class="kc-tile" type="button" data-ct-panel="sinks"><span>Sinks</span></button>
+            <button class="kc-tile" type="button" data-ct-panel="seams"><span>Seams</span></button>
           </div>
           <div class="kc-panels">
             <div class="kc-panel kc-panel-shapes" hidden>
               <div class="kc-panel-grid">
-                <button class="kc-tile" type="button" data-ct-shape="rect">Rectangle</button>
-                <button class="kc-tile" type="button" data-ct-shape="l">L Shape</button>
-                <button class="kc-tile" type="button" data-ct-shape="u">U Shape</button>
+                <button class="kc-tile" type="button" data-ct-shape="rect" data-ct-len-a="60" data-ct-len-b="25">Rectangle</button>
+                <button class="kc-tile" type="button" data-ct-shape="l" data-ct-len-a="120" data-ct-len-b="96" data-ct-len-c="26" data-ct-len-d="26">L Shape</button>
+                <button class="kc-tile" type="button" data-ct-shape="u" data-ct-len-a="160" data-ct-len-b="100" data-ct-len-c="60" data-ct-len-d="25">U Shape</button>
+                <button class="kc-tile" type="button" data-ct-shape="rect" data-ct-len-a="72" data-ct-len-b="36">Island 36×72</button>
+                <button class="kc-tile" type="button" data-ct-shape="rect" data-ct-len-a="96" data-ct-len-b="26">Bar Top 26×96</button>
+                <button class="kc-tile" type="button" data-ct-shape="rect" data-ct-len-a="120" data-ct-len-b="25">Galley 25×120</button>
               </div>
               <section class="kc-section">
                 <h3>Measurements</h3>
@@ -55,7 +61,9 @@
                   </div>
                 </div>
               </section>
+            </div>
 
+            <div class="kc-panel kc-panel-backsplash" hidden>
               <section class="kc-section">
                 <h3>Backsplash</h3>
                 <div class="kc-option-grid">
@@ -69,21 +77,19 @@
                   <input type="number" class="kc-input" min="0" max="24" step="1" data-ct-bs-height />
                 </div>
               </section>
+            </div>
 
+            <div class="kc-panel kc-panel-sinks" hidden>
               <section class="kc-section">
-                <h3>Overhang</h3>
-                <div class="kc-option-grid">
-                  <label class="kc-meas opt"><input type="checkbox" data-ct-overhang="A" /> Top (A)</label>
-                  <label class="kc-meas opt"><input type="checkbox" data-ct-overhang="B" /> Left (B)</label>
-                  <label class="kc-meas opt"><input type="checkbox" data-ct-overhang="C" /> Bottom (C)</label>
-                  <label class="kc-meas opt"><input type="checkbox" data-ct-overhang="D" /> Right (D)</label>
-                </div>
-                <div class="kc-fieldset">
-                  <div class="kc-field-label">Overhang (inches)</div>
-                  <input type="number" class="kc-input" min="0" max="6" step="0.5" data-ct-oh-height />
+                <h3>Sinks</h3>
+                <div class="kc-option-grid" role="radiogroup" aria-label="Sinks">
+                  <button class="kc-opt is-active" type="button" data-ct-radio="sinks" data-value="No">No</button>
+                  <button class="kc-opt" type="button" data-ct-radio="sinks" data-value="Yes">Yes</button>
                 </div>
               </section>
+            </div>
 
+            <div class="kc-panel kc-panel-seams" hidden>
               <section class="kc-section">
                 <h3>Seams</h3>
                 <div class="kc-option-grid">
@@ -172,13 +178,6 @@
         </div>
       </section>
 
-      <section class="kc-section">
-        <h3>Sinks</h3>
-        <div class="kc-option-grid" role="radiogroup" aria-label="Sinks">
-          <button class="kc-opt is-active" type="button" data-ct-radio="sinks" data-value="No">No</button>
-          <button class="kc-opt" type="button" data-ct-radio="sinks" data-value="Yes">Yes</button>
-        </div>
-      </section>
 
       <section class="kc-section">
         <h3>Cutouts</h3>

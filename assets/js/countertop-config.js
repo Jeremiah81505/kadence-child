@@ -24,7 +24,6 @@
     color: '',
   bsHeight: 4,
   snap: true,
-  ohHeight: 1.5,
   showSeams: false
   };
   const STATE_KEY = 'kcCountertopConfig:v1';
@@ -57,7 +56,12 @@
         const a=Number(dims.A||cur.len?.A||0), b=Number(dims.B||cur.len?.B||0), c=Number(dims.C||cur.len?.C||0), d=Number(dims.D||cur.len?.D||0);
         // outer labels
         mk(cx, cy - (px(b)/2) - 10, `${a}\"`);
-        mk(cx - (px(a)/2) - 16, cy, `${b}\"`);
+        mk(cx - (px(a)/2) - 16, cy, `B`);
+        mk(cx + (px(a)/2) + 16, cy, `D`);
+        // add numeric ticks for B and D along the mid points
+        const ty = cy - (px(b)/2) + px(b)/2; // center Y
+        const leftTxt=document.createElementNS(ns,'text'); leftTxt.setAttribute('x', String(cx - (px(a)/2) - 22)); leftTxt.setAttribute('y', String(ty)); leftTxt.setAttribute('text-anchor','end'); leftTxt.setAttribute('font-size','12'); leftTxt.textContent = `${b}\"`; parent.appendChild(leftTxt);
+        const rightTxt=document.createElementNS(ns,'text'); rightTxt.setAttribute('x', String(cx + (px(a)/2) + 22)); rightTxt.setAttribute('y', String(ty)); rightTxt.setAttribute('text-anchor','start'); rightTxt.setAttribute('font-size','12'); rightTxt.textContent = `${d}\"`; parent.appendChild(rightTxt);
         // inner where applicable
         if (cur.type==='u'){
           const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
@@ -82,20 +86,7 @@
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
 
-          // overhang per side (outside the slab)
-          const oh = px(Number(opts.ohHeight||0));
-          if (oh>0 && cur.oh){
-            ['A','B','C','D'].forEach(side=>{
-              if (cur.oh[side]){
-                const r = document.createElementNS(ns,'rect');
-                if (side==='A'){ r.setAttribute('x', String(centerX - w/2)); r.setAttribute('y', String(centerY - h/2 - oh)); r.setAttribute('width', String(w)); r.setAttribute('height', String(oh)); }
-                if (side==='B'){ r.setAttribute('x', String(centerX - w/2 - oh)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(oh)); r.setAttribute('height', String(h)); }
-                if (side==='C'){ r.setAttribute('x', String(centerX - w/2)); r.setAttribute('y', String(centerY + h/2)); r.setAttribute('width', String(w)); r.setAttribute('height', String(oh)); }
-                if (side==='D'){ r.setAttribute('x', String(centerX + w/2)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(oh)); r.setAttribute('height', String(h)); }
-                r.setAttribute('fill', '#cbe4ff'); r.setAttribute('stroke','none'); rotG.appendChild(r);
-              }
-            });
-          }
+          // overhang removed
 
           // backsplash per side
           const bh = px(Number(opts.bsHeight||0));
@@ -193,8 +184,7 @@
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
 
-          // overhang approx for L bounding box
-          { const aBox=a, bBox=b; const oh = px(Number(opts.ohHeight||0)); if (oh>0 && cur.oh){ ['A','B','C','D'].forEach(side=>{ if (cur.oh[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - oh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(oh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - oh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(oh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(oh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(oh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#cbe4ff'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
+          // overhang removed
 
           // backsplash approx for L bounding box
           { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
@@ -259,8 +249,7 @@
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
 
-          // overhang along outer bounding box
-          { const aBox=a, bBox=b; const oh = px(Number(opts.ohHeight||0)); if (oh>0 && cur.oh){ ['A','B','C','D'].forEach(side=>{ if (cur.oh[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - oh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(oh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - oh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(oh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(oh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(oh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#cbe4ff'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
+          // overhang removed
 
           // backsplash along outer bounding box
           { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
@@ -378,9 +367,13 @@
     // Create shapes from panel
   root.querySelectorAll('[data-ct-shape]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        const type = btn.getAttribute('data-ct-shape')||'rect';
+  const type = btn.getAttribute('data-ct-shape')||'rect';
+  const a = parseInt(btn.getAttribute('data-ct-len-a')||'60',10);
+  const b = parseInt(btn.getAttribute('data-ct-len-b')||'25',10);
+  const c = parseInt(btn.getAttribute('data-ct-len-c')|| (type==='rect'?'0':'20'),10);
+  const d = parseInt(btn.getAttribute('data-ct-len-d')|| (type==='rect'?'0':'10'),10);
         const id='s'+(shapes.length+1);
-    shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len:{A:60,B:25,C:20,D:10}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, oh:{A:false,B:false,C:false,D:false}, seams:[] });
+  shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len:{A:a,B:b,C:c,D:d}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
         active = shapes.length-1; shapeLabel.textContent = shapes[active].name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
       });
     });
@@ -532,19 +525,7 @@
     });
     // Backsplash height input
     sel('[data-ct-bs-height]', root)?.addEventListener('input', (e)=>{
-    // Overhang per side
-    all('[data-ct-overhang]', root).forEach(inp=>{
-      inp.addEventListener('change', ()=>{
-        if (active<0) return; const k = inp.getAttribute('data-ct-overhang');
-        if (!shapes[active].oh) shapes[active].oh = {A:false,B:false,C:false,D:false};
-        shapes[active].oh[k] = !!inp.checked;
-        save(); draw();
-      });
-    });
-    // Overhang height
-    sel('[data-ct-oh-height]', root)?.addEventListener('input', (e)=>{
-      let v = parseFloat(e.target.value||'0'); if(!isFinite(v)||v<0) v=0; if (v>6) v=6; opts.ohHeight = v; save(); draw();
-    });
+  // Overhang removed
 
     // Seams
     sel('[data-ct-seam-show]', root)?.addEventListener('change', (e)=>{ opts.showSeams = !!e.target.checked; save(); draw(); });
@@ -769,8 +750,7 @@
         if (valEl) valEl.textContent = String(opts[key]||0);
       });
   // Overhang/Seams UI state
-  all('[data-ct-overhang]', root).forEach(inp=>{ const k=inp.getAttribute('data-ct-overhang'); const cur=shapes[active]; inp.checked = !!(cur && cur.oh && cur.oh[k]); inp.disabled = (active<0); });
-  const ohH = sel('[data-ct-oh-height]', root); if (ohH){ ohH.value = String(opts.ohHeight||0); }
+  // Overhang removed
   const seamShow = sel('[data-ct-seam-show]', root); if (seamShow){ seamShow.checked = !!opts.showSeams; }
     }
 
@@ -856,8 +836,7 @@
       }; reader.readAsText(f);
     });
 
-  // default open Shapes panel
-  const panelBtn = sel('[data-ct-panel="shapes"]', root); if (panelBtn) panelBtn.click();
+  // do not auto-open panels so controls show only when selected
   shapeLabel.textContent = (active>=0 && shapes[active]) ? shapes[active].name : 'No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); syncOptionsUI(); updateSummary(); save();
   }
 
