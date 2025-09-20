@@ -99,12 +99,20 @@
   // base margin to pull inputs slightly away from each side
   const M = 28; // px in viewBox units
         const toScreen = (x,y)=>{
+          const hostRect = inlineHost.getBoundingClientRect();
+          const pt = svg.createSVGPoint ? svg.createSVGPoint() : null;
+          if (pt && svg.getScreenCTM){
+            pt.x = x; pt.y = y;
+            const screen = pt.matrixTransform(svg.getScreenCTM());
+            return { left: screen.x - hostRect.left, top: screen.y - hostRect.top };
+          }
+          // Fallback to rect math
           const svgRect = svg.getBoundingClientRect();
-          const hostRect = inlineHost.getBoundingClientRect(); // within .kc-ct-preview
           const vb = svg.viewBox?.baseVal || {x:0,y:0,width:svgRect.width,height:svgRect.height};
-          const left = (x - vb.x)/vb.width * svgRect.width + (svgRect.left - hostRect.left);
-          const top  = (y - vb.y)/vb.height * svgRect.height + (svgRect.top - hostRect.top);
-          return { left, top };
+          return {
+            left: (x - vb.x)/vb.width * svgRect.width + (svgRect.left - hostRect.left),
+            top:  (y - vb.y)/vb.height * svgRect.height + (svgRect.top - hostRect.top)
+          };
         };
         const add = (label, key, x, y, angleDeg=0)=>{
           const pos = toScreen(x,y);
@@ -237,7 +245,7 @@
           }
 
           gRoot.appendChild(rotG);
-          labelDims(rotG, centerX, centerY, len.A, len.B);
+          labelDims(rotG, centerX, centerY, len.A, len.B, rotation);
           labelNumbers(rotG, centerX, centerY, cur, {A:len.A,B:len.B});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation });
           if (idx===active){
@@ -312,7 +320,7 @@
           }
 
           gRoot.appendChild(rotG);
-          labelDims(rotG, centerX, centerY, aIn, bIn);
+          labelDims(rotG, centerX, centerY, aIn, bIn, rotation);
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
           if (idx===active){
@@ -403,7 +411,7 @@
           }
 
           gRoot.appendChild(rotG);
-          labelDims(rotG, centerX, centerY, aIn, bIn);
+          labelDims(rotG, centerX, centerY, aIn, bIn, rotation);
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn,C:cIn,D:dIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
           if (idx===active){
@@ -579,25 +587,22 @@
     };
     all('[data-ct-duplicate]', root).forEach(el=> el.addEventListener('click', onDuplicate));
 
-    // Measurement label guides around the shape
-    function labelDims(parent, cx, cy, A, B){
+    // Measurement side letters A/B/C/D anchored to actual side centers with rotation
+    function labelDims(parent, cx, cy, A, B, rotDeg){
       const ns='http://www.w3.org/2000/svg';
-      const make = (x1,y1,x2,y2,txt)=>{
-        const g=document.createElementNS(ns,'g');
-        const line=document.createElementNS(ns,'line');
-        line.setAttribute('x1',x1); line.setAttribute('y1',y1); line.setAttribute('x2',x2); line.setAttribute('y2',y2);
-        line.setAttribute('stroke','#bbb'); line.setAttribute('stroke-width','2');
-        const t=document.createElementNS(ns,'text');
-        t.setAttribute('x', (x1+x2)/2); t.setAttribute('y', (y1+y2)/2 - 6);
-        t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=txt;
-        g.appendChild(line); g.appendChild(t); parent.appendChild(g);
-      };
-      const px=(v)=> v*2;
-      // Use the provided A/B values for text but position with fixed offsets around center
-      make(cx-100, cy-80, cx+100, cy-80, 'A');
-      make(cx-140, cy-60, cx-140, cy+60, 'B');
-      make(cx-100, cy+80, cx+100, cy+80, 'C');
-      make(cx+140, cy-60, cx+140, cy+60, 'D');
+      const px=(v)=> v*2; const w=px(Number(A||0)), h=px(Number(B||0));
+      const rad=(rotDeg||0)*Math.PI/180, cos=Math.cos(rad), sin=Math.sin(rad);
+      const locToWorld=(lx,ly)=>({ x: cx + lx*cos - ly*sin, y: cy + lx*sin + ly*cos });
+      const m=28; // outward offset
+      const label=(x,y,txt)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x',String(x)); t.setAttribute('y',String(y)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=txt; parent.appendChild(t); };
+      // A top
+      { const p=locToWorld(0, -h/2 - m); label(p.x, p.y, 'A'); }
+      // B left
+      { const p=locToWorld(-w/2 - m, 0); label(p.x, p.y, 'B'); }
+      // C bottom
+      { const p=locToWorld(0, h/2 + m); label(p.x, p.y, 'C'); }
+      // D right
+      { const p=locToWorld(w/2 + m, 0); label(p.x, p.y, 'D'); }
     }
 
   // (shape selection handled below in a single place)
