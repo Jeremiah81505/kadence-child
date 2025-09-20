@@ -38,6 +38,37 @@
                 <button class="kc-tile" type="button" data-ct-shape="l">L Shape</button>
                 <button class="kc-tile" type="button" data-ct-shape="u">U Shape</button>
               </div>
+              <section class="kc-section">
+                <h3>Measurements</h3>
+                <div class="kc-meas">
+                  <div class="row">
+                    <label><span>Width (A)</span><input type="number" min="0" step="1" data-ct-len="A" /></label>
+                  </div>
+                  <div class="row">
+                    <label><span>Depth (B)</span><input type="number" min="0" step="1" data-ct-len="B" /></label>
+                  </div>
+                  <div class="row" data-row-c>
+                    <label><span>Opening Width (C)</span><input type="number" min="0" step="1" data-ct-len="C" /></label>
+                  </div>
+                  <div class="row" data-row-d>
+                    <label><span>Opening Depth (D)</span><input type="number" min="0" step="1" data-ct-len="D" /></label>
+                  </div>
+                </div>
+              </section>
+
+              <section class="kc-section">
+                <h3>Backsplash</h3>
+                <div class="kc-option-grid">
+                  <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="A" /> Top (A)</label>
+                  <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="B" /> Left (B)</label>
+                  <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="C" /> Bottom (C)</label>
+                  <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="D" /> Right (D)</label>
+                </div>
+                <div class="kc-fieldset">
+                  <div class="kc-field-label">Backsplash Height (inches)</div>
+                  <input type="number" class="kc-input" min="0" max="24" step="1" data-ct-bs-height />
+                </div>
+              </section>
             </div>
             
           </div>
@@ -70,38 +101,7 @@
       </section>
     </div>
 
-    <div class="kc-ct-options" data-ct-options>
-      <section class="kc-section">
-        <h3>Measurements</h3>
-        <div class="kc-meas">
-          <div class="row">
-            <label><span>Width (A)</span><input type="number" min="0" step="1" data-ct-len="A" /></label>
-          </div>
-          <div class="row">
-            <label><span>Depth (B)</span><input type="number" min="0" step="1" data-ct-len="B" /></label>
-          </div>
-          <div class="row" data-row-c>
-            <label><span>Opening Width (C)</span><input type="number" min="0" step="1" data-ct-len="C" /></label>
-          </div>
-          <div class="row" data-row-d>
-            <label><span>Opening Depth (D)</span><input type="number" min="0" step="1" data-ct-len="D" /></label>
-          </div>
-        </div>
-      </section>
-
-      <section class="kc-section">
-        <h3>Backsplash</h3>
-        <div class="kc-option-grid">
-          <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="A" /> Top (A)</label>
-          <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="B" /> Left (B)</label>
-          <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="C" /> Bottom (C)</label>
-          <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="D" /> Right (D)</label>
-        </div>
-        <div class="kc-fieldset">
-          <div class="kc-field-label">Backsplash Height (inches)</div>
-          <input type="number" class="kc-input" min="0" max="24" step="1" data-ct-bs-height />
-        </div>
-      </section>
+  <div class="kc-ct-options" data-ct-options>
       <section class="kc-section">
         <h3>Material Quote Request options</h3>
         <div class="kc-option-grid" role="group" aria-label="Material Quote Request options">
