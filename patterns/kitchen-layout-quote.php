@@ -19,6 +19,12 @@
   <button class="kc-btn" type="button" data-kc-zoom-out>Zoom -</button>
   <button class="kc-btn" type="button" data-kc-fit>Fit</button>
       </div>
+      <!-- Presets moved up to toolbar per request -->
+      <div class="kc-group">
+        <button class="kc-btn" type="button" data-kc-preset="island">Island</button>
+        <button class="kc-btn" type="button" data-kc-preset="galley">Galley</button>
+        <button class="kc-btn" type="button" data-kc-preset="ushape">U-Shape</button>
+      </div>
       <div class="kc-group">
   <button class="kc-btn" type="button" data-kc-reset>Reset</button>
   <button class="kc-btn" type="button" data-kc-delete-all>Delete All</button>

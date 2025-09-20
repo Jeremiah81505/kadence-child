@@ -1,5 +1,6 @@
 /* Kitchen Layout Designer styles */
 .kc-kitchen-designer{--kc-bg:#0f1420;--kc-surface:#182235;--kc-accent:#3ea6ff;--kc-accent-2:#7de2cf;--kc-danger:#ff6b6b;--kc-grid:#24324a;--kc-grid-strong:#2e3f5d;--kc-text:#f5f8ff;color:var(--kc-text);background:linear-gradient(180deg,#101622,#0f1420);border:1px solid rgba(255,255,255,.12);border-radius:16px;box-shadow:0 12px 36px rgba(0,0,0,.28);overflow:hidden}
+.kc-kitchen-designer, .kc-kd-aside, .kc-kd-aside h3, .kc-kd-aside label, .kc-kd-aside dt, .kc-kd-aside dd, .kc-kd-toolbar{color:#ffffff}
 .kc-kitchen-designer.is-contained{max-width:1850px;margin:0 auto}
 /* Ensure Gutenberg alignfull wrapper respects our max width and centers */
 .wp-block-group.alignfull.kc-kitchen-designer.is-contained{width:auto;max-width:1850px;margin-left:auto;margin-right:auto}
@@ -23,6 +24,8 @@
 .kc-kd-aside{position:relative}
 .kc-kd-aside .kc-card:not(.kc-sticky){max-height:unset;overflow:visible}
 .kc-kd-aside .kc-tabs{margin-top:-4px;margin-bottom:4px}
+.kc-kd-aside .kc-tabs{overflow:visible}
+.kc-kd-aside .kc-tabs .kc-btn{color:#fff}
 .kc-acc-mobile{display:none}
 .kc-kd-aside [data-kc-panel]{display:block}
 .kc-kd-aside [data-kc-panel].is-hidden{display:none}
