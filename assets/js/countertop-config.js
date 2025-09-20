@@ -181,7 +181,7 @@
           }
         }
         // set values and wire
-        all('[data-kc-inline]', inlineHost).forEach(inp=>{
+  all('[data-kc-inline]', inlineHost).forEach(inp=>{
           const k = inp.getAttribute('data-kc-inline');
           if (k && k.startsWith('P')){
             // polygon edge length from points
@@ -192,9 +192,12 @@
           } else {
             inp.value = String(s.len[k]||0);
           }
+          let rafId=0;
+          const schedule = ()=>{ cancelAnimationFrame(rafId); rafId = requestAnimationFrame(()=>{ renderInlineInputs(); updateSummary(); }); };
           inp.addEventListener('input', ()=>{
-            let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0; s.len[k]=v; draw(); updateOversize(); updateSummary(); save();
+            let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0; s.len[k]=v; schedule(); save();
           });
+          inp.addEventListener('blur', ()=>{ draw(); });
         });
       };
 
@@ -680,7 +683,7 @@
     function labelDims(parent, cx, cy, A, B, rotDeg){
       const ns='http://www.w3.org/2000/svg';
       const px=(v)=> v*2; const w=px(Number(A||0)), h=px(Number(B||0));
-      const m=28; // outward offset (parent group handles rotation)
+  const m=22; // outward offset (parent group handles rotation)
       const label=(x,y,txt)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x',String(x)); t.setAttribute('y',String(y)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=txt; parent.appendChild(t); };
       // A top
       label(cx + 0, cy - h/2 - m, 'A');
@@ -698,12 +701,31 @@
   all('[data-ct-rotate-left]', root).forEach(el=> el.addEventListener('click', ()=>{ if(active<0) return; shapes[active].rot = (shapes[active].rot + 270)%360; draw(); }));
   all('[data-ct-rotate-right]', root).forEach(el=> el.addEventListener('click', ()=>{ if(active<0) return; shapes[active].rot = (shapes[active].rot + 90)%360; draw(); }));
 
-  all('[data-ct-len]', root).forEach(inp=>{
-  inp.addEventListener('input', ()=>{
-    if(active<0) return;
-    const k = inp.getAttribute('data-ct-len');
-  let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0; shapes[active].len[k] = v; draw(); updateOversize(); updateSummary(); save();
-      });
+    // Delegated input handling for dynamic measurement fields
+    root.addEventListener('input', (ev)=>{
+      const inp = ev.target;
+      if (!(inp instanceof HTMLElement)) return;
+      if (!inp.matches('[data-ct-len]')) return;
+      if (active<0) return;
+      const s = shapes[active];
+      const k = inp.getAttribute('data-ct-len');
+      let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0;
+      if (s.type==='rect' && (k==='C' || k==='D')){
+        // mirror to A/B
+        if (k==='C') s.len.A = v; else s.len.B = v;
+      } else if (s.type==='poly' && k && k.startsWith('P')){
+        const idx = parseInt(k.slice(1)||'0',10);
+        const pts = Array.isArray(s.points)? s.points: [];
+        if (idx>=0 && pts.length>=2){
+          const n = pts.length; const a = pts[idx]; const b = pts[(idx+1)%n];
+          const vx = (b.x - a.x); const vy = (b.y - a.y); const cur = Math.hypot(vx,vy)||1; const ux = vx/cur; const uy = vy/cur;
+          // set new B along A-> dir with length v
+          pts[(idx+1)%n] = { x: Math.round(a.x + ux * v), y: Math.round(a.y + uy * v) };
+        }
+      } else {
+        s.len[k] = v;
+      }
+      draw(); updateOversize(); updateSummary(); save();
     });
 
     function updateOversize(){
@@ -761,7 +783,7 @@
             const n = (Array.isArray(cur.points)?cur.points.length:0); for(let i=0;i<n;i++){ const letter=String.fromCharCode(65+i); addRow(`Side ${letter}`, `P${i}`); }
           }
         }
-        all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); const v=(cur.len && k in cur.len) ? cur.len[k] : (k && k.startsWith('P') ? Math.round(0) : 0); inp.value = String(v||0); });
+  all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); let v=0; if (cur.type==='poly' && k && k.startsWith('P')){ const idx=parseInt(k.slice(1)||'0',10); const pts=cur.points||[]; if (pts.length>=2){ const a=pts[idx], b=pts[(idx+1)%pts.length]; v=Math.round(Math.hypot((b.x-a.x),(b.y-a.y))); } } else { v = (cur.len && k in cur.len) ? cur.len[k] : 0; } const activeEl=document.activeElement; inp.value = String(v||0); if (activeEl===inp) inp.focus(); });
         all('[data-ct-wall]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-wall'); inp.checked = !!cur.wall[k]; });
         all('[data-ct-backsplash]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-backsplash'); inp.checked = !!cur.bs[k]; });
         all('[data-ct-shape]', root).forEach(btn=> btn.classList.toggle('is-active', btn.getAttribute('data-ct-shape')===cur.type));
