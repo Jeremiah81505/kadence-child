@@ -107,12 +107,12 @@
 
     <div class="kc-ct-options" data-ct-options>
       <section class="kc-section">
-        <h3>Material</h3>
-        <div class="kc-option-grid" role="radiogroup" aria-label="Material">
-          <button class="kc-opt is-active" type="button" data-ct-radio="material" data-value="Laminate">Laminate</button>
-          <button class="kc-opt" type="button" data-ct-radio="material" data-value="Solid Surface">Solid Surface</button>
-          <button class="kc-opt" type="button" data-ct-radio="material" data-value="Quartz">Quartz</button>
-          <button class="kc-opt" type="button" data-ct-radio="material" data-value="Granite">Granite</button>
+        <h3>Material Quote Request options</h3>
+        <div class="kc-option-grid" role="group" aria-label="Material Quote Request options">
+          <button class="kc-opt is-active" type="button" data-ct-multi="material" data-value="Laminate" aria-pressed="true">Laminate</button>
+          <button class="kc-opt" type="button" data-ct-multi="material" data-value="Solid Surface" aria-pressed="false">Solid Surface</button>
+          <button class="kc-opt" type="button" data-ct-multi="material" data-value="Quartz" aria-pressed="false">Quartz</button>
+          <button class="kc-opt" type="button" data-ct-multi="material" data-value="Granite" aria-pressed="false">Granite</button>
         </div>
       </section>
 
