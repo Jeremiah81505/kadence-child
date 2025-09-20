@@ -9,7 +9,9 @@
 .kc-ct-actions .kc-btn{appearance:none;background:#eef2ff;border:1px solid #c7d3e8;color:#21306a;border-radius:6px;padding:8px 12px;font:600 13px/1.2 system-ui;cursor:pointer}
 .kc-ct-actions .kc-btn[disabled]{opacity:.4;cursor:not-allowed}
 
-.kc-ct-grid{display:grid;grid-template-columns:1fr 380px;gap:16px;padding:16px}
+.kc-ct-grid{display:grid;grid-template-columns:1fr 380px;grid-template-areas:'preview side';gap:16px;padding:16px}
+.kc-ct-right{grid-area:preview}
+.kc-ct-left{grid-area:side}
 .kc-card{border:0;padding:12px;background:#ffffff;border-radius:10px;box-shadow:0 2px 10px rgba(25,48,106,.08)}
 .kc-card h3{margin:.2em 0 .6em;font:800 16px/1.2 system-ui;color:#21306a}
 
@@ -41,7 +43,7 @@
 .kc-ct-alert .ico{width:22px;height:22px;border-radius:6px;background:#ff9f43;color:#fff;font:700 14px/22px system-ui;text-align:center}
 
 @media (max-width: 960px){
-  .kc-ct-grid{grid-template-columns:1fr}
+  .kc-ct-grid{grid-template-columns:1fr;grid-template-areas:'preview' 'side'}
   .kc-ct-right{border-left:none}
 }
 
