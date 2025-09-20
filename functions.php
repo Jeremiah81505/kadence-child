@@ -151,41 +151,24 @@ add_action( 'wp_enqueue_scripts', function() {
   // Provide a flag to tone down hero motion without affecting carousel
   wp_localize_script( 'kc-hero-motion', 'KC_HERO', array( 'minimal' => true ) );
 
-  // Kitchen designer assets: only when the page contains the pattern/container
-  $should_load_kitchen = false;
+  // Countertop configurator assets (HD-like)
+  $should_load_config = false;
   if ( is_singular() ) {
     global $post; $html = $post ? (string) $post->post_content : '';
-    $should_load_kitchen = ( false !== strpos( $html, 'kc-kitchen-designer' ) ) || ( false !== strpos( $html, 'kadence-child/kitchen-layout-quote' ) );
+    $should_load_config = ( false !== strpos( $html, 'kc-ct-configurator' ) ) || ( false !== strpos( $html, 'kadence-child/countertop-configurator' ) );
   }
-  // Also allow force via query for testing
-  if ( isset( $_GET['kc_kitchen'] ) && $_GET['kc_kitchen'] == '1' ) { $should_load_kitchen = true; }
-  if ( $should_load_kitchen ) {
-    wp_enqueue_style( 'kc-kitchen-css', get_stylesheet_directory_uri() . '/assets/css/kitchen-layout.css', array(), kc_asset_ver( 'assets/css/kitchen-layout.css' ) );
-    wp_enqueue_script( 'kc-kitchen-js', get_stylesheet_directory_uri() . '/assets/js/kitchen-layout.js', array(), kc_asset_ver( 'assets/js/kitchen-layout.js' ), true );
-    // Inline critical overrides to bypass stubborn caches and enforce layout width
-    $kc_inline_css = '/* kc-inline ' . esc_html( kc_asset_ver( 'assets/css/kitchen-layout.css' ) ) . ' */\n'
-      . '.wp-block-group.alignfull.kc-kitchen-designer.is-contained{width:auto;max-width:1850px;margin-left:auto;margin-right:auto}\n'
-      . '.wp-block-group.alignwide.kc-kitchen-designer.is-contained{width:auto!important;max-width:1850px!important;margin-left:auto;margin-right:auto}\n'
-      . '.kc-kd-wrap{grid-template-columns:1fr 560px}\n'
-      . '.kc-tabs{display:flex;gap:10px;flex-wrap:nowrap;overflow-x:auto}\n'
-      . '.kc-tabs .kc-btn{min-width:140px;white-space:nowrap;flex:0 0 auto}\n';
-    wp_add_inline_style( 'kc-kitchen-css', $kc_inline_css );
+  if ( isset( $_GET['kc_ct'] ) && $_GET['kc_ct'] == '1' ) { $should_load_config = true; }
+  if ( $should_load_config ) {
+    wp_enqueue_style( 'kc-ct-css', get_stylesheet_directory_uri() . '/assets/css/countertop-config.css', array(), kc_asset_ver( 'assets/css/countertop-config.css' ) );
+    wp_enqueue_script( 'kc-ct-js', get_stylesheet_directory_uri() . '/assets/js/countertop-config.js', array(), kc_asset_ver( 'assets/js/countertop-config.js' ), true );
   }
 }, 99 );
 
 // Load kitchen designer assets inside the block editor when pattern block is present
 add_action( 'enqueue_block_editor_assets', function() {
-  // Cheap detection: always load in editor to avoid missing styles in pattern preview
-  wp_enqueue_style( 'kc-kitchen-css', get_stylesheet_directory_uri() . '/assets/css/kitchen-layout.css', array(), kc_asset_ver( 'assets/css/kitchen-layout.css' ) );
-  wp_enqueue_script( 'kc-kitchen-js', get_stylesheet_directory_uri() . '/assets/js/kitchen-layout.js', array(), kc_asset_ver( 'assets/js/kitchen-layout.js' ), true );
-  // Editor inline overrides mirror frontend to ensure accurate preview
-  $kc_inline_css = '/* kc-inline ' . esc_html( kc_asset_ver( 'assets/css/kitchen-layout.css' ) ) . ' */\n'
-    . '.wp-block-group.alignfull.kc-kitchen-designer.is-contained{width:auto;max-width:1850px;margin-left:auto;margin-right:auto}\n'
-    . '.wp-block-group.alignwide.kc-kitchen-designer.is-contained{width:auto!important;max-width:1850px!important;margin-left:auto;margin-right:auto}\n'
-    . '.kc-kd-wrap{grid-template-columns:1fr 560px}\n'
-    . '.kc-tabs{display:flex;gap:10px;flex-wrap:nowrap;overflow-x:auto}\n'
-    . '.kc-tabs .kc-btn{min-width:140px;white-space:nowrap;flex:0 0 auto}\n';
-  wp_add_inline_style( 'kc-kitchen-css', $kc_inline_css );
+  // Editor: always load configurator assets if editing
+  wp_enqueue_style( 'kc-ct-css', get_stylesheet_directory_uri() . '/assets/css/countertop-config.css', array(), kc_asset_ver( 'assets/css/countertop-config.css' ) );
+  wp_enqueue_script( 'kc-ct-js', get_stylesheet_directory_uri() . '/assets/js/countertop-config.js', array(), kc_asset_ver( 'assets/js/countertop-config.js' ), true );
 }, 20 );
 
 /**
@@ -322,8 +305,6 @@ add_action( 'send_headers', function( $wp ) {
     header( 'X-KC-Hero-CSS: ' . kc_asset_ver( 'assets/css/hero-motion.css' ) );
     header( 'X-KC-Hero-JS: ' . kc_asset_ver( 'assets/js/hero-ultimate-motion.js' ) );
     header( 'X-KC-Carousel-CSS: ' . kc_asset_ver( 'assets/css/carousel-adv.css' ) );
-  header( 'X-KC-Kitchen-CSS: ' . kc_asset_ver( 'assets/css/kitchen-layout.css' ) );
-  header( 'X-KC-Kitchen-JS: ' . kc_asset_ver( 'assets/js/kitchen-layout.js' ) );
   }
   // Strongly discourage caches when diagnosing
   header( 'Cache-Control: no-cache, no-store, must-revalidate, max-age=0' );

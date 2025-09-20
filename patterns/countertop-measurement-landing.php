@@ -49,8 +49,8 @@
   <section id="designer" class="kc-section kc-designer">
     <h2>Your Layout</h2>
     <p class="kc-muted">Add rectangles or an L‑shape, then drag to position. Use Presets for a quick start. The area and edge length are calculated for you.</p>
-  <!-- Reuse our Kitchen Designer pattern -->
-  <!-- wp:pattern {"slug":"kadence-child/kitchen-layout-quote"} /-->
+  <!-- Insert our Countertop Configurator pattern -->
+  <!-- wp:pattern {"slug":"kadence-child/countertop-configurator"} /-->
   </section>
 
   <section class="kc-section kc-measurements">
