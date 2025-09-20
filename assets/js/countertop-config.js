@@ -11,6 +11,7 @@
   // Simple multi-shape state
   let shapes = [];
   let active = -1;
+  let hover = -1;
   // Global options state (not per shape for now)
   const opts = {
     material: ['Laminate'], edge: 'Bevel',
@@ -33,8 +34,8 @@
       hitAreas = [];
 
   shapes.forEach((cur, idx)=>{
-        const centerX = cur.pos?.x ?? 300;
-        const centerY = cur.pos?.y ?? 180;
+  const centerX = cur.pos?.x ?? 300;
+  const centerY = cur.pos?.y ?? 300;
         const len = cur.len; const shape = cur.type; const rotation = cur.rot;
 
         if (shape==='rect'){
@@ -183,13 +184,32 @@
           labelDims(rotG, centerX, centerY, aIn, bIn);
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
         }
+
+        // end forEach
       });
+
+      // Draw hover highlight if any
+      if (hover >= 0){
+        const ha = hitAreas.find(h=> h.idx===hover);
+        if (ha){
+          const rotG = document.createElementNS(ns, 'g');
+          rotG.setAttribute('transform', `rotate(${ha.rot} ${ha.cx} ${ha.cy})`);
+          const hi = document.createElementNS(ns,'rect');
+          hi.setAttribute('x', String(ha.cx - ha.w/2 - 6));
+          hi.setAttribute('y', String(ha.cy - ha.h/2 - 6));
+          hi.setAttribute('width', String(ha.w + 12));
+          hi.setAttribute('height', String(ha.h + 12));
+          hi.setAttribute('fill','none'); hi.setAttribute('stroke','#8aa3ff'); hi.setAttribute('stroke-width','2'); hi.setAttribute('stroke-dasharray','4 4'); hi.setAttribute('opacity','0.8');
+          rotG.appendChild(hi);
+          gRoot.appendChild(rotG);
+        }
+      }
     }
 
-  function labelDims(parent, cx, cy, a, b){
-      // A top, B left, C bottom, D right (like the screenshot)
+    // Measurement label guides around the shape
+    function labelDims(parent, cx, cy, A, B){
+      const ns='http://www.w3.org/2000/svg';
       const make = (x1,y1,x2,y2,txt)=>{
-        const ns='http://www.w3.org/2000/svg';
         const g=document.createElementNS(ns,'g');
         const line=document.createElementNS(ns,'line');
         line.setAttribute('x1',x1); line.setAttribute('y1',y1); line.setAttribute('x2',x2); line.setAttribute('y2',y2);
@@ -197,9 +217,10 @@
         const t=document.createElementNS(ns,'text');
         t.setAttribute('x', (x1+x2)/2); t.setAttribute('y', (y1+y2)/2 - 6);
         t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=txt;
-  g.appendChild(line); g.appendChild(t); parent.appendChild(g);
+        g.appendChild(line); g.appendChild(t); parent.appendChild(g);
       };
       const px=(v)=> v*2;
+      // Use the provided A/B values for text but position with fixed offsets around center
       make(cx-100, cy-80, cx+100, cy-80, 'A');
       make(cx-140, cy-60, cx-140, cy+60, 'B');
       make(cx-100, cy+80, cx+100, cy+80, 'C');
@@ -366,6 +387,7 @@
     let hitAreas = [];
     (function enableDrag(){
       let dragging=false, start={}, orig={}, dragIdx=-1;
+      hover = -1;
       const svgEl = sel('[data-ct-svg]', root);
       function getPoint(ev){
         const rect = svgEl.getBoundingClientRect();
@@ -376,26 +398,35 @@
         const ny = (cY - rect.top) / rect.height; // 0..1
         return { x: vb.x + nx * vb.width, y: vb.y + ny * vb.height };
       }
-      function pointInRotRect(px, py, cx, cy, w, h, rotDeg){
+      function pointInRotRect(px, py, cx, cy, w, h, rotDeg, pad=0){
         const rad = -rotDeg * Math.PI/180; // inverse rotate
         const cos = Math.cos(rad), sin = Math.sin(rad);
         const dx = px - cx, dy = py - cy;
         const lx = dx*cos - dy*sin; const ly = dx*sin + dy*cos;
-        return Math.abs(lx) <= w/2 && Math.abs(ly) <= h/2;
+        return Math.abs(lx) <= (w/2 + pad) && Math.abs(ly) <= (h/2 + pad);
       }
-      function pickIndex(pt){
-        for (let i=hitAreas.length-1;i>=0;i--){ const h=hitAreas[i]; if (pointInRotRect(pt.x, pt.y, h.cx, h.cy, h.w, h.h, h.rot)) return h.idx; }
+      function pickIndex(pt, pad=24){
+        for (let i=hitAreas.length-1;i>=0;i--){ const h=hitAreas[i]; if (pointInRotRect(pt.x, pt.y, h.cx, h.cy, h.w, h.h, h.rot, pad)) return h.idx; }
         return -1;
       }
       const onDown=(ev)=>{
         const pt=getPoint(ev);
-        const idx=pickIndex(pt);
+        const idx=pickIndex(pt, 28);
         if (idx!==-1){
           if (idx!==active){ active=idx; shapeLabel.textContent=shapes[active].name; renderTabs(); syncInputs(); draw(); }
           dragging=true; start=pt; orig={...shapes[active].pos}; dragIdx=active; ev.preventDefault();
         }
       };
-      const onMove=(ev)=>{ if(!dragging) return; const pt=getPoint(ev); const dx=pt.x-start.x, dy=pt.y-start.y; shapes[dragIdx].pos={x:orig.x+dx,y:orig.y+dy}; draw(); };
+      const onMove=(ev)=>{
+        const pt=getPoint(ev);
+        if(!dragging){
+          const idx=pickIndex(pt, 28);
+          if (hover!==idx){ hover=idx; draw(); }
+          svgEl.style.cursor = hover!==-1 ? 'move' : 'default';
+          return;
+        }
+        const dx=pt.x-start.x, dy=pt.y-start.y; shapes[dragIdx].pos={x:orig.x+dx,y:orig.y+dy}; draw();
+      };
       const onUp=()=>{ if(!dragging) return; dragging=false; dragIdx=-1; save(); };
       svgEl.addEventListener('mousedown', onDown);
       window.addEventListener('mousemove', onMove);
