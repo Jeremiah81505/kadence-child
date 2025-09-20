@@ -55,27 +55,35 @@
         if (idx===active) gRoot.appendChild(g), g.appendChild(c);
       };
 
-  const labelNumbers=(parent, cx, cy, cur, dims)=>{
+      const labelNumbers=(parent, cx, cy, cur, dims)=>{
         const mk=(x,y,txt)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x',String(x)); t.setAttribute('y',String(y)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','14'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; parent.appendChild(t); };
         const a=Number(dims.A||cur.len?.A||0), b=Number(dims.B||cur.len?.B||0), c=Number(dims.C||cur.len?.C||0), d=Number(dims.D||cur.len?.D||0);
-        // outer labels
+        // common: top A number
         mk(cx, cy - (px(b)/2) - 10, `${a}\"`);
-        mk(cx - (px(a)/2) - 16, cy, `B`);
-        mk(cx + (px(a)/2) + 16, cy, `D`);
-        // add numeric ticks for B and D along the mid points
-        const ty = cy - (px(b)/2) + px(b)/2; // center Y
-        const leftTxt=document.createElementNS(ns,'text'); leftTxt.setAttribute('x', String(cx - (px(a)/2) - 22)); leftTxt.setAttribute('y', String(ty)); leftTxt.setAttribute('text-anchor','end'); leftTxt.setAttribute('font-size','12'); leftTxt.textContent = `${b}\"`; parent.appendChild(leftTxt);
-        const rightTxt=document.createElementNS(ns,'text'); rightTxt.setAttribute('x', String(cx + (px(a)/2) + 22)); rightTxt.setAttribute('y', String(ty)); rightTxt.setAttribute('text-anchor','start'); rightTxt.setAttribute('font-size','12'); rightTxt.textContent = `${d}\"`; parent.appendChild(rightTxt);
-        // inner where applicable
-        if (cur.type==='u'){
-          const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
-          const innerTopY = cy - bPx/2 + dPx; const innerLeftX = cx - aPx/2 + px(26); // approx offset for readability
-          mk(cx, innerTopY - 6, `${c}\"`);
-          mk(innerLeftX - 20, cy + (bPx/2) - (bPx - dPx)/2, `${b-d}\"`);
+        if (cur.type==='rect'){
+          // Only two measurements for rect: A (length) and B (width)
+          const ty = cy; const leftTxt=document.createElementNS(ns,'text'); leftTxt.setAttribute('x', String(cx - (px(a)/2) - 22)); leftTxt.setAttribute('y', String(ty)); leftTxt.setAttribute('text-anchor','end'); leftTxt.setAttribute('font-size','12'); leftTxt.textContent = `${b}\"`; parent.appendChild(leftTxt);
+          return;
         }
         if (cur.type==='l'){
-          // show inner legs
-          mk(cx - 30, cy + 14, `${d||0}\"`);
+          // Segment-aware: show C along bottom inner run (length c), D along inner vertical (height d), and B at left outer
+          const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
+          // left outer B
+          const leftTxt=document.createElementNS(ns,'text'); leftTxt.setAttribute('x', String(cx - (aPx/2) - 22)); leftTxt.setAttribute('y', String(cy)); leftTxt.setAttribute('text-anchor','end'); leftTxt.setAttribute('font-size','12'); leftTxt.textContent = `${b}\"`; parent.appendChild(leftTxt);
+          // C bottom inner segment centered between left edge and inner notch start
+          const cMidX = cx - aPx/2 + cPx/2; const cY = cy + bPx/2 + 14; mk(cMidX, cY, `${c}\"`);
+          // D inner vertical centered from top to inner notch depth
+          const dX = cx - aPx/2 + cPx; const dMidY = cy - bPx/2 + dPx/2; mk(dX - 16, dMidY, `${d}\"`);
+          return;
+        }
+        if (cur.type==='u'){
+          const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
+          // Outer left B
+          const leftTxt=document.createElementNS(ns,'text'); leftTxt.setAttribute('x', String(cx - (aPx/2) - 22)); leftTxt.setAttribute('y', String(cy)); leftTxt.setAttribute('text-anchor','end'); leftTxt.setAttribute('font-size','12'); leftTxt.textContent = `${b}\"`; parent.appendChild(leftTxt);
+          // Inner top C
+          const innerTopY = cy - bPx/2 + dPx; mk(cx, innerTopY - 6, `${c}\"`);
+          // F/G (inner verticals) label near centers, E/H (returns) along bottom will be covered by inline inputs; labels optional here
+          return;
         }
       };
 
@@ -83,11 +91,11 @@
       const renderInlineInputs = () =>{
         if (!inlineHost) return;
         inlineHost.innerHTML = '';
-  if (active<0 || !shapes[active]) return;
+        if (active<0 || !shapes[active]) return;
   const s = shapes[active];
   // hide inline inputs for polygons (vertex editing handles are used instead)
   if (s.type==='poly') return;
-        const {A=0,B=0,C=0,D=0} = s.len||{};
+        const {A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0} = s.len||{};
         const toScreen = (x,y)=>{ const rect = svg.getBoundingClientRect(); const vb = svg.viewBox?.baseVal || {x:0,y:0,width:rect.width,height:rect.height}; return { left: rect.left + (x - vb.x)/vb.width * rect.width, top: rect.top + (y - vb.y)/vb.height * rect.height }; };
         const add = (label, key, x, y)=>{
           const pos = toScreen(x,y);
@@ -102,13 +110,30 @@
         { const p = locToWorld(0, -b/2 - 14); add('A','A', p.x, p.y); }
         // B left center
         { const p = locToWorld(-a/2 - 24, 0); add('B','B', p.x, p.y); }
-        // D right center
-        { const p = locToWorld(a/2 + 24, 0); add('D','D', p.x, p.y); }
-        if (s.type==='u' || s.type==='l'){
+        if (s.type==='rect'){
+          // Only A/B for rectangles
+        } else if (s.type==='l'){
           const dPx = D*2; const cPx=C*2;
-          const innerTop = -b/2 + dPx; const innerX = 0;
-          { const p = locToWorld(innerX, innerTop - 18); add('C','C', p.x, p.y); }
-          { const p = locToWorld(-a/2 + (a - cPx)/2 - 22, -b/2 + dPx + (b - dPx)/2); add('D','D', p.x, p.y); }
+          const innerTop = -b/2 + dPx;
+          // C at bottom inner run center
+          { const p = locToWorld(-a/2 + cPx/2, b/2 + 18); add('C','C', p.x, p.y); }
+          // D at inner vertical center (left side of notch)
+          { const p = locToWorld(-a/2 + cPx - 18, (-b/2 + dPx)/2); add('D','D', p.x, p.y); }
+        } else if (s.type==='u'){
+          const dPx = D*2; const cPx=C*2; const ePx=E*2, hPx=H*2; const fPx=F*2, gPx=G*2;
+          const innerTop = -b/2 + dPx;
+          // C at inner top center
+          { const p = locToWorld(0, innerTop - 18); add('C','C', p.x, p.y); }
+          // D top offset input (depth)
+          { const p = locToWorld(-a/2 + (a - cPx)/2, innerTop - 42); add('D','D', p.x, p.y); }
+          // E left bottom return mid
+          { const p = locToWorld(-a/2 + ePx/2, b/2 + 18); add('E','E', p.x, p.y); }
+          // H right bottom return mid
+          { const p = locToWorld(a/2 - hPx/2, b/2 + 18); add('H','H', p.x, p.y); }
+          // F left inner vertical mid
+          { const p = locToWorld(-a/2 + (a - cPx)/2 - 22, (innerTop + b/2)/2); add('F','F', p.x, p.y); }
+          // G right inner vertical mid
+          { const p = locToWorld(a/2 - (a - cPx)/2 + 22, (innerTop + b/2)/2); add('G','G', p.x, p.y); }
         }
         // set values and wire
         all('[data-kc-inline]', inlineHost).forEach(inp=>{
@@ -285,6 +310,19 @@
   } else if (shape==='u'){
           // Use A (outer width), B (outer height), C (inner opening width), D (inner opening depth)
           let aIn = Number(len.A||60), bIn = Number(len.B||25), cIn = Number(len.C||20), dIn = Number(len.D||10);
+          // Derive/normalize E,F,G,H if present (returns and inner verticals)
+          let eIn = Number(len.E != null ? len.E : Math.round((aIn - cIn)/2));
+          let hIn = Number(len.H != null ? len.H : Math.round((aIn - cIn)/2));
+          let fIn = Number(len.F != null ? len.F : Math.max(0, bIn - dIn));
+          let gIn = Number(len.G != null ? len.G : Math.max(0, bIn - dIn));
+          // Keep consistency: C = A - (E+H), D = B - min(F,G); enforce bounds
+          if (eIn<0) eIn=0; if (hIn<0) hIn=0; if (eIn + hIn >= aIn) { const spare=aIn-1; const half=Math.max(0, Math.floor(spare/2)); eIn=half; hIn=spare-half; }
+          cIn = Math.max(1, aIn - (eIn + hIn));
+          const innerH = Math.max(0, Math.min(fIn,gIn));
+          dIn = Math.max(0, Math.min(bIn-1, bIn - innerH));
+          fIn = gIn = Math.max(0, bIn - dIn);
+          // write back so inline inputs stay in sync
+          cur.len.E = eIn; cur.len.H = hIn; cur.len.F = fIn; cur.len.G = gIn; cur.len.C = cIn; cur.len.D = dIn;
           // clamp to keep geometry valid
           if (cIn >= aIn) cIn = Math.max(0, aIn - 1);
           if (dIn >= bIn) dIn = Math.max(0, bIn - 1);
@@ -459,7 +497,7 @@
     });
 
     // Create shapes from panel
-    root.querySelectorAll('[data-ct-shape]').forEach(btn=>{
+  root.querySelectorAll('[data-ct-shape]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
   const type = btn.getAttribute('data-ct-shape')||'rect';
   const a = parseInt(btn.getAttribute('data-ct-len-a')||'60',10);
@@ -471,7 +509,9 @@
           const pts=[{x:-40,y:-30},{x:40,y:-30},{x:60,y:0},{x:10,y:40},{x:-30,y:20}];
           shapes.push({ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:pts, len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
         } else {
-          shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len:{A:a,B:b,C:c,D:d}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
+      const baseLen = {A:a,B:b,C:c,D:d};
+      if (type==='u'){ baseLen.E = Math.round((a - c)/2); baseLen.H = Math.round((a - c)/2); baseLen.F = Math.max(0, b - d); baseLen.G = Math.max(0, b - d); }
+      shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len:baseLen, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
         }
         active = shapes.length-1; shapeLabel.textContent = shapes[active].name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
       });
@@ -552,7 +592,7 @@
   all('[data-ct-rotate-right]', root).forEach(el=> el.addEventListener('click', ()=>{ if(active<0) return; shapes[active].rot = (shapes[active].rot + 90)%360; draw(); }));
 
   all('[data-ct-len]', root).forEach(inp=>{
-      inp.addEventListener('input', ()=>{
+  inp.addEventListener('input', ()=>{
     if(active<0) return;
     const k = inp.getAttribute('data-ct-len');
   let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0; shapes[active].len[k] = v; draw(); updateOversize(); updateSummary(); save();
@@ -807,8 +847,11 @@
             s.len.B = Math.max(1, Math.round((oLen.B||0) + dyIn));
           } else if (resizeKey==='C'){
             s.len.C = clamp(Math.round((oLen.C||0) + dxIn), 0, Math.max(0, (s.len.A||0)-1));
+            // keep E/H in sync for U
+            if (s.type==='u'){ const A=s.len.A||0; const C=s.len.C||0; const spare=Math.max(0, A - C); s.len.E = Math.round(spare/2); s.len.H = spare - s.len.E; }
           } else if (resizeKey==='D'){
             s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, (s.len.B||0)-1));
+            if (s.type==='u'){ const B=s.len.B||0; const D=s.len.D||0; const inner=Math.max(0, B - D); s.len.F = inner; s.len.G = inner; }
           } else if (resizeKey && String(resizeKey).startsWith('V-')){
             // polygon vertex drag
             const i = parseInt(String(resizeKey).split('-')[1]||'-1',10);
@@ -939,7 +982,7 @@
   const seamsEl = sel('[data-ct-sum-seams]', root);
       if (piecesEl) piecesEl.textContent = String(shapes.length);
       // area: rect A*B, U: A*B - C*(B-D), L: A*B - (A-C)*(B-D)
-      const totalSqIn = shapes.reduce((acc,s)=>{
+  const totalSqIn = shapes.reduce((acc,s)=>{
         const A=Number(s.len?.A||0), B=Number(s.len?.B||0), C=Number(s.len?.C||0), D=Number(s.len?.D||0);
         if (s.type==='u') return acc + (A*B - Math.max(0, C*Math.max(0, B-D)));
         if (s.type==='l') return acc + (A*B - Math.max(0, (A-C)*Math.max(0, B-D)));
