@@ -43,6 +43,14 @@
       const px = (v)=> v * 2; // 2px per inch roughly
       hitAreas = [];
       handles = [];
+      const drawGuideLine=(parent,x1,y1,x2,y2,txt)=>{
+        const l=document.createElementNS(ns,'line');
+        l.setAttribute('x1',String(x1)); l.setAttribute('y1',String(y1));
+        l.setAttribute('x2',String(x2)); l.setAttribute('y2',String(y2));
+        l.setAttribute('stroke','#bdc6da'); l.setAttribute('stroke-width','2');
+        parent.appendChild(l);
+        if (txt){ const t=document.createElementNS(ns,'text'); t.setAttribute('x', String((x1+x2)/2)); t.setAttribute('y', String((y1+y2)/2 - 6)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=txt; parent.appendChild(t); }
+      };
 
   const addHandle=(idx, cx, cy, rot, key)=>{
         handles.push({ idx, cx, cy, rot, key, r:8 });
@@ -244,8 +252,13 @@
             rotG.appendChild(hi);
           }
 
+          // side guides sized to A (top) and B (left)
+          const m=18;
+          // top (A)
+          drawGuideLine(rotG, centerX - w/2 + m, centerY - h/2 + m, centerX + w/2 - m, centerY - h/2 + m, 'A');
+          // left (B)
+          drawGuideLine(rotG, centerX - w/2 + m, centerY - h/2 + m, centerX - w/2 + m, centerY + h/2 - m, 'B');
           gRoot.appendChild(rotG);
-          labelDims(rotG, centerX, centerY, len.A, len.B, rotation);
           labelNumbers(rotG, centerX, centerY, cur, {A:len.A,B:len.B});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation });
           if (idx===active){
@@ -319,8 +332,17 @@
             rotG.appendChild(hi);
           }
 
+          // L-guides for A(top), B(left), C(bottom inner run), D(inner vertical)
+          const m=18;
+          // A top full width
+          drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + m, 'A');
+          // B left full height
+          drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY + b/2 - m, 'B');
+          // C bottom inner run from left to notch start
+          drawGuideLine(rotG, centerX - a/2 + m, centerY + b/2 - m, centerX - a/2 + c - m, centerY + b/2 - m, 'C');
+          // D inner vertical at notch
+          drawGuideLine(rotG, centerX - a/2 + c - m, centerY - b/2 + m, centerX - a/2 + c - m, centerY - b/2 + d - m, 'D');
           gRoot.appendChild(rotG);
-          labelDims(rotG, centerX, centerY, aIn, bIn, rotation);
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
           if (idx===active){
@@ -410,8 +432,28 @@
             rotG.appendChild(hi);
           }
 
+          // U-guides for A–H
+          const m=18;
+          const innerLeftX = centerX - a/2 + (a - c)/2; // px
+          const innerRightX = centerX + a/2 - (a - c)/2;
+          const innerTopY = centerY - b/2 + d;
+          // A top outer
+          drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + m, 'A');
+          // B left outer
+          drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY + b/2 - m, 'B');
+          // C inner top opening
+          drawGuideLine(rotG, innerLeftX + m, innerTopY + m, innerRightX - m, innerTopY + m, 'C');
+          // D inner depth (use mid of opening)
+          drawGuideLine(rotG, centerX, centerY - b/2 + m, centerX, innerTopY - m, 'D');
+          // E bottom left return
+          drawGuideLine(rotG, centerX - a/2 + m, centerY + b/2 - m, innerLeftX - m, centerY + b/2 - m, 'E');
+          // F left inner vertical
+          drawGuideLine(rotG, innerLeftX - m, innerTopY + m, innerLeftX - m, centerY + b/2 - m, 'F');
+          // G right inner vertical
+          drawGuideLine(rotG, innerRightX + m, innerTopY + m, innerRightX + m, centerY + b/2 - m, 'G');
+          // H bottom right return
+          drawGuideLine(rotG, innerRightX + m, centerY + b/2 - m, centerX + a/2 - m, centerY + b/2 - m, 'H');
           gRoot.appendChild(rotG);
-          labelDims(rotG, centerX, centerY, aIn, bIn, rotation);
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn,C:cIn,D:dIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
           if (idx===active){
@@ -456,11 +498,17 @@
 
           // labels: edge lengths (inches) at midpoints
           const labelEdge=(x1,y1,x2,y2,txt)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x', String((x1+x2)/2)); t.setAttribute('y', String((y1+y2)/2 - 6)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; gRoot.appendChild(t); };
+          // draw dynamic side guides and letters A.. as needed
+          const m=10; let letterCode=65; // 'A'
+          const drawGuide=(x1,y1,x2,y2,letTxt)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',String(x1)); l.setAttribute('y1',String(y1)); l.setAttribute('x2',String(x2)); l.setAttribute('y2',String(y2)); l.setAttribute('stroke','#bdc6da'); l.setAttribute('stroke-width','2'); gRoot.appendChild(l); const t=document.createElementNS(ns,'text'); t.setAttribute('x', String((x1+x2)/2)); t.setAttribute('y', String((y1+y2)/2 - 6)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=letTxt; gRoot.appendChild(t); };
           for (let i=0;i<ptsIn.length;i++){
             const aP = ptsIn[i]; const bP = ptsIn[(i+1)%ptsIn.length];
             const lenIn = Math.round(Math.hypot(bP.x - aP.x, bP.y - aP.y));
             const w1 = toWorld(aP.x, aP.y); const w2 = toWorld(bP.x, bP.y);
             labelEdge(w1.x,w1.y,w2.x,w2.y, `${lenIn}\"`);
+            // guide/letter sized exactly to this side
+            drawGuide(w1.x, w1.y, w2.x, w2.y, String.fromCharCode(letterCode));
+            letterCode++;
           }
 
           // active highlight: draw small handles at vertices
