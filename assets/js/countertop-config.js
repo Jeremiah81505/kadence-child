@@ -96,6 +96,8 @@
   // hide inline inputs for polygons (vertex editing handles are used instead)
   if (s.type==='poly') return;
         const {A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0} = s.len||{};
+  // base margin to pull inputs slightly away from each side
+  const M = 28; // px in viewBox units
         const toScreen = (x,y)=>{
           const svgRect = svg.getBoundingClientRect();
           const hostRect = inlineHost.getBoundingClientRect(); // within .kc-ct-preview
@@ -120,33 +122,33 @@
         const rot = s.rot||0; const rad = rot*Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad);
         const locToWorld=(lx,ly)=>({ x: cx + lx*cos - ly*sin, y: cy + lx*sin + ly*cos });
   // A at top center (always horizontal)
-  { const p = locToWorld(0, -b/2 - 14); add('A','A', p.x, p.y); }
+  { const p = locToWorld(0, -b/2 - (M+4)); add('A','A', p.x, p.y); }
   // B left center (always horizontal)
-  { const p = locToWorld(-a/2 - 24, 0); add('B','B', p.x, p.y); }
+  { const p = locToWorld(-a/2 - (M+8), 0); add('B','B', p.x, p.y); }
         if (s.type==='rect'){
           // Only A/B for rectangles
         } else if (s.type==='l'){
           const dPx = D*2; const cPx=C*2;
           const innerTop = -b/2 + dPx;
           // C at bottom inner run center (always horizontal)
-          { const p = locToWorld(-a/2 + cPx/2, b/2 + 18); add('C','C', p.x, p.y); }
+          { const p = locToWorld(-a/2 + cPx/2, b/2 + (M+4)); add('C','C', p.x, p.y); }
           // D at inner vertical center (always horizontal)
-          { const p = locToWorld(-a/2 + cPx - 18, (-b/2 + dPx)/2); add('D','D', p.x, p.y); }
+          { const p = locToWorld(-a/2 + cPx - (M+2), (-b/2 + dPx)/2); add('D','D', p.x, p.y); }
         } else if (s.type==='u'){
           const dPx = D*2; const cPx=C*2; const ePx=E*2, hPx=H*2; const fPx=F*2, gPx=G*2;
           const innerTop = -b/2 + dPx;
           // C at inner top center (always horizontal)
-          { const p = locToWorld(0, innerTop - 18); add('C','C', p.x, p.y); }
+          { const p = locToWorld(0, innerTop - M); add('C','C', p.x, p.y); }
           // D depth (always horizontal)
-          { const p = locToWorld(-a/2 + (a - cPx)/2, innerTop - 42); add('D','D', p.x, p.y); }
+          { const p = locToWorld(-a/2 + (a - cPx)/2, innerTop - (M+18)); add('D','D', p.x, p.y); }
           // E left bottom return mid (always horizontal)
-          { const p = locToWorld(-a/2 + ePx/2, b/2 + 18); add('E','E', p.x, p.y); }
+          { const p = locToWorld(-a/2 + ePx/2, b/2 + (M+4)); add('E','E', p.x, p.y); }
           // H right bottom return mid (always horizontal)
-          { const p = locToWorld(a/2 - hPx/2, b/2 + 18); add('H','H', p.x, p.y); }
+          { const p = locToWorld(a/2 - hPx/2, b/2 + (M+4)); add('H','H', p.x, p.y); }
           // F left inner vertical mid (always horizontal)
-          { const p = locToWorld(-a/2 + (a - cPx)/2 - 22, (innerTop + b/2)/2); add('F','F', p.x, p.y); }
+          { const p = locToWorld(-a/2 + (a - cPx)/2 - (M+4), (innerTop + b/2)/2); add('F','F', p.x, p.y); }
           // G right inner vertical mid (always horizontal)
-          { const p = locToWorld(a/2 - (a - cPx)/2 + 22, (innerTop + b/2)/2); add('G','G', p.x, p.y); }
+          { const p = locToWorld(a/2 - (a - cPx)/2 + (M+4), (innerTop + b/2)/2); add('G','G', p.x, p.y); }
         }
         // set values and wire
         all('[data-kc-inline]', inlineHost).forEach(inp=>{
