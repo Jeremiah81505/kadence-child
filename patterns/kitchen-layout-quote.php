@@ -98,7 +98,7 @@
               <input type="number" step="1" min="0" value="0" data-kc-input-radius>
             </label>
           </div>
-          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <div class="kc-btn-row" style="margin-top:8px">
             <button class="kc-btn" type="button" data-kc-delete>Delete Selected</button>
             <button class="kc-btn" type="button" data-kc-duplicate>Duplicate Selected</button>
             <button class="kc-btn" type="button" data-kc-swap>Swap W/D</button>
@@ -272,7 +272,7 @@
           <input type="hidden" name="kc_layout_json" data-kc-bind="layout-json">
           <input type="hidden" name="kc_area_ft2" data-kc-bind="area-ft2">
           <input type="hidden" name="kc_notes" data-kc-bind="notes">
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div class="kc-btn-row">
             <button class="kc-btn" type="button" data-kc-copy-form>Copy to Form</button>
             <button class="kc-btn" type="button" data-kc-copy-json>Copy JSON</button>
             <button class="kc-btn" type="button" data-kc-load-autosave>Load Autosave</button>
