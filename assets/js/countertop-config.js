@@ -9,8 +9,8 @@
     const actions = root;
 
   // Simple multi-shape state
-  let shapes = [ { id:'s1', name:'Shape 1', type:'rect', rot:0, pos:{x:300,y:180}, len:{A:60,B:25,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} } ];
-  let active = 0;
+  let shapes = [];
+  let active = -1;
   // Global options state (not per shape for now)
   const opts = {
     material: ['Laminate'], edge: 'Bevel',
@@ -24,7 +24,7 @@
   const STATE_KEY = 'kcCountertopConfig:v1';
 
     function draw(){
-      svg.innerHTML = '';
+  svg.innerHTML = '';
       const ns = 'http://www.w3.org/2000/svg';
       const gRoot = document.createElementNS(ns, 'g');
       svg.appendChild(gRoot);
@@ -32,7 +32,7 @@
       const px = (v)=> v * 2; // 2px per inch roughly
       hitAreas = [];
 
-      shapes.forEach((cur, idx)=>{
+  shapes.forEach((cur, idx)=>{
         const centerX = cur.pos?.x ?? 300;
         const centerY = cur.pos?.y ?? 180;
         const len = cur.len; const shape = cur.type; const rotation = cur.rot;
@@ -92,7 +92,7 @@
           labelDims(rotG, centerX, centerY, len.A, len.B);
           hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation });
 
-        } else if (shape==='l'){
+  } else if (shape==='l'){
           const a = px(len.A||60), b = px(len.B||25);
           const t = 40; // thickness for L leg visual only
           const x = centerX - a/2, y = centerY - b/2;
@@ -131,7 +131,7 @@
           labelDims(rotG, centerX, centerY, len.A, len.B);
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
 
-        } else if (shape==='u'){
+  } else if (shape==='u'){
           // Use A (outer width), B (outer height), C (inner opening width), D (inner opening depth)
           let aIn = Number(len.A||60), bIn = Number(len.B||25), cIn = Number(len.C||20), dIn = Number(len.D||10);
           // clamp to keep geometry valid
@@ -208,11 +208,12 @@
 
   // (shape selection handled below in a single place)
 
-  sel('[data-ct-rotate-left]', root)?.addEventListener('click', ()=>{ shapes[active].rot = (shapes[active].rot + 270)%360; draw(); });
-  sel('[data-ct-rotate-right]', root)?.addEventListener('click', ()=>{ shapes[active].rot = (shapes[active].rot + 90)%360; draw(); });
+  sel('[data-ct-rotate-left]', root)?.addEventListener('click', ()=>{ if(active<0) return; shapes[active].rot = (shapes[active].rot + 270)%360; draw(); });
+  sel('[data-ct-rotate-right]', root)?.addEventListener('click', ()=>{ if(active<0) return; shapes[active].rot = (shapes[active].rot + 90)%360; draw(); });
 
   all('[data-ct-len]', root).forEach(inp=>{
       inp.addEventListener('input', ()=>{
+    if(active<0) return;
     const k = inp.getAttribute('data-ct-len');
   let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0; shapes[active].len[k] = v; draw(); updateOversize(); updateSummary();
       });
@@ -230,18 +231,17 @@
     }
 
   function updateActionStates(){
-      const del = sel('[data-ct-delete]', root);
-      const rst = sel('[data-ct-reset]', root);
-      if (del) del.disabled = shapes.length <= 1;
-      if (rst) rst.disabled = false;
+  const del = sel('[data-ct-delete]', root);
+  const rst = sel('[data-ct-reset]', root);
+  if (del) del.disabled = shapes.length <= 1;
+  if (rst) rst.disabled = (active<0);
     }
 
     // Tabs handling
     const tabsWrap = sel('[data-ct-tabs]', root);
     function renderTabs(){
-      const activeId = 's' + (active+1);
       tabsWrap.innerHTML = '';
-      shapes.forEach((sh, idx)=>{
+    shapes.forEach((sh, idx)=>{
         const b=document.createElement('button'); b.className='kc-ct-tab' + (idx===active?' is-active':''); b.type='button'; b.textContent=sh.name; b.addEventListener('click', ()=>{ active=idx; shapeLabel.textContent=sh.name; syncInputs(); draw(); updateOversize(); renderTabs(); }); tabsWrap.appendChild(b);
       });
   const add=document.createElement('button'); add.className='kc-ct-tab add'; add.type='button'; add.textContent='Add A Shape'; add.addEventListener('click', ()=>{ const id='s'+(shapes.length+1); shapes.push({ id, name:'Shape '+(shapes.length+1), type:'rect', rot:0, pos:{x:300,y:180}, len:{A:60,B:25,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} }); active=shapes.length-1; shapeLabel.textContent=shapes[active].name; syncInputs(); draw(); updateOversize(); renderTabs(); updateActionStates(); updateSummary(); }); tabsWrap.appendChild(add);
@@ -250,10 +250,17 @@
 
     function syncInputs(){
       const cur = shapes[active];
-      all('[data-ct-len]', root).forEach(inp=>{ const k=inp.getAttribute('data-ct-len'); inp.value = String(cur.len[k]||0); });
-  all('[data-ct-wall]', root).forEach(inp=>{ const k=inp.getAttribute('data-ct-wall'); inp.checked = !!cur.wall[k]; });
-  all('[data-ct-backsplash]', root).forEach(inp=>{ const k=inp.getAttribute('data-ct-backsplash'); inp.checked = !!cur.bs[k]; });
-      all('[data-ct-shape]', root).forEach(btn=> btn.classList.toggle('is-active', btn.getAttribute('data-ct-shape')===cur.type));
+      if (active<0 || !cur){
+        all('[data-ct-len]', root).forEach(inp=>{ inp.value = '0'; inp.disabled = true; });
+        all('[data-ct-wall]', root).forEach(inp=>{ inp.checked = false; inp.disabled = true; });
+        all('[data-ct-backsplash]', root).forEach(inp=>{ inp.checked = false; inp.disabled = true; });
+        all('[data-ct-shape]', root).forEach(btn=> btn.classList.remove('is-active'));
+      } else {
+        all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); inp.value = String(cur.len[k]||0); });
+        all('[data-ct-wall]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-wall'); inp.checked = !!cur.wall[k]; });
+        all('[data-ct-backsplash]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-backsplash'); inp.checked = !!cur.bs[k]; });
+        all('[data-ct-shape]', root).forEach(btn=> btn.classList.toggle('is-active', btn.getAttribute('data-ct-shape')===cur.type));
+      }
       const bsH = sel('[data-ct-bs-height]', root); if (bsH) bsH.value = String(opts.bsHeight||0);
     }
 
@@ -262,7 +269,15 @@
       btn.addEventListener('click', ()=>{
         all('.kc-shape', root).forEach(b=> b.classList.remove('is-active'));
         btn.classList.add('is-active');
-        shapes[active].type = btn.getAttribute('data-ct-shape')||'rect';
+        if (active<0){
+          const id='s'+(shapes.length+1);
+          shapes.push({ id, name:'Shape '+(shapes.length+1), type:btn.getAttribute('data-ct-shape')||'rect', rot:0, pos:{x:300,y:180}, len:{A:60,B:25,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} });
+          active = shapes.length-1;
+          shapeLabel.textContent = shapes[active].name;
+          renderTabs();
+        } else {
+          shapes[active].type = btn.getAttribute('data-ct-shape')||'rect';
+        }
         draw(); updateOversize();
       });
     });
@@ -290,6 +305,7 @@
 
     // Reset/Delete actions
     sel('[data-ct-reset]', root)?.addEventListener('click', ()=>{
+      if(active<0) return;
       const cur = shapes[active];
       cur.len = {A:60,B:25,C:0,D:0};
       cur.rot = 0;
@@ -297,7 +313,7 @@
   syncInputs(); draw(); updateOversize(); updateSummary();
     });
     sel('[data-ct-delete]', root)?.addEventListener('click', ()=>{
-      if (shapes.length <= 1) return;
+      if (shapes.length <= 1) { shapes = []; active=-1; shapeLabel.textContent='No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary(); return; }
       shapes.splice(active, 1);
       if (active >= shapes.length) active = shapes.length - 1;
       shapes.forEach((s,i)=> s.name = 'Shape ' + (i+1));
@@ -469,7 +485,7 @@
     const origRenderTabs = renderTabs; renderTabs = saveAnd(renderTabs);
     const origSyncInputs = syncInputs; syncInputs = saveAnd(syncInputs);
 
-  shapeLabel.textContent = shapes[active].name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); syncOptionsUI(); updateSummary(); save();
+  shapeLabel.textContent = (active>=0 && shapes[active]) ? shapes[active].name : 'No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); syncOptionsUI(); updateSummary(); save();
   }
 
   function boot(){
