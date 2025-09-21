@@ -673,13 +673,41 @@
             const y = centerY + (lx*2)*sin + (ly*2)*cos;
             return {x,y};
           };
-          // build path
+          // build path with corner operations (clip/radius)
           const polyPath = document.createElementNS(ns, 'path');
           let dStr='';
-          ptsIn.forEach((p,i)=>{
-            const w = toWorld(p.x, p.y);
-            dStr += (i===0?`M ${w.x} ${w.y}`:` L ${w.x} ${w.y}`);
-          });
+          const nPts = ptsIn.length;
+          const getCorner = (i)=>{ const s=cur; if (!Array.isArray(s.corners)) return {mode:'square', value:0}; const c=s.corners[i]; return c||{mode:'square', value:0}; };
+          const toW=(p)=> toWorld(p.x,p.y);
+          const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t});
+          for (let i=0;i<nPts;i++){
+            const p0 = ptsIn[(i-1+nPts)%nPts];
+            const p1 = ptsIn[i];
+            const p2 = ptsIn[(i+1)%nPts];
+            const c = getCorner(i);
+            const w1 = toW(p1);
+            if (!c || c.mode==='square' || !c.value){
+              if (i===0){ dStr += `M ${w1.x} ${w1.y}`; } else { dStr += ` L ${w1.x} ${w1.y}`; }
+              continue;
+            }
+            const sz = Math.max(0, Number(c.value||0));
+            // compute points along edges from p1 towards p0 and p2 by sz inches
+            const v10 = { x: p0.x - p1.x, y: p0.y - p1.y };
+            const v12 = { x: p2.x - p1.x, y: p2.y - p1.y };
+            const l10 = Math.hypot(v10.x, v10.y)||1; const l12=Math.hypot(v12.x, v12.y)||1;
+            const a = { x: p1.x + v10.x*(sz/l10), y: p1.y + v10.y*(sz/l10) };
+            const b = { x: p1.x + v12.x*(sz/l12), y: p1.y + v12.y*(sz/l12) };
+            const aW = toW(a), bW=toW(b);
+            if (i===0){ dStr += `M ${aW.x} ${aW.y}`; } else { dStr += ` L ${aW.x} ${aW.y}`; }
+            if (c.mode==='clip'){
+              dStr += ` L ${bW.x} ${bW.y}`;
+            } else if (c.mode==='radius'){
+              // approximate fillet with a single SVG arc; radius ~ sz
+              const r = sz*2; // px scale handled by path coords already
+              const sweep=0; const large=0;
+              dStr += ` A ${r} ${r} 0 ${large} ${sweep} ${bW.x} ${bW.y}`;
+            }
+          }
           dStr += ' Z';
           polyPath.setAttribute('d', dStr);
           polyPath.setAttribute('fill', '#f8c4a0');
@@ -954,6 +982,8 @@
       if (!(inp instanceof HTMLElement)) return;
       if (!inp.matches('[data-ct-len]')) return;
       if (active<0) return;
+      // Allow clearing field before new number is typed
+      if ((inp).value === ''){ return; }
       // Debounce history: record once per burst of input changes
       if (!lenEditTimer){ pushHistory(); }
   if (lenEditTimer) clearTimeout(lenEditTimer);
@@ -1081,6 +1111,22 @@
             addRow('Right return (H)','H');
           } else if (cur.type==='poly'){
             const n = (Array.isArray(cur.points)?cur.points.length:0); for(let i=0;i<n;i++){ const letter=String.fromCharCode(65+i); addRow(`Side ${letter}`, `P${i}`); }
+            // Corner controls for polygon
+            const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners'; list.appendChild(cornersHdr);
+            const mkCorner=(i)=>{
+              const letter=String.fromCharCode(65+i);
+              const row=document.createElement('div'); row.className='row';
+              row.innerHTML = `<label><span>Corner ${letter}</span>
+                <select data-ct-corner-mode="${i}">
+                  <option value="square">Square</option>
+                  <option value="radius">Radius</option>
+                  <option value="clip">Clip</option>
+                </select>
+                <input type="number" min="0" step="1" class="kc-input-small" data-ct-corner-val="${i}" placeholder="size (in)" />
+              </label>`;
+              list.appendChild(row);
+            };
+            for (let i=0;i<n;i++){ mkCorner(i); }
           }
         }
         // Build dynamic backsplash options per shape
@@ -1116,6 +1162,14 @@
               for (let i=0;i<Math.min(old.length, next.length);i++){ next[i] = !!old[i]; }
               cur.bsPoly = next;
             }
+            // Ensure corners array matches vertices
+            if (!Array.isArray(cur.corners)) cur.corners = new Array(n).fill(null);
+            if (cur.corners.length !== n){
+              const old = cur.corners.slice(0);
+              const next = new Array(n).fill(null);
+              for (let i=0;i<Math.min(old.length, next.length);i++){ next[i] = old[i]; }
+              cur.corners = next;
+            }
             for (let i=0;i<n;i++){
               const letter = String.fromCharCode(65+i);
               const key = `P${i}`;
@@ -1143,6 +1197,18 @@
         try{ updateConstraintsUI(); }catch(e){}
       }
       const bsH = sel('[data-ct-bs-height]', root); if (bsH) bsH.value = String(opts.bsHeight||0);
+      // Sync polygon corner controls
+      if (cur && cur.type==='poly'){
+        const n = Array.isArray(cur.points)?cur.points.length:0;
+        if (!Array.isArray(cur.corners)) cur.corners = new Array(n).fill(null);
+        for (let i=0;i<n;i++){
+          const selEl = sel(`[data-ct-corner-mode="${i}"]`, root);
+          const valEl = sel(`[data-ct-corner-val="${i}"]`, root);
+          const c = cur.corners[i] || {mode:'square', value:0};
+          if (selEl) selEl.value = c.mode || 'square';
+          if (valEl) valEl.value = String(c.value||0);
+        }
+      }
     }
 
     // Show light constraint hints in the Measurements panel
@@ -1236,6 +1302,39 @@
         if (!s.bs) s.bs = {};
         s.bs[k] = !!checked;
       }
+      updateSummary(); save(); draw();
+    });
+    // Polygon corner mode change
+    root.addEventListener('change', (ev)=>{
+      const el = ev.target;
+      if (!(el instanceof HTMLElement)) return;
+      if (!el.matches('[data-ct-corner-mode]')) return;
+      if (active<0) return; const s = shapes[active]; if (s.type!=='poly') return;
+      pushHistory();
+      const idx = parseInt(el.getAttribute('data-ct-corner-mode')||'0',10);
+      const n = Array.isArray(s.points)?s.points.length:0; if (idx<0||idx>=n) return;
+      if (!Array.isArray(s.corners)) s.corners = new Array(n).fill(null);
+      const cur = s.corners[idx] || {mode:'square', value:0};
+      const mode = (el).value || 'square';
+      s.corners[idx] = { mode, value: Number(cur.value||0) };
+      updateSummary(); save(); draw();
+    });
+    // Polygon corner value edit
+    root.addEventListener('input', (ev)=>{
+      const el = ev.target;
+      if (!(el instanceof HTMLElement)) return;
+      if (!el.matches('[data-ct-corner-val]')) return;
+      if (active<0) return; const s = shapes[active]; if (s.type!=='poly') return;
+      if ((el).value==='') return;
+      if (!lenEditTimer){ pushHistory(); }
+      if (lenEditTimer) clearTimeout(lenEditTimer);
+      lenEditTimer = setTimeout(()=>{ lenEditTimer=null; }, 500);
+      const idx = parseInt(el.getAttribute('data-ct-corner-val')||'0',10);
+      const n = Array.isArray(s.points)?s.points.length:0; if (idx<0||idx>=n) return;
+      if (!Array.isArray(s.corners)) s.corners = new Array(n).fill(null);
+      const mode = (s.corners[idx]?.mode)||'square';
+      let v = parseInt((el).value||'0',10); if (!isFinite(v)||v<0) v=0; if (v>48) v=48;
+      s.corners[idx] = { mode, value: v };
       updateSummary(); save(); draw();
     });
     // L flip binding
