@@ -461,24 +461,32 @@
               rotG.appendChild(line);
             });
           }
-      // U shape as outer trapezoid (BL/BR) minus inner notch polygon (evenodd)
-          const path = document.createElementNS(ns, 'path');
-          const outerD = `M ${x} ${yTop} L ${x + a} ${yTop} L ${x + a} ${yTop + brPx} L ${x} ${yTop + blPx} Z`;
-          const innerD = `M ${xiL} ${yInnerTop} L ${xiR} ${yInnerTop} L ${xiR} ${yBotR} L ${xiL} ${yBotL} Z`;
-          const dPath = [outerD, innerD].join(' ');
-          path.setAttribute('d', dPath);
-          path.setAttribute('fill', '#f8c4a0');
-          path.setAttribute('fill-rule', 'evenodd');
-          // Avoid stroking inner subpath to prevent diagonal; draw outer stroke separately
-          path.setAttribute('stroke', 'none');
-          rotG.appendChild(path);
-
-          const outerStroke = document.createElementNS(ns, 'path');
-          outerStroke.setAttribute('d', outerD);
-          outerStroke.setAttribute('fill', 'none');
-          outerStroke.setAttribute('stroke', '#ccc');
-          outerStroke.setAttribute('stroke-width', '2');
-          rotG.appendChild(outerStroke);
+    // U shape as three filled pieces to avoid any diagonal artifacts
+      const fillColor = '#f8c4a0';
+      // Top bar: full width, height = dIn
+      const topBar = document.createElementNS(ns,'rect');
+      topBar.setAttribute('x', String(x));
+      topBar.setAttribute('y', String(yTop));
+      topBar.setAttribute('width', String(a));
+      topBar.setAttribute('height', String(px(dIn)));
+      topBar.setAttribute('fill', fillColor);
+          topBar.setAttribute('stroke', '#ccc'); topBar.setAttribute('stroke-width','2'); rotG.appendChild(topBar);
+      // Left leg: from left edge to xiL, full BL depth
+      const leftLeg = document.createElementNS(ns,'rect');
+      leftLeg.setAttribute('x', String(x));
+      leftLeg.setAttribute('y', String(yTop));
+      leftLeg.setAttribute('width', String(xiL - x));
+      leftLeg.setAttribute('height', String(blPx));
+      leftLeg.setAttribute('fill', fillColor);
+          leftLeg.setAttribute('stroke', '#ccc'); leftLeg.setAttribute('stroke-width','2'); rotG.appendChild(leftLeg);
+      // Right leg: from xiR to right edge, full BR depth
+      const rightLeg = document.createElementNS(ns,'rect');
+      rightLeg.setAttribute('x', String(xiR));
+      rightLeg.setAttribute('y', String(yTop));
+      rightLeg.setAttribute('width', String((x + a) - xiR));
+      rightLeg.setAttribute('height', String(brPx));
+      rightLeg.setAttribute('fill', fillColor);
+          rightLeg.setAttribute('stroke', '#ccc'); rightLeg.setAttribute('stroke-width','2'); rotG.appendChild(rightLeg);
 
           // backsplash along U edges (render above countertop)
           { const aBox=a; const bh = px(Number(opts.bsHeight||0)); if (bh>0){
@@ -1433,7 +1441,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T5';
+  window.KC_CT.version = '2025-09-21T6';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
