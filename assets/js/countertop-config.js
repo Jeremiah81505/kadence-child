@@ -386,9 +386,6 @@
 
           // U-guides for A–H
           const m=18;
-          const innerLeftX = centerX - a/2 + (a - c)/2; // px
-          const innerRightX = centerX + a/2 - (a - c)/2;
-          const innerTopY = centerY - b/2 + d;
           // A top outer
           drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + m, 'A');
           // B left outer
