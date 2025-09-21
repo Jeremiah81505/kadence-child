@@ -56,17 +56,10 @@
       };
 
       const addHandle=(idx, cx, cy, rot, key)=>{
-        // Rotate the given point around the shape center so handles follow the side when the shape is rotated
-        const sh = shapes[idx];
-        const scx = sh?.pos?.x ?? cx; const scy = sh?.pos?.y ?? cy;
-        const rad = (rot||0) * Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad);
-        const dx = cx - scx, dy = cy - scy;
-        const rx = scx + dx*cos - dy*sin;
-        const ry = scy + dx*sin + dy*cos;
-        handles.push({ idx, cx: rx, cy: ry, rot, key, r:8 });
-        // visual circle at rotated position (no extra group rotation needed)
+        // Expect world-space coordinates; no extra rotation here (alignment handled by localToWorld upstream)
+        handles.push({ idx, cx, cy, rot, key, r:8 });
         const c=document.createElementNS(ns,'circle');
-        c.setAttribute('cx', String(rx)); c.setAttribute('cy', String(ry)); c.setAttribute('r','6');
+        c.setAttribute('cx', String(cx)); c.setAttribute('cy', String(cy)); c.setAttribute('r','6');
         c.setAttribute('fill','#fff'); c.setAttribute('stroke','#4f6bd8'); c.setAttribute('stroke-width','2');
         if (idx===active) gRoot.appendChild(c);
       };
@@ -135,6 +128,11 @@
   const centerX = cur.pos?.x ?? 300;
   const centerY = cur.pos?.y ?? 300;
         const len = cur.len; const shape = cur.type; const rotation = cur.rot;
+        // Helpers to convert local (unrotated, origin at center in viewBox units) to world
+        const toWorld = (lx, ly) => {
+          const rad=(rotation||0)*Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad);
+          return { x: centerX + lx*cos - ly*sin, y: centerY + lx*sin + ly*cos };
+        };
 
         if (shape==='rect'){
           const w = px(len.A || 60);
@@ -217,12 +215,15 @@
           labelNumbers(rotG, centerX, centerY, cur, {A:len.A,B:len.B});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation });
           if (idx===active){
-            // resize handles for A (width) and B (depth)
-            // top/bottom adjust B, left/right adjust A
-            addHandle(idx, centerX, centerY - h/2, rotation, 'B-top');
-            addHandle(idx, centerX + w/2, centerY, rotation, 'A-right');
-            addHandle(idx, centerX - w/2, centerY, rotation, 'A-left');
-            addHandle(idx, centerX, centerY + h/2, rotation, 'B-bottom');
+            // local anchors relative to center, then convert
+            const pTop = toWorld(0, -h/2);
+            const pRight = toWorld(w/2, 0);
+            const pLeft = toWorld(-w/2, 0);
+            const pBottom = toWorld(0, h/2);
+            addHandle(idx, pTop.x, pTop.y, 0, 'B-top');
+            addHandle(idx, pRight.x, pRight.y, 0, 'A-right');
+            addHandle(idx, pLeft.x, pLeft.y, 0, 'A-left');
+            addHandle(idx, pBottom.x, pBottom.y, 0, 'B-bottom');
           }
 
   } else if (shape==='l'){
@@ -338,18 +339,18 @@
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
           if (idx===active){
-            addHandle(idx, centerX, centerY - b/2, rotation, 'B-top');
-            addHandle(idx, centerX + a/2, centerY, rotation, 'A-right');
-            addHandle(idx, centerX - a/2, centerY, rotation, 'A-left');
-            addHandle(idx, centerX, centerY + b/2, rotation, 'B-bottom');
-            // L-shape inner handles: C bottom inner run midpoint, D inner vertical midpoint
-            const bottomY = centerY + b/2;
-            const ciMidX = !flipX ? (centerX - a/2 + c/2) : (centerX + a/2 - c/2);
-            addHandle(idx, ciMidX, bottomY, rotation, 'C');
-            // D handle at midpoint of top segment on the correct outer edge
-            const dYmid = centerY - b/2 + d/2;
-            const dX = !flipX ? (centerX + a/2) : (centerX - a/2);
-            addHandle(idx, dX, dYmid, rotation, 'D');
+            // Outer handles via local anchors
+            addHandle(idx, toWorld(0, -b/2).x, toWorld(0, -b/2).y, 0, 'B-top');
+            addHandle(idx, toWorld(a/2, 0).x, toWorld(a/2, 0).y, 0, 'A-right');
+            addHandle(idx, toWorld(-a/2, 0).x, toWorld(-a/2, 0).y, 0, 'A-left');
+            addHandle(idx, toWorld(0, b/2).x, toWorld(0, b/2).y, 0, 'B-bottom');
+            // L-shape inner handles: C bottom inner run midpoint, D outer edge top segment midpoint
+            const ciLocalX = !flipX ? (-a/2 + c/2) : (a/2 - c/2);
+            const cP = toWorld(ciLocalX, b/2);
+            addHandle(idx, cP.x, cP.y, 0, 'C');
+            const dYlocal = -b/2 + d/2; const dXlocal = !flipX ? (a/2) : (-a/2);
+            const dP = toWorld(dXlocal, dYlocal);
+            addHandle(idx, dP.x, dP.y, 0, 'D');
           }
 
   } else if (shape==='u'){
@@ -493,23 +494,25 @@
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn,C:cIn,D:dIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
           if (idx===active){
-            addHandle(idx, centerX, centerY - b/2, rotation, 'B-top');
-            addHandle(idx, centerX + a/2, centerY, rotation, 'A-right');
-            addHandle(idx, centerX - a/2, centerY, rotation, 'A-left');
-            addHandle(idx, centerX, centerY + b/2, rotation, 'B-bottom');
-            // inner C handle at inner top midpoint
-            const xiLh = centerX - (px(aIn))/2 + px(eIn);
-            const xiRh = centerX + (px(aIn))/2 - px(hIn);
-            const yi = centerY - (px(bIn))/2 + px(dIn);
-            addHandle(idx, (xiLh+xiRh)/2, yi, rotation, 'C');
-            // D handle at exact midpoint of the inner top span (C), not offset
-            addHandle(idx, (xiLh+xiRh)/2, yi, rotation, 'D');
-            // add handles for E and H (F/G removed)
-            const bottomY = centerY + b/2;
-            // E mid of left bottom return
-            addHandle(idx, centerX - a/2 + px(eIn)/2, bottomY, rotation, 'E');
-            // H mid of right bottom return
-            addHandle(idx, centerX + a/2 - px(hIn)/2, bottomY, rotation, 'H');
+            // outer A/B like rect using local anchors
+            addHandle(idx, toWorld(0, -b/2).x, toWorld(0, -b/2).y, 0, 'B-top');
+            addHandle(idx, toWorld(a/2, 0).x, toWorld(a/2, 0).y, 0, 'A-right');
+            addHandle(idx, toWorld(-a/2, 0).x, toWorld(-a/2, 0).y, 0, 'A-left');
+            addHandle(idx, toWorld(0, b/2).x, toWorld(0, b/2).y, 0, 'B-bottom');
+            // inner spans in local coords
+            const xiLhLocal = -a/2 + px(eIn);
+            const xiRhLocal =  a/2 - px(hIn);
+            const yiLocal = -b/2 + px(dIn);
+            const midXLocal = (xiLhLocal + xiRhLocal)/2;
+            const pC = toWorld(midXLocal, yiLocal);
+            addHandle(idx, pC.x, pC.y, 0, 'C');
+            // D at the same inner-top midpoint
+            addHandle(idx, pC.x, pC.y, 0, 'D');
+            // E and H: midpoints of bottom returns
+            const pE = toWorld(-a/2 + px(eIn)/2, b/2);
+            const pH = toWorld( a/2 - px(hIn)/2, b/2);
+            addHandle(idx, pE.x, pE.y, 0, 'E');
+            addHandle(idx, pH.x, pH.y, 0, 'H');
           }
         } else if (shape==='poly'){
           // Custom polygon defined by local-inch points: [{x,y}, ...] in inches
