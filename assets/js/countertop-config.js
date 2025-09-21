@@ -3,8 +3,10 @@
   const all = (s, el=document)=> Array.from(el.querySelectorAll(s));
 
   function init(root){
-    if (!root || root.__ctInit) return; root.__ctInit = true;
-    const svg = sel('[data-ct-svg]', root);
+  if (!root || root.__ctInit) return;
+  const svg = sel('[data-ct-svg]', root);
+  if (!svg){ try{ console.warn('[kc][ct] init skipped: svg not found in root', root); }catch(e){} return; }
+  root.__ctInit = true;
     const shapeLabel = sel('[data-ct-shape-label]', root);
   const actions = root;
   let mode = 'move'; // move | resize
@@ -984,10 +986,11 @@
     // Select and drag shapes directly in the preview
     let hitAreas = [];
   (function enableDrag(){
+      const svgEl = sel('[data-ct-svg]', root);
+      if (!svgEl){ return; }
       let dragging=false, start={}, orig={}, dragIdx=-1;
   let resizing=false, resizeKey=null, resizeIdx=-1, startLocal={};
       hover = -1;
-  const svgEl = sel('[data-ct-svg]', root);
       function getPoint(ev){
         const rect = svgEl.getBoundingClientRect();
         const vb = svgEl.viewBox?.baseVal || { x:0, y:0, width:rect.width, height:rect.height };
