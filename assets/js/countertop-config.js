@@ -70,12 +70,14 @@
 
       const labelNumbers=(parent, cx, cy, cur, dims)=>{
         const mk=(x,y,txt)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x',String(x)); t.setAttribute('y',String(y)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','14'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; parent.appendChild(t); };
+        const mkRot=(x,y,txt,deg)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x',String(x)); t.setAttribute('y',String(y)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; t.setAttribute('transform', `rotate(${deg} ${x} ${y})`); parent.appendChild(t); };
         const a=Number(dims.A||cur.len?.A||0), b=Number(dims.B||cur.len?.B||0), c=Number(dims.C||cur.len?.C||0), d=Number(dims.D||cur.len?.D||0);
         // common: top A number
         mk(cx, cy - (px(b)/2) - 10, `${a}\"`);
         if (cur.type==='rect'){
           // Only two measurements for rect: A (length) and B (width)
-          const ty = cy; const leftTxt=document.createElementNS(ns,'text'); leftTxt.setAttribute('x', String(cx - (px(a)/2) - 22)); leftTxt.setAttribute('y', String(ty)); leftTxt.setAttribute('text-anchor','end'); leftTxt.setAttribute('font-size','12'); leftTxt.textContent = `${b}\"`; parent.appendChild(leftTxt);
+          const ty = cy; const lx = cx - (px(a)/2) - 22; // rotate B label to align with vertical edge
+          mkRot(lx, ty, `${b}\"`, -90);
           return;
           // Outer right B (mirror numeric label)
           const rightTxt=document.createElementNS(ns,'text'); rightTxt.setAttribute('x', String(cx + (aPx/2) + 22)); rightTxt.setAttribute('y', String(cy)); rightTxt.setAttribute('text-anchor','start'); rightTxt.setAttribute('font-size','12'); rightTxt.textContent = `${b}"`; parent.appendChild(rightTxt);
@@ -83,19 +85,19 @@
         if (cur.type==='l'){
           const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
           // Numbers on all four: A top, B left, C inner bottom run, D right outer
-          // B left
-          const leftTxt=document.createElementNS(ns,'text'); leftTxt.setAttribute('x', String(cx - (aPx/2) - 22)); leftTxt.setAttribute('y', String(cy)); leftTxt.setAttribute('text-anchor','end'); leftTxt.setAttribute('font-size','12'); leftTxt.textContent = `${b}\"`; parent.appendChild(leftTxt);
+          // B left (rotate to align with vertical edge)
+          mkRot(cx - (aPx/2) - 22, cy, `${b}\"`, -90);
           // C bottom inner run
           const flipX = !!cur.flipX; const cMidX = !flipX ? (cx - aPx/2 + cPx/2) : (cx + aPx/2 - cPx/2); const cY = cy + bPx/2 + 14; mk(cMidX, cY, `${c}\"`);
-          // D right outer side number
-          const rightTxt=document.createElementNS(ns,'text'); rightTxt.setAttribute('x', String(cx + (aPx/2) + 22)); rightTxt.setAttribute('y', String(cy)); rightTxt.setAttribute('text-anchor','start'); rightTxt.setAttribute('font-size','12'); rightTxt.textContent = `${b}\"`; parent.appendChild(rightTxt);
+          // D right outer side number (also uses B dimension) rotated to align with vertical edge
+          mkRot(cx + (aPx/2) + 22, cy, `${b}\"`, -90);
           return;
         }
         if (cur.type==='u'){
           const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
           // B on both outer left and right
-          const leftTxt=document.createElementNS(ns,'text'); leftTxt.setAttribute('x', String(cx - (aPx/2) - 22)); leftTxt.setAttribute('y', String(cy)); leftTxt.setAttribute('text-anchor','end'); leftTxt.setAttribute('font-size','12'); leftTxt.textContent = `${b}\"`; parent.appendChild(leftTxt);
-          const rightTxt=document.createElementNS(ns,'text'); rightTxt.setAttribute('x', String(cx + (aPx/2) + 22)); rightTxt.setAttribute('y', String(cy)); rightTxt.setAttribute('text-anchor','start'); rightTxt.setAttribute('font-size','12'); rightTxt.textContent = `${b}\"`; parent.appendChild(rightTxt);
+          mkRot(cx - (aPx/2) - 22, cy, `${b}\"`, -90);
+          mkRot(cx + (aPx/2) + 22, cy, `${b}\"`, -90);
           // Inner top C centered between returns
           const e = Number(cur.len?.E||Math.max(0, (a - c)/2));
           const h = Number(cur.len?.H||Math.max(0, (a - c)/2));
@@ -525,7 +527,7 @@
           gRoot.appendChild(polyPath);
 
           // labels: edge lengths (inches) at midpoints
-          const labelEdge=(x1,y1,x2,y2,txt)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x', String((x1+x2)/2)); t.setAttribute('y', String((y1+y2)/2 - 6)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; gRoot.appendChild(t); };
+          const labelEdge=(x1,y1,x2,y2,txt)=>{ const mx=(x1+x2)/2, my=(y1+y2)/2 - 6; const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI; const t=document.createElementNS(ns,'text'); t.setAttribute('x', String(mx)); t.setAttribute('y', String(my)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`); gRoot.appendChild(t); };
           // draw dynamic side guides and letters A.. as needed
           const m=10; let letterCode=65; // 'A'
           const drawGuide=(x1,y1,x2,y2,letTxt)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',String(x1)); l.setAttribute('y1',String(y1)); l.setAttribute('x2',String(x2)); l.setAttribute('y2',String(y2)); l.setAttribute('stroke','#bdc6da'); l.setAttribute('stroke-width','2'); gRoot.appendChild(l); const t=document.createElementNS(ns,'text'); t.setAttribute('x', String((x1+x2)/2)); t.setAttribute('y', String((y1+y2)/2 - 6)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=letTxt; gRoot.appendChild(t); };
