@@ -82,11 +82,16 @@
         }
         if (cur.type==='l'){
           const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
-          // Numbers on all four: A top, B left, C inner bottom run, D right outer
-          // B left (rotate to align with vertical edge)
-          mkRot(cx - (aPx/2) - 22, cy, `${b}\"`, -90);
+          const flipX = !!cur.flipX;
+          // Numbers on all four: A top, B side (mirrors), C inner bottom run (mirrors), D outer vertical (mirrors)
+          // B (rotate to align with vertical edge) – left by default, right when flipped
+          if (!flipX){
+            mkRot(cx - (aPx/2) - 22, cy, `${b}\"`, -90);
+          } else {
+            mkRot(cx + (aPx/2) + 22, cy, `${b}\"`, -90);
+          }
           // C bottom inner run
-          const flipX = !!cur.flipX; const cMidX = !flipX ? (cx - aPx/2 + cPx/2) : (cx + aPx/2 - cPx/2); const cY = cy + bPx/2 + 14; mk(cMidX, cY, `${c}\"`);
+          const cMidX = !flipX ? (cx - aPx/2 + cPx/2) : (cx + aPx/2 - cPx/2); const cY = cy + bPx/2 + 14; mk(cMidX, cY, `${c}\"`);
           // D outer vertical top segment length shown on the correct side (mirrors with flipX) and uses D value
           const dYmid = cy - bPx/2 + dPx/2;
           if (!flipX){
@@ -317,12 +322,16 @@
             rotG.appendChild(hi);
           }
 
-          // L-guides for A(top), B(left), C(bottom inner run), D(right outer side)
+          // L-guides for A(top), B(side mirror-aware), C(bottom inner run), D(right/left outer segment)
           const m=18;
           // A top full width
           drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + m, 'A');
-          // B left full height
-          drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY + b/2 - m, 'B');
+          // B full height: left by default, right when flipped
+          if (!flipX){
+            drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY + b/2 - m, 'B');
+          } else {
+            drawGuideLine(rotG, centerX + a/2 - m, centerY - b/2 + m, centerX + a/2 - m, centerY + b/2 - m, 'B');
+          }
           // C bottom inner run to notch start (mirrors when flipped)
           if (!flipX){
             drawGuideLine(rotG, centerX - a/2 + m, centerY + b/2 - m, centerX - a/2 + c - m, centerY + b/2 - m, 'C');
@@ -1326,7 +1335,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-    window.KC_CT.version = '2025-09-21T1';
+  window.KC_CT.version = '2025-09-21T2';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
