@@ -20,6 +20,11 @@ if ( ! function_exists( 'str_starts_with' ) ) {
   }
 }
 
+// Editor-friendly defaults for optional constants (no runtime behavior change)
+if ( ! defined( 'KC_DEV' ) ) { define( 'KC_DEV', false ); }
+if ( ! defined( 'KC_DEBUG_PATTERNS' ) ) { define( 'KC_DEBUG_PATTERNS', false ); }
+if ( ! defined( 'KC_ENABLE_HERO_FRONT' ) ) { define( 'KC_ENABLE_HERO_FRONT', false ); }
+
 /*--------------------------------------------------------------
 | ASSETS
 --------------------------------------------------------------*/
