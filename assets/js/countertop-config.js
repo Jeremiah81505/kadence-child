@@ -69,57 +69,57 @@
       const labelNumbers=(parent, cx, cy, cur, dims)=>{
         const mk=(x,y,txt)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x',String(x)); t.setAttribute('y',String(y)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','14'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; parent.appendChild(t); };
         const mkRot=(x,y,txt,deg)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x',String(x)); t.setAttribute('y',String(y)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; t.setAttribute('transform', `rotate(${deg} ${x} ${y})`); parent.appendChild(t); };
-        const a=Number(dims.A||cur.len?.A||0), b=Number(dims.B||cur.len?.B||0), c=Number(dims.C||cur.len?.C||0), d=Number(dims.D||cur.len?.D||0);
-        // common: top A number
-        mk(cx, cy - (px(b)/2) - 10, `${a}\"`);
+  const a=Number(dims.A ?? (cur.len?.A ?? 0)), b=Number(dims.B ?? (cur.len?.B ?? 0)), c=Number(dims.C ?? (cur.len?.C ?? 0)), d=Number(dims.D ?? (cur.len?.D ?? 0));
+
         if (cur.type==='rect'){
-          // Only two measurements for rect: A (length) and B (width)
-          const ty = cy; const lx = cx - (px(a)/2) - 22; // rotate B label to align with vertical edge
-          mkRot(lx, ty, `${b}\"`, -90);
+          const aPx=px(a), bPx=px(b);
+          // A top
+          mk(cx, cy - (bPx/2) - 10, `${a}\"`);
+          // B left
+          mkRot(cx - (aPx/2) - 22, cy, `${b}\"`, -90);
           return;
-          // Outer right B (mirror numeric label)
-          const rightTxt=document.createElementNS(ns,'text'); rightTxt.setAttribute('x', String(cx + (aPx/2) + 22)); rightTxt.setAttribute('y', String(cy)); rightTxt.setAttribute('text-anchor','start'); rightTxt.setAttribute('font-size','12'); rightTxt.textContent = `${b}"`; parent.appendChild(rightTxt);
         }
         if (cur.type==='l'){
           const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
+          // A top
+          mk(cx, cy - (bPx/2) - 10, `${a}\"`);
           const flipX = !!cur.flipX;
-          // Numbers on all four: A top, B side (mirrors), C inner bottom run (mirrors), D outer vertical (mirrors)
-          // B (rotate to align with vertical edge) – left by default, right when flipped
-          if (!flipX){
-            mkRot(cx - (aPx/2) - 22, cy, `${b}\"`, -90);
-          } else {
-            mkRot(cx + (aPx/2) + 22, cy, `${b}\"`, -90);
-          }
+          // B side mirrors
+          if (!flipX){ mkRot(cx - (aPx/2) - 22, cy, `${b}\"`, -90); }
+          else { mkRot(cx + (aPx/2) + 22, cy, `${b}\"`, -90); }
           // C bottom inner run
-          const cMidX = !flipX ? (cx - aPx/2 + cPx/2) : (cx + aPx/2 - cPx/2); const cY = cy + bPx/2 + 14; mk(cMidX, cY, `${c}\"`);
-          // D outer vertical top segment length shown on the correct side (mirrors with flipX) and uses D value
+          const cMidX = !flipX ? (cx - aPx/2 + cPx/2) : (cx + aPx/2 - cPx/2);
+          const cY = cy + bPx/2 + 14; mk(cMidX, cY, `${c}\"`);
+          // D outer vertical segment on mirrored side
           const dYmid = cy - bPx/2 + dPx/2;
-          if (!flipX){
-            // D on right side when not flipped
-            mkRot(cx + (aPx/2) + 22, dYmid, `${d}\"`, -90);
-          } else {
-            // D on left side when flipped
-            mkRot(cx - (aPx/2) - 22, dYmid, `${d}\"`, -90);
-          }
+          if (!flipX){ mkRot(cx + (aPx/2) + 22, dYmid, `${d}\"`, -90); }
+          else { mkRot(cx - (aPx/2) - 22, dYmid, `${d}\"`, -90); }
           return;
         }
         if (cur.type==='u'){
-          const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
-          // B on both outer left and right
-          mkRot(cx - (aPx/2) - 22, cy, `${b}\"`, -90);
-          mkRot(cx + (aPx/2) + 22, cy, `${b}\"`, -90);
-          // Inner top C centered between returns
-          const e = Number(cur.len?.E||Math.max(0, (a - c)/2));
-          const h = Number(cur.len?.H||Math.max(0, (a - c)/2));
+          const aPx = px(a);
+          const dPx = px(Number(dims.D ?? cur.len?.D ?? 0));
+          const bl = Number(dims.BL ?? cur.len?.BL ?? cur.len?.B ?? 25);
+          const br = Number(dims.BR ?? cur.len?.BR ?? cur.len?.B ?? 25);
+          const blPx = px(bl), brPx = px(br);
+          const hMax = Math.max(blPx, brPx);
+          const yTop = cy - hMax/2;
+          // A top
+          mk(cx, yTop - 10, `${a}\"`);
+          // B-L and B-R numbers (left and right verticals)
+          mkRot(cx - (aPx/2) - 22, yTop + blPx/2, `${bl}\"`, -90);
+          mkRot(cx + (aPx/2) + 22, yTop + brPx/2, `${br}\"`, -90);
+          // Inner top C and D positions derived from E/H splits
+          const e = Number(cur.len?.E ?? Math.max(0, Math.round((a - c)/2)));
+          const h = Number(cur.len?.H ?? Math.max(0, Math.round((a - c)/2)));
           const xiL = cx - aPx/2 + px(e);
           const xiR = cx + aPx/2 - px(h);
-          const innerTopY = cy - bPx/2 + dPx;
-          // Stagger C and D horizontally to avoid stacking
+          const innerTopY = yTop + dPx;
           const cX = xiL + (xiR - xiL) * 0.35; mk(cX, innerTopY - 6, `${c}\"`);
           const dX = xiL + (xiR - xiL) * 0.65; mk(dX, innerTopY - 26, `${d}\"`);
-          // E/H along bottom near returns
-          const eMidX = cx - aPx/2 + px(e)/2; mk(eMidX, cy + bPx/2 + 14, `${e}\"`);
-          const hMidX = cx + aPx/2 - px(h)/2; mk(hMidX, cy + bPx/2 + 14, `${h}\"`);
+          // E/H bottom return labels
+          const eMidX = cx - aPx/2 + px(e)/2; mk(eMidX, yTop + blPx + 14, `${e}\"`);
+          const hMidX = cx + aPx/2 - px(h)/2; mk(hMidX, yTop + brPx + 14, `${h}\"`);
           return;
         }
       };
@@ -365,60 +365,69 @@
           }
 
   } else if (shape==='u'){
-          // Independent sides: A,B outer, D offset from top, E/H returns, F/G inner verticals; derive C from E/H
-          let aIn = Number(len.A||60), bIn = Number(len.B||25);
+          // U with independent side depths: BL (left), BR (right)
+          let aIn = Number(len.A||60);
+          let blIn = Number((len.BL!=null ? len.BL : (len.B!=null ? len.B : 25)));
+          let brIn = Number((len.BR!=null ? len.BR : (len.B!=null ? len.B : 25)));
           let dIn = Number(len.D||10);
           let eIn = Number(len.E != null ? len.E :  Math.round((aIn - (len.C||20))/2));
           let hIn = Number(len.H != null ? len.H :  Math.round((aIn - (len.C||20))/2));
-          // clamp each independently
-          if (dIn < 0) dIn = 0; if (dIn > bIn-1) dIn = bIn-1;
+          // clamp independently
+          if (blIn < 1) blIn = 1; if (brIn < 1) brIn = 1;
+          const minSide = Math.min(blIn, brIn);
+          if (dIn < 0) dIn = 0; if (dIn > minSide - 1) dIn = minSide - 1;
           // compute local clamped values (do not mutate stored lengths here)
           const eMax = Math.max(0, aIn - 1 - Math.max(0,hIn));
-          const hMax = Math.max(0, aIn - 1 - Math.max(0,eIn));
+          const hMaxRet = Math.max(0, aIn - 1 - Math.max(0,eIn));
           let eLocal = Math.min(Math.max(eIn,0), eMax);
-          let hLocal = Math.min(Math.max(hIn,0), hMax);
+          let hLocal = Math.min(Math.max(hIn,0), hMaxRet);
           // enforce a minimum inner width of 1 inch
-          const minSpan = 1; const maxSum = Math.max(minSpan, aIn - minSpan);
+          const minSpan = 1;
           if (eLocal + hLocal > aIn - minSpan){
             const over = (eLocal + hLocal) - (aIn - minSpan);
             if (hLocal >= eLocal) hLocal = Math.max(0, hLocal - over); else eLocal = Math.max(0, eLocal - over);
           }
           // derived C used only for rendering
           const cIn = Math.max(1, aIn - (eLocal + hLocal));
-          const a = px(aIn), b = px(bIn);
-          const x = centerX - a/2, y = centerY - b/2;
-          // inner notch polygon (verticals extend to bottom; F/G removed)
+          const a = px(aIn);
+          const blPx = px(blIn), brPx = px(brIn);
+          const hMax = Math.max(blPx, brPx);
+          const x = centerX - a/2;
+          const yTop = centerY - hMax/2;
+          // inner notch polygon (verticals extend to bottom)
           const xiL = x + px(eLocal);                // left inner x
           const xiR = x + px(aIn - hLocal);          // right inner x
-          const yTop = y + px(dIn);               // inner top y
-          // inner verticals extend to the outer bottom to ensure a true U opening
-          const yBotL = y + b;                       // left vertical bottom at outer bottom
-          const yBotR = y + b;                       // right vertical bottom at outer bottom
+          const yInnerTop = yTop + px(dIn);          // inner top y
+          const yBotL = yTop + blPx;                 // left vertical bottom
+          const yBotR = yTop + brPx;                 // right vertical bottom
 
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
 
           // overhang removed
 
-      // backsplash along U edges with precise segments: A top full; B both left & right full; C inner top opening; D right full; E/H precise returns
-      { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){
+  // backsplash along U edges with precise segments: A top full; BL/BR sides to each depth; C inner top; E/H returns (no D on U)
+  { const aBox=a; const bh = px(Number(opts.bsHeight||0)); if (bh>0){
         // A top
-        if (cur.bs.A){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
-        // B both sides
-        if (cur.bs.B){ const rL=document.createElementNS(ns,'rect'); rL.setAttribute('x', String(centerX - aBox/2 - bh)); rL.setAttribute('y', String(centerY - bBox/2)); rL.setAttribute('width', String(bh)); rL.setAttribute('height', String(bBox)); rL.setAttribute('fill','#e6f2ff'); rL.setAttribute('stroke','#7fb3ff'); rL.setAttribute('stroke-width','1'); rotG.appendChild(rL); const rR=document.createElementNS(ns,'rect'); rR.setAttribute('x', String(centerX + aBox/2)); rR.setAttribute('y', String(centerY - bBox/2)); rR.setAttribute('width', String(bh)); rR.setAttribute('height', String(bBox)); rR.setAttribute('fill','#e6f2ff'); rR.setAttribute('stroke','#7fb3ff'); rR.setAttribute('stroke-width','1'); rotG.appendChild(rR); }
+        if (cur.bs.A){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(yTop - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
+        // BL/BR sides toggles independently
+        if (cur.bs.BL){
+          const rL=document.createElementNS(ns,'rect'); rL.setAttribute('x', String(centerX - aBox/2 - bh)); rL.setAttribute('y', String(yTop)); rL.setAttribute('width', String(bh)); rL.setAttribute('height', String(blPx)); rL.setAttribute('fill','#e6f2ff'); rL.setAttribute('stroke','#7fb3ff'); rL.setAttribute('stroke-width','1'); rotG.appendChild(rL);
+        }
+        if (cur.bs.BR){
+          const rR=document.createElementNS(ns,'rect'); rR.setAttribute('x', String(centerX + aBox/2)); rR.setAttribute('y', String(yTop)); rR.setAttribute('width', String(bh)); rR.setAttribute('height', String(brPx)); rR.setAttribute('fill','#e6f2ff'); rR.setAttribute('stroke','#7fb3ff'); rR.setAttribute('stroke-width','1'); rotG.appendChild(rR);
+        }
         // C inner top opening (xiL..xiR)
-        if (cur.bs.C){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(xiL)); r.setAttribute('y', String(yTop)); r.setAttribute('width', String(xiR - xiL)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
-        // D right outer
-        if (cur.bs.D){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
-        // E (bottom left return) and H (bottom right return) precise lengths
+        if (cur.bs.C){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(xiL)); r.setAttribute('y', String(yInnerTop)); r.setAttribute('width', String(xiR - xiL)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
+    // E (bottom left return) and H (bottom right return) precise lengths
               if (cur.bs && (cur.bs.E || cur.bs.H)){
                 const eLen = px(Math.max(0, Number(len.E||0)));
                 const hLen = px(Math.max(0, Number(len.H||0)));
                 // world coords for returns along bottom outer edge
                 if (cur.bs.E && eLen>0){
                   const rE = document.createElementNS(ns,'rect');
-                  rE.setAttribute('x', String(centerX - a/2));
-                  rE.setAttribute('y', String(centerY + b/2));
+      rE.setAttribute('x', String(centerX - a/2));
+      rE.setAttribute('y', String(yTop + blPx));
                   rE.setAttribute('width', String(eLen));
                   rE.setAttribute('height', String(bh));
                   rE.setAttribute('fill','#e6f2ff'); rE.setAttribute('stroke','#7fb3ff'); rE.setAttribute('stroke-width','1');
@@ -426,8 +435,8 @@
                 }
                 if (cur.bs.H && hLen>0){
                   const rH = document.createElementNS(ns,'rect');
-                  rH.setAttribute('x', String(centerX + a/2 - hLen));
-                  rH.setAttribute('y', String(centerY + b/2));
+      rH.setAttribute('x', String(centerX + a/2 - hLen));
+      rH.setAttribute('y', String(yTop + brPx));
                   rH.setAttribute('width', String(hLen));
                   rH.setAttribute('height', String(bh));
                   rH.setAttribute('fill','#e6f2ff'); rH.setAttribute('stroke','#7fb3ff'); rH.setAttribute('stroke-width','1');
@@ -435,29 +444,28 @@
                 }
               }
           } }
-          // seams for U (bounding-box approximation)
+      // seams for U (bounding-box approximation)
           if (opts.showSeams && Array.isArray(cur.seams)){
             cur.seams.forEach(seam=>{
               const line=document.createElementNS(ns,'line');
               if (seam.type==='v'){
                 const x = centerX + px(seam.atIn||0);
-                line.setAttribute('x1', String(x)); line.setAttribute('y1', String(centerY - b/2));
-                line.setAttribute('x2', String(x)); line.setAttribute('y2', String(centerY + b/2));
+        line.setAttribute('x1', String(x)); line.setAttribute('y1', String(yTop));
+        line.setAttribute('x2', String(x)); line.setAttribute('y2', String(yTop + hMax));
               } else {
-                const y = centerY + px(seam.atIn||0);
-                line.setAttribute('x1', String(centerX - a/2)); line.setAttribute('y1', String(y));
-                line.setAttribute('x2', String(centerX + a/2)); line.setAttribute('y2', String(y));
+        const y = yTop + px(seam.atIn||0);
+        line.setAttribute('x1', String(centerX - a/2)); line.setAttribute('y1', String(y));
+        line.setAttribute('x2', String(centerX + a/2)); line.setAttribute('y2', String(y));
               }
               line.setAttribute('stroke','#666'); line.setAttribute('stroke-width','2'); line.setAttribute('stroke-dasharray','6 6');
               rotG.appendChild(line);
             });
           }
-
-          // U shape as outer rect minus inner notch polygon (evenodd)
+      // U shape as outer trapezoid (BL/BR) minus inner notch polygon (evenodd)
           const path = document.createElementNS(ns, 'path');
           const dPath = [
-            `M ${x} ${y} h ${a} v ${b} h ${-a} Z`,
-            `M ${xiL} ${yTop} L ${xiR} ${yTop} L ${xiR} ${yBotR} L ${xiL} ${yBotL} Z`
+            `M ${x} ${yTop} L ${x + a} ${yTop} L ${x + a} ${yTop + brPx} L ${x} ${yTop + blPx} Z`,
+            `M ${xiL} ${yInnerTop} L ${xiR} ${yInnerTop} L ${xiR} ${yBotR} L ${xiL} ${yBotL} Z`
           ].join(' ');
           path.setAttribute('d', dPath);
           path.setAttribute('fill', '#f8c4a0');
@@ -469,59 +477,63 @@
           // wall sides as red lines along outer bounding box
           const sideColor = '#d32f2f';
           const mkLine = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke', sideColor); l.setAttribute('stroke-width','3'); return l; };
-          if (cur.wall.A) rotG.appendChild(mkLine(centerX - a/2, centerY - b/2, centerX + a/2, centerY - b/2));
-          if (cur.wall.B) rotG.appendChild(mkLine(centerX - a/2, centerY - b/2, centerX - a/2, centerY + b/2));
-          if (cur.wall.C) rotG.appendChild(mkLine(centerX - a/2, centerY + b/2, centerX + a/2, centerY + b/2));
-          if (cur.wall.D) rotG.appendChild(mkLine(centerX + a/2, centerY - b/2, centerX + a/2, centerY + b/2));
+      if (cur.wall.A) rotG.appendChild(mkLine(centerX - a/2, yTop, centerX + a/2, yTop));
+      if (cur.wall.B) rotG.appendChild(mkLine(centerX - a/2, yTop, centerX - a/2, yTop + blPx));
+      if (cur.wall.C) rotG.appendChild(mkLine(centerX - a/2, yTop + hMax, centerX + a/2, yTop + hMax));
+      if (cur.wall.D) rotG.appendChild(mkLine(centerX + a/2, yTop, centerX + a/2, yTop + brPx));
 
           if (idx===active){
             const hi = document.createElementNS(ns,'rect');
             hi.setAttribute('x', String(centerX - a/2 - 4));
-            hi.setAttribute('y', String(centerY - b/2 - 4));
+            hi.setAttribute('y', String(yTop - 4));
             hi.setAttribute('width', String(a + 8));
-            hi.setAttribute('height', String(b + 8));
+            hi.setAttribute('height', String(hMax + 8));
             hi.setAttribute('fill','none'); hi.setAttribute('stroke','#4f6bd8'); hi.setAttribute('stroke-width','2'); hi.setAttribute('stroke-dasharray','6 4');
             rotG.appendChild(hi);
           }
 
-          // U-guides for A–H
+          // U-guides for A–H (with BL/BR)
           const m=18;
           // A top outer
-          drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + m, 'A');
-          // B left outer
-          drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY + b/2 - m, 'B');
-          // B right outer (mirror)
-          drawGuideLine(rotG, centerX + a/2 - m, centerY - b/2 + m, centerX + a/2 - m, centerY + b/2 - m, 'B');
+          drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX + a/2 - m, yTop + m, 'A');
+          // B-L left outer
+          drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX - a/2 + m, yTop + blPx - m, 'B-L');
+          // B-R right outer
+          drawGuideLine(rotG, centerX + a/2 - m, yTop + m, centerX + a/2 - m, yTop + brPx - m, 'B-R');
           // Use existing xiL/xiR/yTop to draw C/D/E/H guides (F/G removed)
           // C inner top opening
-          drawGuideLine(rotG, xiL + m, yTop + m, xiR - m, yTop + m, 'C');
+          drawGuideLine(rotG, xiL + m, yInnerTop + m, xiR - m, yInnerTop + m, 'C');
           // D inner depth (using center of opening)
-          drawGuideLine(rotG, (xiL+xiR)/2, centerY - b/2 + m, (xiL+xiR)/2, yTop - m, 'D');
+          drawGuideLine(rotG, (xiL+xiR)/2, yTop + m, (xiL+xiR)/2, yInnerTop - m, 'D');
           // E bottom left return
-          drawGuideLine(rotG, centerX - a/2 + m, centerY + b/2 - m, xiL - m, centerY + b/2 - m, 'E');
+          drawGuideLine(rotG, centerX - a/2 + m, yTop + blPx - m, xiL - m, yTop + blPx - m, 'E');
           // H bottom right return
-          drawGuideLine(rotG, xiR + m, centerY + b/2 - m, centerX + a/2 - m, centerY + b/2 - m, 'H');
+          drawGuideLine(rotG, xiR + m, yTop + brPx - m, centerX + a/2 - m, yTop + brPx - m, 'H');
           gRoot.appendChild(rotG);
-          labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn,C:cIn,D:dIn});
-          hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
+          labelNumbers(rotG, centerX, centerY, cur, {A:aIn,BL:blIn,BR:brIn,C:cIn,D:dIn});
+          hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:Math.max(blPx, brPx), rot:rotation });
           if (idx===active){
             // outer A/B like rect using local anchors
-            addHandle(idx, toWorld(0, -b/2).x, toWorld(0, -b/2).y, 0, 'B-top');
+            // top handle remains for panning vertically (no resize)
             addHandle(idx, toWorld(a/2, 0).x, toWorld(a/2, 0).y, 0, 'A-right');
             addHandle(idx, toWorld(-a/2, 0).x, toWorld(-a/2, 0).y, 0, 'A-left');
-            addHandle(idx, toWorld(0, b/2).x, toWorld(0, b/2).y, 0, 'B-bottom');
+            // independent side-depth handles at each side bottom midpoint
+            const wBL = toWorld(-a/2, (-hMax/2) + blPx);
+            const wBR = toWorld(a/2, (-hMax/2) + brPx);
+            addHandle(idx, wBL.x, wBL.y, 0, 'BL');
+            addHandle(idx, wBR.x, wBR.y, 0, 'BR');
             // inner spans in local coords
             const xiLhLocal = -a/2 + px(eIn);
             const xiRhLocal =  a/2 - px(hIn);
-            const yiLocal = -b/2 + px(dIn);
+            const yiLocal = -hMax/2 + px(dIn);
             const midXLocal = (xiLhLocal + xiRhLocal)/2;
             const pC = toWorld(midXLocal, yiLocal);
             addHandle(idx, pC.x, pC.y, 0, 'C');
             // D at the same inner-top midpoint
             addHandle(idx, pC.x, pC.y, 0, 'D');
             // E and H: midpoints of bottom returns
-            const pE = toWorld(-a/2 + px(eIn)/2, b/2);
-            const pH = toWorld( a/2 - px(hIn)/2, b/2);
+            const pE = toWorld(-a/2 + px(eIn)/2, hMax/2);
+            const pH = toWorld( a/2 - px(hIn)/2, hMax/2);
             addHandle(idx, pE.x, pE.y, 0, 'E');
             addHandle(idx, pH.x, pH.y, 0, 'H');
           }
@@ -725,11 +737,17 @@
     if (cur.type==='l'){
       cur.flipX = !cur.flipX;
     } else if (cur.type==='u'){
-  // Mirror U: swap return lengths E/H and swap backsplash flags E/H
+  // Mirror U: swap BL/BR depths, swap return lengths E/H, and swap backsplash flags E/H
+  if (cur.len){ const tmpBL = cur.len.BL; cur.len.BL = cur.len.BR; cur.len.BR = tmpBL; }
   const eVal = Number(cur.len?.E||0), hVal = Number(cur.len?.H||0);
   if (!cur.len) cur.len = {};
   cur.len.E = hVal; cur.len.H = eVal;
-  if (cur.bs){ const tmp = cur.bs.E; cur.bs.E = cur.bs.H; cur.bs.H = tmp; }
+  if (cur.bs){
+    // swap E/H backsplash flags
+    const tmpEH = cur.bs.E; cur.bs.E = cur.bs.H; cur.bs.H = tmpEH;
+    // swap BL/BR backsplash flags
+    const tmpB = cur.bs.BL; cur.bs.BL = cur.bs.BR; cur.bs.BR = tmpB;
+  }
     } // rect/poly: no-op for now
     draw(); save();
   }));
@@ -759,19 +777,28 @@
         // Default assignment, then shape-specific clamps
         s.len[k] = v;
         if (s.type==='u'){
-          const A = Number(s.len.A||0), B = Number(s.len.B||0);
+          const A = Number(s.len.A||0);
+          const BL = Number((s.len.BL!=null)?s.len.BL:(s.len.B!=null?s.len.B:25));
+          const BR = Number((s.len.BR!=null)?s.len.BR:(s.len.B!=null?s.len.B:25));
+          const minSide = Math.max(0, Math.min(BL, BR));
           if (k==='E' || k==='H'){
             if (k==='E'){ s.len.E = Math.max(0, Math.min(v, Math.max(0, A - 1 - (s.len.H||0)))); }
             if (k==='H'){ s.len.H = Math.max(0, Math.min(v, Math.max(0, A - 1 - (s.len.E||0)))); }
             s.len.C = Math.max(1, A - Math.max(0, (s.len.E||0)) - Math.max(0, (s.len.H||0)));
           } else if (k==='D'){
-            s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, B-1)));
+            s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, minSide-1)));
           } else if (k==='C'){
             // Update C by rebalancing E/H symmetrically to keep notch centered
             const newC = Math.max(1, Math.min(v, Math.max(1, A-1)));
             const spare = Math.max(0, A - newC);
             const e = Math.floor(spare/2), h = spare - e;
             s.len.C = newC; s.len.E = e; s.len.H = h;
+          } else if (k==='BL' || k==='BR'){
+            // Clamp D to the new shallower side - 1
+            const nBL = Number((k==='BL'?v:(s.len.BL!=null?s.len.BL:(s.len.B!=null?s.len.B:25))));
+            const nBR = Number((k==='BR'?v:(s.len.BR!=null?s.len.BR:(s.len.B!=null?s.len.B:25))));
+            const m = Math.max(0, Math.min(nBL, nBR));
+            s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, m-1)));
           }
         }
       }
@@ -783,9 +810,15 @@
       const limit = 120;
       const over = shapes.some(s=>{
         const len = s.len||{};
-        return (Number(len.A||0)>limit) || (Number(len.B||0)>limit) || (Number(len.C||0)>limit) || (Number(len.D||0)>limit);
+        const base = (Number(len.A||0)>limit) || (Number(len.B||0)>limit) || (Number(len.C||0)>limit) || (Number(len.D||0)>limit);
+        if (s.type==='u'){
+          const BL = Number((len.BL!=null)?len.BL:((len.B!=null)?len.B:0));
+          const BR = Number((len.BR!=null)?len.BR:((len.B!=null)?len.B:0));
+          return base || BL>limit || BR>limit;
+        }
+        return base;
       });
-      const alertEl = sel('[data-ct-alert]', root);
+  const alertEl = sel('[data-ct-alert]', root);
       if (alertEl) alertEl.hidden = !over;
     }
 
@@ -830,7 +863,13 @@
       } else if (cur.type==='l'){
             addRow('Top (A)','A'); addRow('Left (B)','B'); addRow('Inner bottom run (C)','C'); addRow('Inner vertical (D)','D');
           } else if (cur.type==='u'){
-            ['A','B','C','D','E','H'].forEach(k=> addRow(`${k}`, k));
+            addRow('Top (A)','A');
+            addRow('Left depth (BL)','BL');
+            addRow('Right depth (BR)','BR');
+            addRow('Inner opening width (C)','C');
+            addRow('Inner setback (D)','D');
+            addRow('Left return (E)','E');
+            addRow('Right return (H)','H');
           } else if (cur.type==='poly'){
             const n = (Array.isArray(cur.points)?cur.points.length:0); for(let i=0;i<n;i++){ const letter=String.fromCharCode(65+i); addRow(`Side ${letter}`, `P${i}`); }
           }
@@ -849,9 +888,16 @@
           if (cur.type==='rect' || cur.type==='l'){
             ['A','B','C','D'].forEach(s=> mk(s, sideLabel(s)));
           } else if (cur.type==='u'){
-            if (!cur.bs) cur.bs = {A:false,B:false,C:false,D:false,E:false,H:false};
+            // migrate and ensure keys: use BL/BR instead of legacy B; omit D for U backsplash
+            if (!cur.bs) cur.bs = {A:false,BL:false,BR:false,C:false,E:false,H:false};
+            // Legacy migration: if B existed, apply to both BL and BR (do not render B anymore)
+            if (cur.bs.B!=null){
+              if (cur.bs.BL==null) cur.bs.BL = !!cur.bs.B;
+              if (cur.bs.BR==null) cur.bs.BR = !!cur.bs.B;
+            }
+            if (cur.bs.BL==null) cur.bs.BL=false; if (cur.bs.BR==null) cur.bs.BR=false;
             if (cur.bs.E==null) cur.bs.E=false; if (cur.bs.H==null) cur.bs.H=false;
-            ['A','B','C','D','E','H'].forEach(s=> mk(s, sideLabel(s)));
+            ['A','BL','BR','C','E','H'].forEach(s=> mk(s, sideLabel(s)));
           } else {
             // default to A-D if unknown
             ['A','B','C','D'].forEach(s=> mk(s, sideLabel(s)));
@@ -861,7 +907,7 @@
     const flipWrap = sel('[data-ct-l-flip-wrap]', root);
     const flipInp = sel('[data-ct-l-flip]', root);
     if (flipWrap && flipInp){ flipWrap.hidden = cur.type!=='l'; flipInp.checked = !!cur.flipX; }
-  all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); let v=0; if (cur.type==='poly' && k && k.startsWith('P')){ const idx=parseInt(k.slice(1)||'0',10); const pts=cur.points||[]; if (pts.length>=2){ const a=pts[idx], b=pts[(idx+1)%pts.length]; v=Math.round(Math.hypot((b.x-a.x),(b.y-a.y))); } } else { v = (cur.len && k in cur.len) ? cur.len[k] : 0; } const activeEl=document.activeElement; inp.value = String(v||0); if (activeEl===inp) inp.focus(); });
+  all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); let v=0; if (cur.type==='poly' && k && k.startsWith('P')){ const idx=parseInt(k.slice(1)||'0',10); const pts=cur.points||[]; if (pts.length>=2){ const a=pts[idx], b=pts[(idx+1)%pts.length]; v=Math.round(Math.hypot((b.x-a.x),(b.y-a.y))); } } else { if (cur.type==='u' && (k==='BL' || k==='BR')){ if (k==='BL'){ v = (cur.len && cur.len.BL!=null) ? cur.len.BL : (cur.len && cur.len.B!=null ? cur.len.B : 25); } else { v = (cur.len && cur.len.BR!=null) ? cur.len.BR : (cur.len && cur.len.B!=null ? cur.len.B : 25); } } else { v = (cur.len && k in cur.len) ? cur.len[k] : 0; } } const activeEl=document.activeElement; inp.value = String(v||0); if (activeEl===inp) inp.focus(); });
         all('[data-ct-wall]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-wall'); inp.checked = !!cur.wall[k]; });
         all('[data-ct-shape]', root).forEach(btn=> btn.classList.toggle('is-active', btn.getAttribute('data-ct-shape')===cur.type));
     const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
@@ -872,7 +918,9 @@
 
     function sideLabel(s){
       if (s==='A') return 'Top (A)';
-      if (s==='B') return 'Left (B)';
+  if (s==='B') return 'Left (B)';
+  if (s==='BL') return 'Left (B-L)';
+  if (s==='BR') return 'Right (B-R)';
       if (s==='C') return 'Bottom/Inner (C)';
       if (s==='D') return 'Right (D)';
       if (s==='E') return 'Bottom Left (E)';
@@ -1090,11 +1138,31 @@
             if (s.type==='rect'){
               s.len.B = Math.max(1, Math.round((oLen.B||0)));
             } else if (s.type==='u'){
-              s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, (s.len.B||0)-1));
+              // Clamp D to the shallower of BL/BR minus 1
+              const BL = Number((s.len.BL!=null)?s.len.BL:((s.len.B!=null)?s.len.B:25));
+              const BR = Number((s.len.BR!=null)?s.len.BR:((s.len.B!=null)?s.len.B:25));
+              const m = Math.max(0, Math.min(BL, BR));
+              s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, m-1));
             } else if (s.type==='l'){
               // L: D is the inner vertical; clamp 0..B-1
               s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, (s.len.B||0)-1));
             }
+          } else if (resizeKey==='BL' && s.type==='u'){
+            // Adjust left depth directly; re-clamp D to new min(BL,BR)-1
+            const curBL = (oLen.BL!=null)?oLen.BL:((oLen.B!=null)?oLen.B:25);
+            const newBL = clamp(Math.round(curBL + dyIn), 1, 240);
+            s.len.BL = newBL;
+            const BR = Number((s.len.BR!=null)?s.len.BR:((s.len.B!=null)?s.len.B:25));
+            const m = Math.max(0, Math.min(newBL, BR));
+            s.len.D = Math.max(0, Math.min(Math.round(s.len.D||0), Math.max(0, m-1)));
+          } else if (resizeKey==='BR' && s.type==='u'){
+            // Adjust right depth directly; re-clamp D to new min(BL,BR)-1
+            const curBR = (oLen.BR!=null)?oLen.BR:((oLen.B!=null)?oLen.B:25);
+            const newBR = clamp(Math.round(curBR + dyIn), 1, 240);
+            s.len.BR = newBR;
+            const BL = Number((s.len.BL!=null)?s.len.BL:((s.len.B!=null)?s.len.B:25));
+            const m = Math.max(0, Math.min(BL, newBR));
+            s.len.D = Math.max(0, Math.min(Math.round(s.len.D||0), Math.max(0, m-1)));
           } else if (['E','H'].includes(String(resizeKey)) && s.type==='u'){
             // adjust corresponding return/inner verticals independently
             if (resizeKey==='E'){
@@ -1252,10 +1320,15 @@
       const removalEl = sel('[data-ct-sum-removal]', root);
   const seamsEl = sel('[data-ct-sum-seams]', root);
       if (piecesEl) piecesEl.textContent = String(shapes.length);
-      // area: rect A*B, U: A*B - C*(B-D), L: A*B - (A-C)*(B-D)
+      // area: rect A*B, U: A*(BL+BR)/2 - C*(min(BL,BR)-D), L: A*B - (A-C)*(B-D)
   const totalSqIn = shapes.reduce((acc,s)=>{
         const A=Number(s.len?.A||0), B=Number(s.len?.B||0), C=Number(s.len?.C||0), D=Number(s.len?.D||0);
-        if (s.type==='u') return acc + (A*B - Math.max(0, C*Math.max(0, B-D)));
+        if (s.type==='u'){
+          const BL = Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25));
+          const BR = Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25));
+          const minSide = Math.max(0, Math.min(BL, BR));
+          return acc + (A*((BL+BR)/2) - Math.max(0, C*Math.max(0, minSide - D)));
+        }
         if (s.type==='l') return acc + (A*B - Math.max(0, (A-C)*Math.max(0, B-D)));
         if (s.type==='poly' && Array.isArray(s.points) && s.points.length>=3){
           // shoelace formula (in^2) on local-inch points
@@ -1335,7 +1408,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T2';
+  window.KC_CT.version = '2025-09-21T3';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
