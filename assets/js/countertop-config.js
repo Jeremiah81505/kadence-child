@@ -236,8 +236,30 @@
 
           // overhang removed
 
-          // backsplash approx for L bounding box
-          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); } }); } }
+          // backsplash precise for L: A full top, B full left, C bottom segment length=c, D right-top segment length=d (mirrors with flipX)
+          { const bh = px(Number(opts.bsHeight||0)); if (bh>0){
+              const addRect=(x,y,w,h)=>{ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(x)); r.setAttribute('y', String(y)); r.setAttribute('width', String(w)); r.setAttribute('height', String(h)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); };
+              if (cur.bs.A){ addRect(centerX - a/2, centerY - b/2 - bh, a, bh); }
+              if (cur.bs.B){ addRect(centerX - a/2 - bh, centerY - b/2, bh, b); }
+              if (cur.bs.C){
+                if (!flipX){
+                  // left bottom segment from left outer to notch start (length=c)
+                  addRect(centerX - a/2, centerY + b/2, c, bh);
+                } else {
+                  // right bottom segment from notch start to right outer (length=c)
+                  addRect(centerX + a/2 - c, centerY + b/2, c, bh);
+                }
+              }
+              if (cur.bs.D){
+                if (!flipX){
+                  // top segment on right edge, height=d
+                  addRect(centerX + a/2, centerY - b/2, bh, d);
+                } else {
+                  // top segment on left edge, height=d
+                  addRect(centerX - a/2 - bh, centerY - b/2, bh, d);
+                }
+              }
+          } }
           // seams for L (bounding-box approximation)
           if (opts.showSeams && Array.isArray(cur.seams)){
             cur.seams.forEach(seam=>{
