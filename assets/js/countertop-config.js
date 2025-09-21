@@ -1320,5 +1320,27 @@
   function boot(){
     document.querySelectorAll('.kc-ct-configurator').forEach(init);
   }
+  // Expose a tiny runtime for diagnostics/manual boot
+  try{
+    window.KC_CT = window.KC_CT || {};
+    window.KC_CT.version = '2025-09-21T1';
+    window.KC_CT.init = init;
+    window.KC_CT.initAll = boot;
+  }catch(e){}
+
+  // Auto-boot now and also watch for late-added nodes (e.g., injected at footer)
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+  try{
+    const mo = new MutationObserver((mutations)=>{
+      for (const m of mutations){
+        if (!m.addedNodes) continue;
+        m.addedNodes.forEach(n=>{
+          if (!(n instanceof Element)) return;
+          if (n.classList && n.classList.contains('kc-ct-configurator')) { init(n); }
+          n.querySelectorAll && n.querySelectorAll('.kc-ct-configurator').forEach(init);
+        });
+      }
+    });
+    mo.observe(document.body || document.documentElement, { childList: true, subtree: true });
+  }catch(e){}
 })();
