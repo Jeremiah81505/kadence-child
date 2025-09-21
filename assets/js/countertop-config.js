@@ -72,6 +72,8 @@
           // Only two measurements for rect: A (length) and B (width)
           const ty = cy; const leftTxt=document.createElementNS(ns,'text'); leftTxt.setAttribute('x', String(cx - (px(a)/2) - 22)); leftTxt.setAttribute('y', String(ty)); leftTxt.setAttribute('text-anchor','end'); leftTxt.setAttribute('font-size','12'); leftTxt.textContent = `${b}\"`; parent.appendChild(leftTxt);
           return;
+          // Outer right B (mirror numeric label)
+          const rightTxt=document.createElementNS(ns,'text'); rightTxt.setAttribute('x', String(cx + (aPx/2) + 22)); rightTxt.setAttribute('y', String(cy)); rightTxt.setAttribute('text-anchor','start'); rightTxt.setAttribute('font-size','12'); rightTxt.textContent = `${b}"`; parent.appendChild(rightTxt);
         }
         if (cur.type==='l'){
           // Segment-aware: show C along bottom inner run (length c), D along inner vertical (height d), and B at left outer
@@ -390,6 +392,8 @@
           drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + m, 'A');
           // B left outer
           drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY + b/2 - m, 'B');
+          // B right outer (mirror)
+          drawGuideLine(rotG, centerX + a/2 - m, centerY - b/2 + m, centerX + a/2 - m, centerY + b/2 - m, 'B');
           // Use existing xiL/xiR/yTop/yBotL/yBotR to draw C/D/E/F/G/H guides
           // C inner top opening
           drawGuideLine(rotG, xiL + m, yTop + m, xiR - m, yTop + m, 'C');
