@@ -88,8 +88,12 @@
           const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
           // Outer left B
           const leftTxt=document.createElementNS(ns,'text'); leftTxt.setAttribute('x', String(cx - (aPx/2) - 22)); leftTxt.setAttribute('y', String(cy)); leftTxt.setAttribute('text-anchor','end'); leftTxt.setAttribute('font-size','12'); leftTxt.textContent = `${b}\"`; parent.appendChild(leftTxt);
-          // Inner top C
-          const innerTopY = cy - bPx/2 + dPx; mk(cx, innerTopY - 6, `${c}\"`);
+          // Inner top C centered between returns (E/H if available)
+          const e = Number(cur.len?.E||Math.max(0, (a - c)/2));
+          const h = Number(cur.len?.H||Math.max(0, (a - c)/2));
+          const xiL = cx - aPx/2 + px(e);
+          const xiR = cx + aPx/2 - px(h);
+          const innerTopY = cy - bPx/2 + dPx; mk((xiL+xiR)/2, innerTopY - 6, `${c}"`);
           // F/G (inner verticals) label near centers, E/H (returns) along bottom will be covered by inline inputs; labels optional here
           return;
         }
@@ -140,11 +144,11 @@
   { const p = locToWorld(0, -b/2 - (M+4)); add('A','A', p.x, p.y); }
   // B left center (always horizontal)
   { const p = locToWorld(-a/2 - (M+8), 0); add('B','B', p.x, p.y); }
-        if (s.type==='rect'){
+  if (s.type==='rect'){
           // Add C (bottom) and D (right) inputs mirroring A/B
           { const p = locToWorld(0, b/2 + (M+4)); add('C','C', p.x, p.y); }
           { const p = locToWorld(a/2 + (M+8), 0); add('D','D', p.x, p.y); }
-        } else if (s.type==='l'){
+  } else if (s.type==='l'){
           const dPx = D*2; const cPx=C*2;
           const innerTop = -b/2 + dPx;
           // C at bottom inner run center (always horizontal)
@@ -152,20 +156,22 @@
           // D at inner vertical center (always horizontal)
           { const p = locToWorld(-a/2 + cPx - (M+2), (-b/2 + dPx)/2); add('D','D', p.x, p.y); }
   } else if (s.type==='u'){
-          const dPx = D*2; const cPx=C*2; const ePx=E*2, hPx=H*2; const fPx=F*2, gPx=G*2;
+          const dPx = D*2; const ePx=E*2, hPx=H*2; const fPx=F*2, gPx=G*2;
           const innerTop = -b/2 + dPx;
-          // C at inner top center (always horizontal)
-          { const p = locToWorld(0, innerTop - M); add('C','C', p.x, p.y); }
-          // D depth (always horizontal)
-          { const p = locToWorld(-a/2 + (a - cPx)/2, innerTop - (M+18)); add('D','D', p.x, p.y); }
-          // E left bottom return mid (always horizontal)
+          const innerLeftX = -a/2 + ePx; const innerRightX = a/2 - hPx;
+          const yBotL = innerTop + fPx; const yBotR = innerTop + gPx;
+          // C at inner top midpoint (derived)
+          { const p = locToWorld((innerLeftX + innerRightX)/2, innerTop - M); add('C','C', p.x, p.y); }
+          // D depth near inner top center
+          { const p = locToWorld((innerLeftX + innerRightX)/2, innerTop - (M+18)); add('D','D', p.x, p.y); }
+          // E left bottom return midpoint
           { const p = locToWorld(-a/2 + ePx/2, b/2 + (M+4)); add('E','E', p.x, p.y); }
-          // H right bottom return mid (always horizontal)
+          // H right bottom return midpoint
           { const p = locToWorld(a/2 - hPx/2, b/2 + (M+4)); add('H','H', p.x, p.y); }
-          // F left inner vertical mid (always horizontal)
-          { const p = locToWorld(-a/2 + (a - cPx)/2 - (M+4), (innerTop + b/2)/2); add('F','F', p.x, p.y); }
-          // G right inner vertical mid (always horizontal)
-          { const p = locToWorld(a/2 - (a - cPx)/2 + (M+4), (innerTop + b/2)/2); add('G','G', p.x, p.y); }
+          // F left inner vertical midpoint
+          { const p = locToWorld(innerLeftX - (M+4), (innerTop + yBotL)/2); add('F','F', p.x, p.y); }
+          // G right inner vertical midpoint
+          { const p = locToWorld(innerRightX + (M+4), (innerTop + yBotR)/2); add('G','G', p.x, p.y); }
         } else if (s.type==='poly'){
           // For each edge, place an input at midpoint labeled P{index}
           const pts = Array.isArray(s.points)? s.points: [];
@@ -293,9 +299,6 @@
             addHandle(idx, centerX + w/2, centerY, rotation, 'A-right');
             addHandle(idx, centerX - w/2, centerY, rotation, 'A-left');
             addHandle(idx, centerX, centerY + h/2, rotation, 'B-bottom');
-            // mirror handles for C (bottom) and D (right) to allow direct dragging
-            addHandle(idx, centerX, centerY + h/2, rotation, 'C');
-            addHandle(idx, centerX + w/2, centerY, rotation, 'D');
           }
 
   } else if (shape==='l'){
@@ -378,31 +381,38 @@
             addHandle(idx, centerX + a/2, centerY, rotation, 'A-right');
             addHandle(idx, centerX - a/2, centerY, rotation, 'A-left');
             addHandle(idx, centerX, centerY + b/2, rotation, 'B-bottom');
+            // L-shape inner handles: C bottom inner run midpoint, D inner vertical midpoint
+            const ciMidX = centerX - a/2 + c/2; const bottomY = centerY + b/2;
+            addHandle(idx, ciMidX, bottomY, rotation, 'C');
+            const dX = centerX - a/2 + c; const dMidY = centerY - b/2 + d/2;
+            addHandle(idx, dX, dMidY, rotation, 'D');
           }
 
   } else if (shape==='u'){
-          // Use A (outer width), B (outer height), C (inner opening width), D (inner opening depth)
-          let aIn = Number(len.A||60), bIn = Number(len.B||25), cIn = Number(len.C||20), dIn = Number(len.D||10);
-          // Derive/normalize E,F,G,H if present (returns and inner verticals)
-          let eIn = Number(len.E != null ? len.E : Math.round((aIn - cIn)/2));
-          let hIn = Number(len.H != null ? len.H : Math.round((aIn - cIn)/2));
-          let fIn = Number(len.F != null ? len.F : Math.max(0, bIn - dIn));
-          let gIn = Number(len.G != null ? len.G : Math.max(0, bIn - dIn));
-          // Keep consistency: C = A - (E+H), D = B - min(F,G); enforce bounds
-          if (eIn<0) eIn=0; if (hIn<0) hIn=0; if (eIn + hIn >= aIn) { const spare=aIn-1; const half=Math.max(0, Math.floor(spare/2)); eIn=half; hIn=spare-half; }
-          cIn = Math.max(1, aIn - (eIn + hIn));
-          const innerH = Math.max(0, Math.min(fIn,gIn));
-          dIn = Math.max(0, Math.min(bIn-1, bIn - innerH));
-          fIn = gIn = Math.max(0, bIn - dIn);
-          // write back so inline inputs stay in sync
-          cur.len.E = eIn; cur.len.H = hIn; cur.len.F = fIn; cur.len.G = gIn; cur.len.C = cIn; cur.len.D = dIn;
-          // clamp to keep geometry valid
-          if (cIn >= aIn) cIn = Math.max(0, aIn - 1);
-          if (dIn >= bIn) dIn = Math.max(0, bIn - 1);
-          const a = px(aIn), b = px(bIn), c = px(cIn), d = px(dIn);
+          // Independent sides: A,B outer, D offset from top, E/H returns, F/G inner verticals; derive C from E/H
+          let aIn = Number(len.A||60), bIn = Number(len.B||25);
+          let dIn = Number(len.D||10);
+          let eIn = Number(len.E != null ? len.E :  Math.round((aIn - (len.C||20))/2));
+          let hIn = Number(len.H != null ? len.H :  Math.round((aIn - (len.C||20))/2));
+          let fIn = Number(len.F != null ? len.F :  Math.max(0, (bIn - dIn)/2));
+          let gIn = Number(len.G != null ? len.G :  Math.max(0, (bIn - dIn)/2));
+          // clamp each independently
+          if (dIn < 0) dIn = 0; if (dIn > bIn-1) dIn = bIn-1;
+          if (eIn < 0) eIn = 0; if (hIn < 0) hIn = 0; if (eIn + hIn > aIn-1){ const spare=aIn-1; if (eIn>spare) eIn=spare; hIn = Math.max(0, spare - eIn); }
+          const maxVert = Math.max(0, bIn - dIn - 1);
+          if (fIn < 0) fIn = 0; if (gIn < 0) gIn = 0; if (fIn>maxVert) fIn=maxVert; if (gIn>maxVert) gIn=maxVert;
+          // derive C from returns and keep stored
+          const cIn = Math.max(1, aIn - (eIn + hIn)); cur.len.C = cIn;
+          // write back clamped values so UI stays in sync
+          cur.len.D = dIn; cur.len.E = eIn; cur.len.H = hIn; cur.len.F = fIn; cur.len.G = gIn;
+          const a = px(aIn), b = px(bIn);
           const x = centerX - a/2, y = centerY - b/2;
-          // inner notch is centered horizontally, starts d from top, extends to bottom
-          const xi = centerX - c/2, yi = y + d, wi = c, hi = b - d;
+          // inner notch polygon (may be slanted at bottom if F != G)
+          const xiL = x + px(eIn);                // left inner x
+          const xiR = x + px(aIn - hIn);          // right inner x
+          const yTop = y + px(dIn);               // inner top y
+          const yBotL = yTop + px(fIn);           // left vertical bottom y
+          const yBotR = yTop + px(gIn);           // right vertical bottom y
 
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
@@ -429,11 +439,11 @@
             });
           }
 
-          // U shape as outer rect minus inner notch (evenodd)
+          // U shape as outer rect minus inner notch polygon (evenodd)
           const path = document.createElementNS(ns, 'path');
           const dPath = [
             `M ${x} ${y} h ${a} v ${b} h ${-a} Z`,
-            `M ${xi} ${yi} h ${wi} v ${hi} h ${-wi} Z`
+            `M ${xiL} ${yTop} L ${xiR} ${yTop} L ${xiR} ${yBotR} L ${xiL} ${yBotL} Z`
           ].join(' ');
           path.setAttribute('d', dPath);
           path.setAttribute('fill', '#f8c4a0');
@@ -469,18 +479,19 @@
           drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + m, 'A');
           // B left outer
           drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY + b/2 - m, 'B');
+          // Use existing xiL/xiR/yTop/yBotL/yBotR to draw C/D/E/F/G/H guides
           // C inner top opening
-          drawGuideLine(rotG, innerLeftX + m, innerTopY + m, innerRightX - m, innerTopY + m, 'C');
-          // D inner depth (use mid of opening)
-          drawGuideLine(rotG, centerX, centerY - b/2 + m, centerX, innerTopY - m, 'D');
+          drawGuideLine(rotG, xiL + m, yTop + m, xiR - m, yTop + m, 'C');
+          // D inner depth (using center of opening)
+          drawGuideLine(rotG, (xiL+xiR)/2, centerY - b/2 + m, (xiL+xiR)/2, yTop - m, 'D');
           // E bottom left return
-          drawGuideLine(rotG, centerX - a/2 + m, centerY + b/2 - m, innerLeftX - m, centerY + b/2 - m, 'E');
+          drawGuideLine(rotG, centerX - a/2 + m, centerY + b/2 - m, xiL - m, centerY + b/2 - m, 'E');
           // F left inner vertical
-          drawGuideLine(rotG, innerLeftX - m, innerTopY + m, innerLeftX - m, centerY + b/2 - m, 'F');
+          drawGuideLine(rotG, xiL - m, yTop + m, xiL - m, yBotL - m, 'F');
           // G right inner vertical
-          drawGuideLine(rotG, innerRightX + m, innerTopY + m, innerRightX + m, centerY + b/2 - m, 'G');
+          drawGuideLine(rotG, xiR + m, yTop + m, xiR + m, yBotR - m, 'G');
           // H bottom right return
-          drawGuideLine(rotG, innerRightX + m, centerY + b/2 - m, centerX + a/2 - m, centerY + b/2 - m, 'H');
+          drawGuideLine(rotG, xiR + m, centerY + b/2 - m, centerX + a/2 - m, centerY + b/2 - m, 'H');
           gRoot.appendChild(rotG);
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn,C:cIn,D:dIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
@@ -489,24 +500,23 @@
             addHandle(idx, centerX + a/2, centerY, rotation, 'A-right');
             addHandle(idx, centerX - a/2, centerY, rotation, 'A-left');
             addHandle(idx, centerX, centerY + b/2, rotation, 'B-bottom');
-            // inner C/D
-            const xi = centerX - (px(aIn))/2 + px((aIn - cIn)/2) + px(cIn)/2; // inner top center
+            // inner C handle at inner top midpoint
+            const xiLh = centerX - (px(aIn))/2 + px(eIn);
+            const xiRh = centerX + (px(aIn))/2 - px(hIn);
             const yi = centerY - (px(bIn))/2 + px(dIn);
-            addHandle(idx, centerX, yi, rotation, 'C');
-            // inner left mid for D depth (use left inner vertical center)
-            const innerLeftX = centerX - (px(aIn))/2 + (px(aIn)-px(cIn))/2; // approx inner left x
-            const innerMidY = centerY + (px(bIn)-px(dIn))/2 - px(bIn)/2 + px(dIn);
-            addHandle(idx, innerLeftX, innerMidY, rotation, 'D');
-            // add handles for E–H
-            const innerRightX = centerX + (px(aIn))/2 - (px(aIn)-px(cIn))/2;
+            addHandle(idx, (xiLh+xiRh)/2, yi, rotation, 'C');
+            // D handle slightly above inner top center
+            addHandle(idx, (xiLh+xiRh)/2, yi - 10, rotation, 'D');
+            // add handles for E–H using independent returns/verticals
             const bottomY = centerY + b/2;
             // E mid of left bottom return
-            addHandle(idx, centerX - a/2 + px((aIn - cIn)/2)/2, bottomY, rotation, 'E');
+            addHandle(idx, centerX - a/2 + px(eIn)/2, bottomY, rotation, 'E');
             // H mid of right bottom return
-            addHandle(idx, centerX + a/2 - px((aIn - cIn)/2)/2, bottomY, rotation, 'H');
+            addHandle(idx, centerX + a/2 - px(hIn)/2, bottomY, rotation, 'H');
             // F/G inner vertical mids
-            addHandle(idx, innerLeftX, (yi + bottomY)/2, rotation, 'F');
-            addHandle(idx, innerRightX, (yi + bottomY)/2, rotation, 'G');
+            const yBotLh = yi + px(fIn); const yBotRh = yi + px(gIn);
+            addHandle(idx, xiLh, (yi + yBotLh)/2, rotation, 'F');
+            addHandle(idx, xiRh, (yi + yBotRh)/2, rotation, 'G');
           }
         } else if (shape==='poly'){
           // Custom polygon defined by local-inch points: [{x,y}, ...] in inches
@@ -989,27 +999,41 @@
           } else if (resizeKey==='B-bottom'){
             s.len.B = Math.max(1, Math.round((oLen.B||0) + dyIn));
           } else if (resizeKey==='C'){
-            // bottom mirrors A for rect or is inner top center for U
-            if (s.type==='rect') s.len.A = Math.max(1, Math.round((oLen.A||0))); // noop, mirrored via input UI
+            if (s.type==='rect'){
+              s.len.A = Math.max(1, Math.round((oLen.A||0))); // mirrored via UI; no drag-op
+            } else if (s.type==='u'){
+              // Change C by adjusting E/H symmetrically to keep notch centered
+              const A = s.len.A||0; const newC = clamp(Math.round((oLen.C||0) + dxIn), 1, Math.max(1, A-1));
+              const spare = Math.max(0, A - newC);
+              s.len.E = Math.round(spare/2); s.len.H = spare - s.len.E; s.len.C = newC;
+            } else if (s.type==='l'){
+              // L: C is the inner bottom run; clamp 0..A-1
+              const newC = clamp(Math.round((oLen.C||0) + dxIn), 0, Math.max(0, (s.len.A||0)-1));
+              s.len.C = newC;
+            }
           } else if (resizeKey==='D'){
-            if (s.type==='rect') s.len.B = Math.max(1, Math.round((oLen.B||0)));
-          } else if (resizeKey==='C'){
-            s.len.C = clamp(Math.round((oLen.C||0) + dxIn), 0, Math.max(0, (s.len.A||0)-1));
-            // keep E/H in sync for U
-            if (s.type==='u'){ const A=s.len.A||0; const C=s.len.C||0; const spare=Math.max(0, A - C); s.len.E = Math.round(spare/2); s.len.H = spare - s.len.E; }
-          } else if (resizeKey==='D'){
-            s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, (s.len.B||0)-1));
-            if (s.type==='u'){ const B=s.len.B||0; const D=s.len.D||0; const inner=Math.max(0, B - D); s.len.F = inner; s.len.G = inner; }
+            if (s.type==='rect'){
+              s.len.B = Math.max(1, Math.round((oLen.B||0)));
+            } else if (s.type==='u'){
+              s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, (s.len.B||0)-1));
+            } else if (s.type==='l'){
+              // L: D is the inner vertical; clamp 0..B-1
+              s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, (s.len.B||0)-1));
+            }
           } else if (['E','F','G','H'].includes(String(resizeKey)) && s.type==='u'){
-            // adjust corresponding return/inner verticals
-            if (resizeKey==='E' || resizeKey==='H'){
-              const side = resizeKey==='E'?'E':'H';
-              const other = side==='E'?'H':'E';
-              const newV = clamp(Math.round((oLen[side]||0) + (resizeKey==='E'? dxIn : -dxIn)), 0, Math.max(0,(s.len.A||0)-1));
-              s.len[side] = newV; const spare = Math.max(0,(s.len.A||0) - (s.len.C||0)); s.len[other] = Math.max(0, spare - newV);
-            } else {
-              const newInner = clamp(Math.round((oLen[resizeKey]||0) + dyIn), 0, Math.max(0,(s.len.B||0)-1));
-              s.len.F = newInner; s.len.G = newInner; s.len.D = Math.max(0, (s.len.B||0) - newInner);
+            // adjust corresponding return/inner verticals independently
+            if (resizeKey==='E'){
+              const maxE = Math.max(0, (s.len.A||0) - 1 - (s.len.H||0));
+              s.len.E = clamp(Math.round((oLen.E||0) + dxIn), 0, maxE);
+            } else if (resizeKey==='H'){
+              const maxH = Math.max(0, (s.len.A||0) - 1 - (s.len.E||0));
+              s.len.H = clamp(Math.round((oLen.H||0) - dxIn), 0, maxH);
+            } else if (resizeKey==='F'){
+              const maxF = Math.max(0, (s.len.B||0) - 1 - (s.len.D||0));
+              s.len.F = clamp(Math.round((oLen.F||0) + dyIn), 0, maxF);
+            } else if (resizeKey==='G'){
+              const maxG = Math.max(0, (s.len.B||0) - 1 - (s.len.D||0));
+              s.len.G = clamp(Math.round((oLen.G||0) + dyIn), 0, maxG);
             }
           } else if (resizeKey && String(resizeKey).startsWith('P-') && s.type==='poly'){
             // edge midpoint drag: scale edge length by moving the far vertex along edge normal
