@@ -99,131 +99,11 @@
         }
       };
 
-      // Inline numeric inputs positioned near the active shape sides
+      // Inline numeric inputs are disabled per request; clear any remnants and no-op.
       const renderInlineInputs = () =>{
         if (!inlineHost) return;
         inlineHost.innerHTML = '';
-    if (active<0 || !shapes[active]) return;
-  const s = shapes[active];
-  // polygons now show per-edge inline inputs
-        const {A=0,B=0,C=0,D=0,E=0,F=0,G=0,H=0} = s.len||{};
-  // base margin to pull inputs slightly away from each side
-    const M = 32; // px in viewBox units
-        const toScreen = (x,y)=>{
-          const hostRect = inlineHost.getBoundingClientRect();
-          const pt = svg.createSVGPoint ? svg.createSVGPoint() : null;
-          if (pt && svg.getScreenCTM){
-            pt.x = x; pt.y = y;
-            const screen = pt.matrixTransform(svg.getScreenCTM());
-            return { left: screen.x - hostRect.left, top: screen.y - hostRect.top };
-          }
-          // Fallback to rect math
-          const svgRect = svg.getBoundingClientRect();
-          const vb = svg.viewBox?.baseVal || {x:0,y:0,width:svgRect.width,height:svgRect.height};
-          return {
-            left: (x - vb.x)/vb.width * svgRect.width + (svgRect.left - hostRect.left),
-            top:  (y - vb.y)/vb.height * svgRect.height + (svgRect.top - hostRect.top)
-          };
-        };
-        const add = (label, key, x, y, angleDeg=0)=>{
-          const pos = toScreen(x,y);
-          const wrap = document.createElement('div');
-          wrap.className = 'kc-inp';
-          wrap.style.left = `${pos.left}px`;
-          wrap.style.top = `${pos.top}px`;
-          // keep inputs always horizontal
-          wrap.style.transform = `translate(-50%, -50%)`;
-          wrap.removeAttribute('data-orient');
-          wrap.innerHTML = `<label class="sr">${label}</label><input type="number" inputmode="numeric" step="1" class="kc-inp-num" data-kc-inline="${key}" />`;
-          inlineHost.appendChild(wrap);
-        };
-        const cx=s.pos.x, cy=s.pos.y; const a= A*2, b=B*2; // px
-        const rot = s.rot||0; const rad = rot*Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad);
-        const locToWorld=(lx,ly)=>({ x: cx + lx*cos - ly*sin, y: cy + lx*sin + ly*cos });
-  // A at top center (always horizontal)
-  { const p = locToWorld(0, -b/2 - (M+4)); add('A','A', p.x, p.y); }
-  // B left center (always horizontal)
-  { const p = locToWorld(-a/2 - (M+8), 0); add('B','B', p.x, p.y); }
-  if (s.type==='rect'){
-          // Add C (bottom) and D (right) inputs mirroring A/B
-          { const p = locToWorld(0, b/2 + (M+4)); add('C','C', p.x, p.y); }
-          { const p = locToWorld(a/2 + (M+8), 0); add('D','D', p.x, p.y); }
-  } else if (s.type==='l'){
-          const dPx = D*2; const cPx=C*2;
-          const innerTop = -b/2 + dPx;
-          // C at bottom inner run center (always horizontal)
-          { const p = locToWorld(-a/2 + cPx/2, b/2 + (M+4)); add('C','C', p.x, p.y); }
-          // D at inner vertical center (always horizontal)
-          { const p = locToWorld(-a/2 + cPx - (M+2), (-b/2 + dPx)/2); add('D','D', p.x, p.y); }
-  } else if (s.type==='u'){
-          const dPx = D*2; const ePx=E*2, hPx=H*2; const fPx=F*2, gPx=G*2;
-          const innerTop = -b/2 + dPx;
-          const innerLeftX = -a/2 + ePx; const innerRightX = a/2 - hPx;
-          const yBotL = innerTop + fPx; const yBotR = innerTop + gPx;
-          // C at inner top midpoint (derived)
-          { const p = locToWorld((innerLeftX + innerRightX)/2, innerTop - M); add('C','C', p.x, p.y); }
-          // D depth near inner top center
-          { const p = locToWorld((innerLeftX + innerRightX)/2, innerTop - (M+18)); add('D','D', p.x, p.y); }
-          // E left bottom return midpoint
-          { const p = locToWorld(-a/2 + ePx/2, b/2 + (M+4)); add('E','E', p.x, p.y); }
-          // H right bottom return midpoint
-          { const p = locToWorld(a/2 - hPx/2, b/2 + (M+4)); add('H','H', p.x, p.y); }
-          // F left inner vertical midpoint
-          { const p = locToWorld(innerLeftX - (M+4), (innerTop + yBotL)/2); add('F','F', p.x, p.y); }
-          // G right inner vertical midpoint
-          { const p = locToWorld(innerRightX + (M+4), (innerTop + yBotR)/2); add('G','G', p.x, p.y); }
-        } else if (s.type==='poly'){
-          // For each edge, place an input at midpoint labeled P{index}
-          const pts = Array.isArray(s.points)? s.points: [];
-          if (pts.length>=2){
-            const rad = (s.rot||0)*Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad);
-            const toWorld=(lx,ly)=>({ x: s.pos.x + (lx*2)*cos - (ly*2)*sin, y: s.pos.y + (lx*2)*sin + (ly*2)*cos });
-            for (let i=0;i<pts.length;i++){
-              const aP=pts[i], bP=pts[(i+1)%pts.length];
-              const mid={ x: (aP.x + bP.x)/2, y: (aP.y + bP.y)/2 };
-              const w=toWorld(mid.x, mid.y);
-              add(String.fromCharCode(65+i), `P${i}`, w.x, w.y - M);
-            }
-          }
-        }
-        // set values and wire
-  all('[data-kc-inline]', inlineHost).forEach(inp=>{
-          const k = inp.getAttribute('data-kc-inline');
-          if (k && k.startsWith('P')){
-            // polygon edge length from points
-            const idx = parseInt(k.slice(1)||'0',10);
-            const pts = s.points||[]; if (pts.length>=2){ const a=pts[idx], b=pts[(idx+1)%pts.length]; const lenIn=Math.round(Math.hypot((b.x-a.x),(b.y-a.y))); inp.value = String(lenIn); }
-          } else if (s.type==='rect' && (k==='C' || k==='D')){
-            const map = (k==='C')?'A':'B'; inp.value = String(s.len[map]||0);
-          } else {
-            inp.value = String(s.len[k]||0);
-          }
-          let rafId=0;
-          const schedule = ()=>{ cancelAnimationFrame(rafId); rafId = requestAnimationFrame(()=>{ renderInlineInputs(); updateSummary(); }); };
-          inp.addEventListener('input', ()=>{
-            let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0;
-            if (s.type==='u'){
-              const A = Number(s.len.A||0), B = Number(s.len.B||0);
-              if (k==='E'){ s.len.E = Math.max(0, Math.min(v, Math.max(0, A - 1 - (s.len.H||0)))); s.len.C = Math.max(1, A - (s.len.E||0) - (s.len.H||0)); }
-              else if (k==='H'){ s.len.H = Math.max(0, Math.min(v, Math.max(0, A - 1 - (s.len.E||0)))); s.len.C = Math.max(1, A - (s.len.E||0) - (s.len.H||0)); }
-              else if (k==='F' || k==='G' || k==='D'){
-                s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, B-1)));
-                const maxVert = Math.max(0, B - s.len.D - 1);
-                if (k==='F'){ s.len.F = Math.max(0, Math.min(v, maxVert)); }
-                if (k==='G'){ s.len.G = Math.max(0, Math.min(v, maxVert)); }
-                if (k==='D'){ s.len.D = Math.max(0, Math.min(v, Math.max(0, B-1))); }
-              } else if (k==='C'){
-                const newC = Math.max(1, Math.min(v, Math.max(1, A-1)));
-                const spare = Math.max(0, A - newC);
-                const e = Math.floor(spare/2), h = spare - e; s.len.C=newC; s.len.E=e; s.len.H=h;
-              } else { s.len[k]=v; }
-            } else {
-              s.len[k]=v;
-            }
-            schedule(); save();
-          });
-          inp.addEventListener('blur', ()=>{ draw(); });
-        });
+        return;
       };
 
   shapes.forEach((cur, idx)=>{
@@ -420,11 +300,17 @@
           // compute local clamped values (do not mutate stored lengths here)
           const eMax = Math.max(0, aIn - 1 - Math.max(0,hIn));
           const hMax = Math.max(0, aIn - 1 - Math.max(0,eIn));
-          const eLocal = Math.min(Math.max(eIn,0), eMax);
-          const hLocal = Math.min(Math.max(hIn,0), hMax);
+          let eLocal = Math.min(Math.max(eIn,0), eMax);
+          let hLocal = Math.min(Math.max(hIn,0), hMax);
+          // enforce a minimum inner width of 1 inch
+          const minSpan = 1; const maxSum = Math.max(minSpan, aIn - minSpan);
+          if (eLocal + hLocal > aIn - minSpan){
+            const over = (eLocal + hLocal) - (aIn - minSpan);
+            if (hLocal >= eLocal) hLocal = Math.max(0, hLocal - over); else eLocal = Math.max(0, eLocal - over);
+          }
           const maxVert = Math.max(0, bIn - dIn - 1);
-          const fLocal = Math.min(Math.max(fIn,0), maxVert);
-          const gLocal = Math.min(Math.max(gIn,0), maxVert);
+          let fLocal = Math.min(Math.max(fIn,0), maxVert);
+          let gLocal = Math.min(Math.max(gIn,0), maxVert);
           // derived C used only for rendering
           const cIn = Math.max(1, aIn - (eLocal + hLocal));
           const a = px(aIn), b = px(bIn);
@@ -433,8 +319,14 @@
           const xiL = x + px(eLocal);                // left inner x
           const xiR = x + px(aIn - hLocal);          // right inner x
           const yTop = y + px(dIn);               // inner top y
-          const yBotL = yTop + px(fLocal);           // left vertical bottom y
-          const yBotR = yTop + px(gLocal);           // right vertical bottom y
+          let yBotL = yTop + px(fLocal);           // left vertical bottom y
+          let yBotR = yTop + px(gLocal);           // right vertical bottom y
+          const yBottomLimit = y + b - px(1);
+          if (yBotL > yBottomLimit) yBotL = yBottomLimit;
+          if (yBotR > yBottomLimit) yBotR = yBottomLimit;
+          const yMin = yTop + px(1);
+          if (yBotL < yMin) yBotL = yMin;
+          if (yBotR < yMin) yBotR = yMin;
 
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
