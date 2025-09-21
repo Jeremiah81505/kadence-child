@@ -370,11 +370,17 @@
 
           // overhang removed
 
-          // backsplash along outer bounding box A-D plus precise returns E/H
-          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){
-              // A-D bounding box splash
-              ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); } });
-              // E (bottom left return) and H (bottom right return) precise lengths
+      // backsplash along U edges with precise segments: A top full; B both left & right full; C inner top opening; D right full; E/H precise returns
+      { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){
+        // A top
+        if (cur.bs.A){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
+        // B both sides
+        if (cur.bs.B){ const rL=document.createElementNS(ns,'rect'); rL.setAttribute('x', String(centerX - aBox/2 - bh)); rL.setAttribute('y', String(centerY - bBox/2)); rL.setAttribute('width', String(bh)); rL.setAttribute('height', String(bBox)); rL.setAttribute('fill','#e6f2ff'); rL.setAttribute('stroke','#7fb3ff'); rL.setAttribute('stroke-width','1'); rotG.appendChild(rL); const rR=document.createElementNS(ns,'rect'); rR.setAttribute('x', String(centerX + aBox/2)); rR.setAttribute('y', String(centerY - bBox/2)); rR.setAttribute('width', String(bh)); rR.setAttribute('height', String(bBox)); rR.setAttribute('fill','#e6f2ff'); rR.setAttribute('stroke','#7fb3ff'); rR.setAttribute('stroke-width','1'); rotG.appendChild(rR); }
+        // C inner top opening (xiL..xiR)
+        if (cur.bs.C){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(xiL)); r.setAttribute('y', String(yTop)); r.setAttribute('width', String(xiR - xiL)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
+        // D right outer
+        if (cur.bs.D){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
+        // E (bottom left return) and H (bottom right return) precise lengths
               if (cur.bs && (cur.bs.E || cur.bs.H)){
                 const eLen = px(Math.max(0, Number(len.E||0)));
                 const hLen = px(Math.max(0, Number(len.H||0)));
