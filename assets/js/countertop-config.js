@@ -92,8 +92,15 @@
           mkRot(cx - (aPx/2) - 22, cy, `${b}\"`, -90);
           // C bottom inner run
           const flipX = !!cur.flipX; const cMidX = !flipX ? (cx - aPx/2 + cPx/2) : (cx + aPx/2 - cPx/2); const cY = cy + bPx/2 + 14; mk(cMidX, cY, `${c}\"`);
-          // D right outer side number (also uses B dimension) rotated to align with vertical edge
-          mkRot(cx + (aPx/2) + 22, cy, `${b}\"`, -90);
+          // D outer vertical top segment length shown on the correct side (mirrors with flipX) and uses D value
+          const dYmid = cy - bPx/2 + dPx/2;
+          if (!flipX){
+            // D on right side when not flipped
+            mkRot(cx + (aPx/2) + 22, dYmid, `${d}\"`, -90);
+          } else {
+            // D on left side when flipped
+            mkRot(cx - (aPx/2) - 22, dYmid, `${d}\"`, -90);
+          }
           return;
         }
         if (cur.type==='u'){
@@ -339,9 +346,10 @@
             const bottomY = centerY + b/2;
             const ciMidX = !flipX ? (centerX - a/2 + c/2) : (centerX + a/2 - c/2);
             addHandle(idx, ciMidX, bottomY, rotation, 'C');
-            const dX = !flipX ? (centerX - a/2 + c) : (centerX + a/2 - c);
-            const dMidY = centerY - b/2 + d/2;
-            addHandle(idx, dX, dMidY, rotation, 'D');
+            // D handle at midpoint of top segment on the correct outer edge
+            const dYmid = centerY - b/2 + d/2;
+            const dX = !flipX ? (centerX + a/2) : (centerX - a/2);
+            addHandle(idx, dX, dYmid, rotation, 'D');
           }
 
   } else if (shape==='u'){
@@ -494,8 +502,8 @@
             const xiRh = centerX + (px(aIn))/2 - px(hIn);
             const yi = centerY - (px(bIn))/2 + px(dIn);
             addHandle(idx, (xiLh+xiRh)/2, yi, rotation, 'C');
-            // D handle slightly above inner top center
-            addHandle(idx, (xiLh+xiRh)/2, yi - 10, rotation, 'D');
+            // D handle at exact midpoint of the inner top span (C), not offset
+            addHandle(idx, (xiLh+xiRh)/2, yi, rotation, 'D');
             // add handles for E and H (F/G removed)
             const bottomY = centerY + b/2;
             // E mid of left bottom return
