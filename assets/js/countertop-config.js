@@ -1120,7 +1120,7 @@
               const key = `P${i}`;
               const lab = document.createElement('label'); lab.className='kc-meas opt';
               const id = `bs_${key}`;
-              lab.innerHTML = `<input type="checkbox" id="${id}" data-ct-backsplash="${key}" /> Edge ${letter}`;
+              lab.innerHTML = `<input type="checkbox" id="${id}" data-ct-backsplash="${key}" /> Side ${letter}`;
               bsList.appendChild(lab);
               const inp = lab.querySelector('input'); if (inp){ inp.checked = !!cur.bsPoly[i]; inp.disabled = false; }
             }

@@ -90,7 +90,7 @@
 .kc-ct-inline .sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
 /* resize handles (future) */
-.kc-ct-handle{position:absolute;width:10px;height:10px;border:2px solid #4f6bd8;background:#fff;border-radius:50%;box-shadow:0 1px 2px rgba(0,0,0,.2);z-index:3}
+.kc-ct-handle{position:absolute;width:12px;height:12px;border:2px solid #2d4a7a;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.25);z-index:3}
 
 .kc-ct-alert{display:flex;gap:10px;border-top:0;margin:0 16px 16px;padding:12px;color:#23356f;background:#fff7ec;border:1px solid #ffd49c;border-radius:8px}
 .kc-ct-alert .ico{width:22px;height:22px;border-radius:6px;background:#ff9f43;color:#fff;font:700 14px/22px system-ui;text-align:center}
