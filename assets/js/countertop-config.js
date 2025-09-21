@@ -657,6 +657,14 @@
           const ptsIn = Array.isArray(cur.points) && cur.points.length>=3 ? cur.points : [
             {x:-40,y:-30},{x:40,y:-30},{x:60,y:0},{x:10,y:40},{x:-30,y:20}
           ];
+          // ensure bsPoly exists and matches edges count
+          if (!Array.isArray(cur.bsPoly)) cur.bsPoly = new Array(ptsIn.length).fill(false);
+          if (cur.bsPoly.length !== ptsIn.length){
+            const old = cur.bsPoly.slice(0);
+            const next = new Array(ptsIn.length).fill(false);
+            for (let i=0;i<Math.min(old.length, next.length);i++){ next[i] = !!old[i]; }
+            cur.bsPoly = next;
+          }
           // local inches -> viewBox units
           const toWorld = (lx,ly)=>{
             const rad = (rotation||0) * Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad);
@@ -677,6 +685,35 @@
           polyPath.setAttribute('stroke', '#ccc');
           polyPath.setAttribute('stroke-width', '2');
           gRoot.appendChild(polyPath);
+
+          // backsplash along selected polygon edges (render above countertop)
+          {
+            const bhPx = Number(opts.bsHeight||0) * 2; // pixels
+            if (bhPx>0 && Array.isArray(cur.bsPoly)){
+              // orientation via signed area (local inches)
+              let area=0; for (let i=0;i<ptsIn.length;i++){ const a=ptsIn[i], b=ptsIn[(i+1)%ptsIn.length]; area += (a.x*b.y - b.x*a.y); }
+              const isCCW = area > 0;
+              for (let i=0;i<ptsIn.length;i++){
+                if (!cur.bsPoly[i]) continue;
+                const aL = ptsIn[i], bL = ptsIn[(i+1)%ptsIn.length];
+                const aW = toWorld(aL.x, aL.y), bW = toWorld(bL.x, bL.y);
+                const dx = bW.x - aW.x, dy = bW.y - aW.y; const len = Math.hypot(dx,dy)||1;
+                // outward normal: right side for CCW, left for CW
+                const nx = isCCW ? (dy/len) : (-dy/len);
+                const ny = isCCW ? (-dx/len) : (dx/len);
+                const p0x = aW.x, p0y = aW.y;
+                const p1x = bW.x, p1y = bW.y;
+                const q1x = p1x + nx*bhPx, q1y = p1y + ny*bhPx;
+                const q0x = p0x + nx*bhPx, q0y = p0y + ny*bhPx;
+                const bp = document.createElementNS(ns,'path');
+                bp.setAttribute('d', `M ${p0x} ${p0y} L ${p1x} ${p1y} L ${q1x} ${q1y} L ${q0x} ${q0y} Z`);
+                bp.setAttribute('fill', '#e6f2ff');
+                bp.setAttribute('stroke', '#7fb3ff');
+                bp.setAttribute('stroke-width', '1');
+                gRoot.appendChild(bp);
+              }
+            }
+          }
 
           // labels: edge lengths (inches) at midpoints
           const labelEdge=(x1,y1,x2,y2,txt)=>{ const mx=(x1+x2)/2, my=(y1+y2)/2 - 6; const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI; const t=document.createElementNS(ns,'text'); t.setAttribute('x', String(mx)); t.setAttribute('y', String(my)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`); gRoot.appendChild(t); };
@@ -806,7 +843,8 @@
         const id='s'+(shapes.length+1);
         if (type==='poly'){
           const pts=[{x:-40,y:-30},{x:40,y:-30},{x:60,y:0},{x:10,y:40},{x:-30,y:20}];
-          shapes.push({ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:pts, len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
+          const bsPoly = new Array(pts.length).fill(false);
+          shapes.push({ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:pts, bsPoly, len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
         } else {
   const baseLen = {A:a,B:b,C:c,D:d};
   if (type==='u'){ baseLen.E = Math.round((a - c)/2); baseLen.H = Math.round((a - c)/2); }
@@ -821,7 +859,7 @@
       btn.addEventListener('click', ()=>{
           pushHistory();
         const id='s'+(shapes.length+1);
-        const s={ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:[], len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] };
+        const s={ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:[], bsPoly:[], len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] };
         shapes.push(s); active=shapes.length-1; drawingPoly=true; drawingIdx=active; shapeLabel.textContent=s.name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
       });
     });
@@ -1068,6 +1106,24 @@
             if (cur.bs.BL==null) cur.bs.BL=false; if (cur.bs.BR==null) cur.bs.BR=false;
             if (cur.bs.E==null) cur.bs.E=false; if (cur.bs.H==null) cur.bs.H=false;
             ['A','BL','BR','C','E','H'].forEach(s=> mk(s, sideLabel(s)));
+          } else if (cur.type==='poly'){
+            const n = Array.isArray(cur.points) ? cur.points.length : 0;
+            if (!Array.isArray(cur.bsPoly)) cur.bsPoly = new Array(n).fill(false);
+            if (cur.bsPoly.length !== n){
+              const old = cur.bsPoly.slice(0);
+              const next = new Array(n).fill(false);
+              for (let i=0;i<Math.min(old.length, next.length);i++){ next[i] = !!old[i]; }
+              cur.bsPoly = next;
+            }
+            for (let i=0;i<n;i++){
+              const letter = String.fromCharCode(65+i);
+              const key = `P${i}`;
+              const lab = document.createElement('label'); lab.className='kc-meas opt';
+              const id = `bs_${key}`;
+              lab.innerHTML = `<input type="checkbox" id="${id}" data-ct-backsplash="${key}" /> Edge ${letter}`;
+              bsList.appendChild(lab);
+              const inp = lab.querySelector('input'); if (inp){ inp.checked = !!cur.bsPoly[i]; inp.disabled = false; }
+            }
           } else {
             // default to A-D if unknown
             ['A','B','C','D'].forEach(s=> mk(s, sideLabel(s)));
@@ -1162,9 +1218,23 @@
       if (active<0) return;
         pushHistory();
       const k = inp.getAttribute('data-ct-backsplash'); if (!k) return;
-      if (!shapes[active].bs) shapes[active].bs = {};
-  const checked = (inp.tagName === 'INPUT') ? (inp).checked : !!inp.getAttribute('checked');
-  shapes[active].bs[k] = !!checked;
+      const s = shapes[active];
+      const checked = (inp.tagName === 'INPUT') ? (inp).checked : !!inp.getAttribute('checked');
+      if (s.type==='poly' && /^P\d+$/.test(k)){
+        const idx = parseInt(k.slice(1),10);
+        const n = Array.isArray(s.points) ? s.points.length : 0;
+        if (!Array.isArray(s.bsPoly)) s.bsPoly = new Array(n).fill(false);
+        if (s.bsPoly.length !== n){
+          const old = s.bsPoly.slice(0);
+          const next = new Array(n).fill(false);
+          for (let i=0;i<Math.min(old.length, next.length);i++){ next[i] = !!old[i]; }
+          s.bsPoly = next;
+        }
+        if (idx>=0 && idx<n) s.bsPoly[idx] = !!checked;
+      } else {
+        if (!s.bs) s.bs = {};
+        s.bs[k] = !!checked;
+      }
       updateSummary(); save(); draw();
     });
     // L flip binding
@@ -1247,23 +1317,23 @@
 
     // Select and drag shapes directly in the preview
     let hitAreas = [];
-  (function enableDrag(){
+    (function enableDrag(){
       const svgEl = sel('[data-ct-svg]', root);
       if (!svgEl){ return; }
       let dragging=false, start={}, orig={}, dragIdx=-1;
-  let resizing=false, resizeKey=null, resizeIdx=-1, startLocal={};
+      let resizing=false, resizeKey=null, resizeIdx=-1, startLocal={};
       hover = -1;
       function getPoint(ev){
         const rect = svgEl.getBoundingClientRect();
         const vb = svgEl.viewBox?.baseVal || { x:0, y:0, width:rect.width, height:rect.height };
         const cX = ('touches' in ev ? ev.touches[0].clientX : ev.clientX);
         const cY = ('touches' in ev ? ev.touches[0].clientY : ev.clientY);
-        const nx = (cX - rect.left) / rect.width; // 0..1
-        const ny = (cY - rect.top) / rect.height; // 0..1
+        const nx = (cX - rect.left) / rect.width;
+        const ny = (cY - rect.top) / rect.height;
         return { x: vb.x + nx * vb.width, y: vb.y + ny * vb.height };
       }
       function pointInRotRect(px, py, cx, cy, w, h, rotDeg, pad=0){
-        const rad = -rotDeg * Math.PI/180; // inverse rotate
+        const rad = -rotDeg * Math.PI/180;
         const cos = Math.cos(rad), sin = Math.sin(rad);
         const dx = px - cx, dy = py - cy;
         const lx = dx*cos - dy*sin; const ly = dx*sin + dy*cos;
@@ -1278,9 +1348,9 @@
         return null;
       }
       function worldToLocal(pxv, pyv, cx, cy, rotDeg){ const rad=-rotDeg*Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad); const dx=pxv-cx, dy=pyv-cy; return { x: dx*cos - dy*sin, y: dx*sin + dy*cos }; }
-    const onDown=(ev)=>{
+
+      const onDown=(ev)=>{
         const pt=getPoint(ev);
-        // Handle free-draw polygon creation clicks
         if (drawingPoly && drawingIdx>=0 && shapes[drawingIdx] && shapes[drawingIdx].type==='poly'){
           if (shapes[drawingIdx].points.length===0){ pushHistory(); }
           const s=shapes[drawingIdx];
@@ -1289,72 +1359,81 @@
             s.points.push({x:0,y:0});
           } else {
             const loc = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot||0);
-            // convert viewBox units to inches
             s.points.push({ x: Math.round(loc.x/2), y: Math.round(loc.y/2) });
+          }
+          const n = s.points.length;
+          if (!Array.isArray(s.bsPoly)) s.bsPoly = new Array(n).fill(false);
+          if (s.bsPoly.length !== n){
+            const old = s.bsPoly.slice(0);
+            const next = new Array(n).fill(false);
+            for (let i=0;i<Math.min(old.length, next.length);i++){ next[i] = !!old[i]; }
+            s.bsPoly = next;
           }
           active=drawingIdx; shapeLabel.textContent=s.name; draw(); save(); ev.preventDefault(); return;
         }
         if (toolMode==='resize'){
           const ph = pickHandle(pt);
-          if (ph){ pushHistory(); const {h}=ph; resizeIdx=h.idx; resizeKey=h.key; resizing=true; isGestureActive=true; updateActionStates(); if (gestureHintTimer) clearTimeout(gestureHintTimer); gestureHintTimer=setTimeout(()=>{ const gh=sel('[data-ct-gesture-hint]', root); if (gh && isGestureActive) gh.hidden=true; }, 2000); start=pt; const s=shapes[resizeIdx]; startLocal = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot); orig = { len: JSON.parse(JSON.stringify(s.len)), pos: {x:s.pos.x,y:s.pos.y} }; ev.preventDefault(); return; }
+          if (ph){
+            pushHistory();
+            const {h}=ph; resizeIdx=h.idx; resizeKey=h.key; resizing=true; isGestureActive=true; updateActionStates();
+            if (gestureHintTimer) clearTimeout(gestureHintTimer);
+            gestureHintTimer=setTimeout(()=>{ const gh=sel('[data-ct-gesture-hint]', root); if (gh && isGestureActive) gh.hidden=true; }, 2000);
+            start=pt; const s=shapes[resizeIdx]; startLocal = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot);
+            orig = { len: JSON.parse(JSON.stringify(s.len)), pos: {x:s.pos.x,y:s.pos.y} };
+            ev.preventDefault(); return;
+          }
         }
-        const idx=pickIndex(pt, 28);
-        if (idx!==-1){
-          if (idx!==active){ active=idx; shapeLabel.textContent=shapes[active].name; renderTabs(); syncInputs(); draw(); }
-  if (toolMode==='move'){ pushHistory(); dragging=true; isGestureActive=true; updateActionStates(); if (gestureHintTimer) clearTimeout(gestureHintTimer); gestureHintTimer=setTimeout(()=>{ const gh=sel('[data-ct-gesture-hint]', root); if (gh && isGestureActive) gh.hidden=true; }, 2000); start=pt; orig={...shapes[active].pos}; dragIdx=active; ev.preventDefault(); }
+        if(!dragging){
+          const idx=pickIndex(pt, 28);
+          if (idx!==-1){
+            if (idx!==active){ active=idx; shapeLabel.textContent=shapes[active].name; renderTabs(); syncInputs(); draw(); }
+            if (toolMode==='move'){
+              pushHistory(); dragging=true; isGestureActive=true; updateActionStates();
+              if (gestureHintTimer) clearTimeout(gestureHintTimer);
+              gestureHintTimer=setTimeout(()=>{ const gh=sel('[data-ct-gesture-hint]', root); if (gh && isGestureActive) gh.hidden=true; }, 2000);
+              start=pt; orig={...shapes[active].pos}; dragIdx=active; ev.preventDefault();
+            }
+          }
         }
       };
+
       const snapper = (val)=> opts.snap ? Math.round(val/10)*10 : val;
       const onMove=(ev)=>{
         const pt=getPoint(ev);
         if(resizing){
           const s=shapes[resizeIdx];
           const curLocal = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot);
-          let dxIn = (curLocal.x - startLocal.x) / 2; // px->in
+          let dxIn = (curLocal.x - startLocal.x) / 2;
           let dyIn = (curLocal.y - startLocal.y) / 2;
           if (opts.snap){ dxIn = Math.round(dxIn); dyIn = Math.round(dyIn); }
           const clamp=(v,min,max)=> Math.min(Math.max(v,min),max);
-          const oLen = orig.len || {}, oPos = orig.pos || {};
+          const oLen = orig.len || {};
           if (resizeKey==='A-right'){
-            s.len.A = Math.max(1, Math.round((oLen.A||0) + dxIn));
-          } else if (resizeKey==='A-left'){
-            const newA = Math.max(1, Math.round((oLen.A||0) - dxIn));
-            const delta = (newA - (oLen.A||0))/2 * 2; // px in inches then px? here inches
+            const newA = clamp(Math.round((oLen.A||0) + dxIn), 1, 600);
             s.len.A = newA;
-            s.pos.x = oPos.x - dxIn; // move center left when dragging left side
-          } else if (resizeKey==='B-top'){
-            const newB = Math.max(1, Math.round((oLen.B||0) - dyIn));
-            s.len.B = newB; s.pos.y = oPos.y - dyIn;
-          } else if (resizeKey==='B-bottom'){
-            s.len.B = Math.max(1, Math.round((oLen.B||0) + dyIn));
-          } else if (resizeKey==='C'){
-            if (s.type==='rect'){
-              s.len.A = Math.max(1, Math.round((oLen.A||0))); // mirrored via UI; no drag-op
-            } else if (s.type==='u'){
-              // Change C by adjusting E/H symmetrically to keep notch centered
-              const A = s.len.A||0; const newC = clamp(Math.round((oLen.C||0) + dxIn), 1, Math.max(1, A-1));
-              const spare = Math.max(0, A - newC);
-              s.len.E = Math.round(spare/2); s.len.H = spare - s.len.E; s.len.C = newC;
-            } else if (s.type==='l'){
-              // L: C is the inner bottom run; clamp 0..A-1
-              const newC = clamp(Math.round((oLen.C||0) + dxIn), 0, Math.max(0, (s.len.A||0)-1));
-              s.len.C = newC;
+            if (s.type==='u'){
+              const maxC = Math.max(1, newA-1);
+              s.len.C = clamp(Math.round(s.len.C||1), 1, maxC);
+              const spare = Math.max(0, newA - (s.len.C||1));
+              let e = Math.max(0, Math.min(spare, s.len.E||0));
+              let h = Math.max(0, Math.min(spare - e, s.len.H||0));
+              const used = e + h;
+              if (used > spare){ if (h > spare){ h = spare; e = 0; } else { e = spare - h; } }
+              s.len.E = Math.round(e);
+              s.len.H = Math.round(h);
             }
           } else if (resizeKey==='D'){
             if (s.type==='rect'){
               s.len.B = Math.max(1, Math.round((oLen.B||0)));
             } else if (s.type==='u'){
-              // Clamp D to the shallower of BL/BR minus 1
               const BL = Number((s.len.BL!=null)?s.len.BL:((s.len.B!=null)?s.len.B:25));
               const BR = Number((s.len.BR!=null)?s.len.BR:((s.len.B!=null)?s.len.B:25));
               const m = Math.max(0, Math.min(BL, BR));
               s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, m-1));
             } else if (s.type==='l'){
-              // L: D is the inner vertical; clamp 0..B-1
               s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, (s.len.B||0)-1));
             }
           } else if (resizeKey==='BL' && s.type==='u'){
-            // Adjust left depth directly; re-clamp D to new min(BL,BR)-1
             const curBL = (oLen.BL!=null)?oLen.BL:((oLen.B!=null)?oLen.B:25);
             const newBL = clamp(Math.round(curBL + dyIn), 1, 240);
             s.len.BL = newBL;
@@ -1362,7 +1441,6 @@
             const m = Math.max(0, Math.min(newBL, BR));
             s.len.D = Math.max(0, Math.min(Math.round(s.len.D||0), Math.max(0, m-1)));
           } else if (resizeKey==='BR' && s.type==='u'){
-            // Adjust right depth directly; re-clamp D to new min(BL,BR)-1
             const curBR = (oLen.BR!=null)?oLen.BR:((oLen.B!=null)?oLen.B:25);
             const newBR = clamp(Math.round(curBR + dyIn), 1, 240);
             s.len.BR = newBR;
@@ -1370,7 +1448,6 @@
             const m = Math.max(0, Math.min(BL, newBR));
             s.len.D = Math.max(0, Math.min(Math.round(s.len.D||0), Math.max(0, m-1)));
           } else if (['E','H'].includes(String(resizeKey)) && s.type==='u'){
-            // adjust corresponding return/inner verticals independently
             if (resizeKey==='E'){
               const maxE = Math.max(0, (s.len.A||0) - 1 - (s.len.H||0));
               s.len.E = clamp(Math.round((oLen.E||0) + dxIn), 0, maxE);
@@ -1379,25 +1456,21 @@
               s.len.H = clamp(Math.round((oLen.H||0) - dxIn), 0, maxH);
             }
           } else if (resizeKey && String(resizeKey).startsWith('P-') && s.type==='poly'){
-            // edge midpoint drag: scale edge length by moving the far vertex along edge normal
             const i = parseInt(String(resizeKey).split('-')[1]||'-1',10);
             if (Array.isArray(s.points) && i>=0){
               if (!orig.points) orig.points = s.points.map(p=> ({x:p.x, y:p.y}));
               const a = orig.points[i]; const b = orig.points[(i+1)%orig.points.length];
               const ax=a.x, ay=a.y, bx=b.x, by=b.y;
-              const vx=bx-ax, vy=by-ay; const len=Math.hypot(vx,vy)||1; const nx=vx/len, ny=vy/len; // unit along edge
-              // project movement along edge direction (dxIn,dyIn) in local inches
+              const vx=bx-ax, vy=by-ay; const len=Math.hypot(vx,vy)||1; const nx=vx/len, ny=vy/len;
               const t = (dxIn*nx + dyIn*ny);
-              const move = t; // inches along edge
+              const move = t;
               s.points[(i+1)%s.points.length] = { x: Math.round(bx + move*nx), y: Math.round(by + move*ny) };
             }
           } else if (resizeKey && String(resizeKey).startsWith('V-')){
-            // polygon vertex drag
             const i = parseInt(String(resizeKey).split('-')[1]||'-1',10);
             if (Array.isArray(s.points) && i>=0 && i<s.points.length){
               if (!orig.points) orig.points = s.points.map(p=> ({x:p.x, y:p.y}));
               const op = orig.points[i];
-              // move vertex by delta inches
               const nx = (op.x||0) + dxIn; const ny = (op.y||0) + dyIn;
               s.points[i] = { x: Math.round(nx), y: Math.round(ny) };
             }
@@ -1423,28 +1496,37 @@
         }
         const dx=pt.x-start.x, dy=pt.y-start.y; shapes[dragIdx].pos={x:snapper(orig.x+dx),y:snapper(orig.y+dy)}; draw();
       };
-  const onUp=()=>{ if(resizing){ resizing=false; resizeIdx=-1; resizeKey=null; hoverHandle=null; isGestureActive=false; if (gestureHintTimer) clearTimeout(gestureHintTimer); try{ const pop=sel('[data-ct-gesture-pop]', root); if (pop) pop.hidden=true; }catch(e){} updateActionStates(); save(); return; } if(!dragging) return; dragging=false; dragIdx=-1; isGestureActive=false; if (gestureHintTimer) clearTimeout(gestureHintTimer); try{ const pop=sel('[data-ct-gesture-pop]', root); if (pop) pop.hidden=true; }catch(e){} updateActionStates(); save(); };
+
+      const onUp=()=>{
+        if(resizing){
+          resizing=false; resizeIdx=-1; resizeKey=null; hoverHandle=null; isGestureActive=false;
+          if (gestureHintTimer) clearTimeout(gestureHintTimer);
+          try{ const pop=sel('[data-ct-gesture-pop]', root); if (pop) pop.hidden=true; }catch(e){}
+          updateActionStates(); save(); return;
+        }
+        if(!dragging) return;
+        dragging=false; dragIdx=-1; isGestureActive=false;
+        if (gestureHintTimer) clearTimeout(gestureHintTimer);
+        try{ const pop=sel('[data-ct-gesture-pop]', root); if (pop) pop.hidden=true; }catch(e){}
+        updateActionStates(); save();
+      };
+
       svgEl.addEventListener('mousedown', onDown);
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup', onUp);
       svgEl.addEventListener('touchstart', onDown, {passive:false});
       window.addEventListener('touchmove', onMove, {passive:false});
       window.addEventListener('touchend', onUp);
-      // ESC to cancel active drag/resize gesture
       window.addEventListener('keydown', (ev)=>{
         if (ev.key !== 'Escape') return;
-        // Close help if open
         try{ const pop = sel('[data-ct-gesture-pop]', root); if (pop && !pop.hidden){ pop.hidden = true; } }catch(e){}
         if (!dragging && !resizing) return;
         ev.preventDefault();
-        // restore snapshot from start of gesture
         undo();
         dragging=false; dragIdx=-1; resizing=false; resizeIdx=-1; resizeKey=null; hoverHandle=null; isGestureActive=false; updateActionStates();
-        announce('Canceled');
-        try{ toast('Canceled'); }catch(e){}
+        announce('Canceled'); try{ toast('Canceled'); }catch(e){}
       });
-      // finish free draw on double click
-  svgEl.addEventListener('dblclick', ()=>{ if(drawingPoly){ pushHistory(); drawingPoly=false; drawingIdx=-1; save(); draw(); } });
+      svgEl.addEventListener('dblclick', ()=>{ if(drawingPoly){ pushHistory(); drawingPoly=false; drawingIdx=-1; save(); draw(); } });
     })();
   // Reposition inline inputs on resize/scroll
   window.addEventListener('resize', ()=>{ if (inlineHost) { try{ renderInlineInputs(); }catch(e){} } });
@@ -1486,9 +1568,9 @@
   sel('[data-ct-gesture-cancel]', root)?.addEventListener('click', (e)=>{ e.preventDefault(); if (isGestureActive) { undo(); isGestureActive=false; updateActionStates(); announce('Canceled'); try{ toast('Canceled'); }catch(e){} } });
   // Help popover toggle
   sel('[data-ct-gesture-help]', root)?.addEventListener('click', (e)=>{ e.preventDefault(); const pop = sel('[data-ct-gesture-pop]', root); if (!pop) return; pop.hidden = !pop.hidden; });
-    // Duplicate already bound to all matching buttons above
-    const svgEl = sel('[data-ct-svg]', root);
-    function applyZoom(){ svgEl.setAttribute('viewBox', `0 0 ${600/zoom} ${600/zoom}`); }
+  // Duplicate already bound to all matching buttons above
+  const svgView = sel('[data-ct-svg]', root);
+  function applyZoom(){ svgView.setAttribute('viewBox', `0 0 ${600/zoom} ${600/zoom}`); }
   sel('[data-ct-zoom-in]', root)?.addEventListener('click', ()=>{ zoom=Math.min(3, zoom+0.2); applyZoom(); draw(); });
   sel('[data-ct-zoom-out]', root)?.addEventListener('click', ()=>{ zoom=Math.max(0.4, zoom-0.2); applyZoom(); draw(); });
     root.querySelectorAll('[data-ct-counter]').forEach(box=>{
@@ -1655,7 +1737,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T14';
+  window.KC_CT.version = '2025-09-21T15';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
