@@ -295,8 +295,6 @@
           let dIn = Number(len.D||10);
           let eIn = Number(len.E != null ? len.E :  Math.round((aIn - (len.C||20))/2));
           let hIn = Number(len.H != null ? len.H :  Math.round((aIn - (len.C||20))/2));
-          let fIn = Number(len.F != null ? len.F :  Math.max(0, (bIn - dIn)/2));
-          let gIn = Number(len.G != null ? len.G :  Math.max(0, (bIn - dIn)/2));
           // clamp each independently
           if (dIn < 0) dIn = 0; if (dIn > bIn-1) dIn = bIn-1;
           // compute local clamped values (do not mutate stored lengths here)
@@ -310,25 +308,17 @@
             const over = (eLocal + hLocal) - (aIn - minSpan);
             if (hLocal >= eLocal) hLocal = Math.max(0, hLocal - over); else eLocal = Math.max(0, eLocal - over);
           }
-          const maxVert = Math.max(0, bIn - dIn - 1);
-          let fLocal = Math.min(Math.max(fIn,0), maxVert);
-          let gLocal = Math.min(Math.max(gIn,0), maxVert);
           // derived C used only for rendering
           const cIn = Math.max(1, aIn - (eLocal + hLocal));
           const a = px(aIn), b = px(bIn);
           const x = centerX - a/2, y = centerY - b/2;
-          // inner notch polygon (may be slanted at bottom if F != G)
+          // inner notch polygon (verticals extend to bottom; F/G removed)
           const xiL = x + px(eLocal);                // left inner x
           const xiR = x + px(aIn - hLocal);          // right inner x
           const yTop = y + px(dIn);               // inner top y
-          let yBotL = yTop + px(fLocal);           // left vertical bottom y
-          let yBotR = yTop + px(gLocal);           // right vertical bottom y
-          const yBottomLimit = y + b - px(1);
-          if (yBotL > yBottomLimit) yBotL = yBottomLimit;
-          if (yBotR > yBottomLimit) yBotR = yBottomLimit;
-          const yMin = yTop + px(1);
-          if (yBotL < yMin) yBotL = yMin;
-          if (yBotR < yMin) yBotR = yMin;
+          // inner verticals extend to the outer bottom to ensure a true U opening
+          const yBotL = y + b;                       // left vertical bottom at outer bottom
+          const yBotR = y + b;                       // right vertical bottom at outer bottom
 
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
@@ -394,17 +384,13 @@
           drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY + b/2 - m, 'B');
           // B right outer (mirror)
           drawGuideLine(rotG, centerX + a/2 - m, centerY - b/2 + m, centerX + a/2 - m, centerY + b/2 - m, 'B');
-          // Use existing xiL/xiR/yTop/yBotL/yBotR to draw C/D/E/F/G/H guides
+          // Use existing xiL/xiR/yTop to draw C/D/E/H guides (F/G removed)
           // C inner top opening
           drawGuideLine(rotG, xiL + m, yTop + m, xiR - m, yTop + m, 'C');
           // D inner depth (using center of opening)
           drawGuideLine(rotG, (xiL+xiR)/2, centerY - b/2 + m, (xiL+xiR)/2, yTop - m, 'D');
           // E bottom left return
           drawGuideLine(rotG, centerX - a/2 + m, centerY + b/2 - m, xiL - m, centerY + b/2 - m, 'E');
-          // F left inner vertical
-          drawGuideLine(rotG, xiL - m, yTop + m, xiL - m, yBotL - m, 'F');
-          // G right inner vertical
-          drawGuideLine(rotG, xiR + m, yTop + m, xiR + m, yBotR - m, 'G');
           // H bottom right return
           drawGuideLine(rotG, xiR + m, centerY + b/2 - m, centerX + a/2 - m, centerY + b/2 - m, 'H');
           gRoot.appendChild(rotG);
@@ -422,16 +408,12 @@
             addHandle(idx, (xiLh+xiRh)/2, yi, rotation, 'C');
             // D handle slightly above inner top center
             addHandle(idx, (xiLh+xiRh)/2, yi - 10, rotation, 'D');
-            // add handles for E–H using independent returns/verticals
+            // add handles for E and H (F/G removed)
             const bottomY = centerY + b/2;
             // E mid of left bottom return
             addHandle(idx, centerX - a/2 + px(eIn)/2, bottomY, rotation, 'E');
             // H mid of right bottom return
             addHandle(idx, centerX + a/2 - px(hIn)/2, bottomY, rotation, 'H');
-            // F/G inner vertical mids
-            const yBotLh = yi + px(fIn); const yBotRh = yi + px(gIn);
-            addHandle(idx, xiLh, (yi + yBotLh)/2, rotation, 'F');
-            addHandle(idx, xiRh, (yi + yBotRh)/2, rotation, 'G');
           }
         } else if (shape==='poly'){
           // Custom polygon defined by local-inch points: [{x,y}, ...] in inches
@@ -549,8 +531,8 @@
           const pts=[{x:-40,y:-30},{x:40,y:-30},{x:60,y:0},{x:10,y:40},{x:-30,y:20}];
           shapes.push({ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:pts, len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
         } else {
-      const baseLen = {A:a,B:b,C:c,D:d};
-      if (type==='u'){ baseLen.E = Math.round((a - c)/2); baseLen.H = Math.round((a - c)/2); baseLen.F = Math.max(0, b - d); baseLen.G = Math.max(0, b - d); }
+  const baseLen = {A:a,B:b,C:c,D:d};
+  if (type==='u'){ baseLen.E = Math.round((a - c)/2); baseLen.H = Math.round((a - c)/2); }
       shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len:baseLen, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
         }
         active = shapes.length-1; shapeLabel.textContent = shapes[active].name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
@@ -656,11 +638,8 @@
             if (k==='E'){ s.len.E = Math.max(0, Math.min(v, Math.max(0, A - 1 - (s.len.H||0)))); }
             if (k==='H'){ s.len.H = Math.max(0, Math.min(v, Math.max(0, A - 1 - (s.len.E||0)))); }
             s.len.C = Math.max(1, A - Math.max(0, (s.len.E||0)) - Math.max(0, (s.len.H||0)));
-          } else if (k==='F' || k==='G' || k==='D'){
+          } else if (k==='D'){
             s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, B-1)));
-            const maxVert = Math.max(0, B - s.len.D - 1);
-            if (k==='F'){ s.len.F = Math.max(0, Math.min(v, maxVert)); }
-            if (k==='G'){ s.len.G = Math.max(0, Math.min(v, maxVert)); }
           } else if (k==='C'){
             // Update C by rebalancing E/H symmetrically to keep notch centered
             const newC = Math.max(1, Math.min(v, Math.max(1, A-1)));
@@ -723,7 +702,7 @@
           } else if (cur.type==='l'){
             addRow('Top (A)','A'); addRow('Left (B)','B'); addRow('Inner bottom run (C)','C'); addRow('Inner vertical (D)','D');
           } else if (cur.type==='u'){
-            ['A','B','C','D','E','F','G','H'].forEach(k=> addRow(`${k}`, k));
+            ['A','B','C','D','E','H'].forEach(k=> addRow(`${k}`, k));
           } else if (cur.type==='poly'){
             const n = (Array.isArray(cur.points)?cur.points.length:0); for(let i=0;i<n;i++){ const letter=String.fromCharCode(65+i); addRow(`Side ${letter}`, `P${i}`); }
           }
@@ -955,7 +934,7 @@
               // L: D is the inner vertical; clamp 0..B-1
               s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, (s.len.B||0)-1));
             }
-          } else if (['E','F','G','H'].includes(String(resizeKey)) && s.type==='u'){
+          } else if (['E','H'].includes(String(resizeKey)) && s.type==='u'){
             // adjust corresponding return/inner verticals independently
             if (resizeKey==='E'){
               const maxE = Math.max(0, (s.len.A||0) - 1 - (s.len.H||0));
@@ -963,12 +942,6 @@
             } else if (resizeKey==='H'){
               const maxH = Math.max(0, (s.len.A||0) - 1 - (s.len.E||0));
               s.len.H = clamp(Math.round((oLen.H||0) - dxIn), 0, maxH);
-            } else if (resizeKey==='F'){
-              const maxF = Math.max(0, (s.len.B||0) - 1 - (s.len.D||0));
-              s.len.F = clamp(Math.round((oLen.F||0) + dyIn), 0, maxF);
-            } else if (resizeKey==='G'){
-              const maxG = Math.max(0, (s.len.B||0) - 1 - (s.len.D||0));
-              s.len.G = clamp(Math.round((oLen.G||0) + dyIn), 0, maxG);
             }
           } else if (resizeKey && String(resizeKey).startsWith('P-') && s.type==='poly'){
             // edge midpoint drag: scale edge length by moving the far vertex along edge normal
