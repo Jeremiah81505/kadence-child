@@ -682,8 +682,8 @@
           dStr += ' Z';
           polyPath.setAttribute('d', dStr);
           polyPath.setAttribute('fill', '#f8c4a0');
-          polyPath.setAttribute('stroke', '#ccc');
-          polyPath.setAttribute('stroke-width', '2');
+          polyPath.setAttribute('stroke', '#aab3c5');
+          polyPath.setAttribute('stroke-width', '1.5');
           gRoot.appendChild(polyPath);
 
           // backsplash along selected polygon edges (render above countertop)
@@ -708,8 +708,8 @@
                 const bp = document.createElementNS(ns,'path');
                 bp.setAttribute('d', `M ${p0x} ${p0y} L ${p1x} ${p1y} L ${q1x} ${q1y} L ${q0x} ${q0y} Z`);
                 bp.setAttribute('fill', '#e6f2ff');
-                bp.setAttribute('stroke', '#7fb3ff');
-                bp.setAttribute('stroke-width', '1');
+                bp.setAttribute('stroke', '#4d8fe8');
+                bp.setAttribute('stroke-width', '1.25');
                 gRoot.appendChild(bp);
               }
             }
@@ -843,7 +843,7 @@
         const id='s'+(shapes.length+1);
         if (type==='poly'){
           const pts=[{x:-40,y:-30},{x:40,y:-30},{x:60,y:0},{x:10,y:40},{x:-30,y:20}];
-          const bsPoly = new Array(pts.length).fill(false);
+          const bsPoly = new Array(pts.length).fill(true);
           shapes.push({ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:pts, bsPoly, len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
         } else {
   const baseLen = {A:a,B:b,C:c,D:d};
@@ -859,7 +859,7 @@
       btn.addEventListener('click', ()=>{
           pushHistory();
         const id='s'+(shapes.length+1);
-        const s={ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:[], bsPoly:[], len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] };
+  const s={ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:[], bsPoly:[], len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] };
         shapes.push(s); active=shapes.length-1; drawingPoly=true; drawingIdx=active; shapeLabel.textContent=s.name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
       });
     });
