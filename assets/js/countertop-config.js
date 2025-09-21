@@ -1117,12 +1117,18 @@
               const letter=String.fromCharCode(65+i);
               const row=document.createElement('div'); row.className='row';
               row.innerHTML = `<label><span>Corner ${letter}</span>
-                <select data-ct-corner-mode="${i}">
+                <select data-ct-corner-mode="${i}" title="Corner mode: Square keeps sharp; Radius adds an arc; Clip cuts corner straight">
                   <option value="square">Square</option>
                   <option value="radius">Radius</option>
                   <option value="clip">Clip</option>
                 </select>
-                <input type="number" min="0" step="1" class="kc-input-small" data-ct-corner-val="${i}" placeholder="size (in)" />
+                <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-corner-val="${i}" placeholder="size (in)" title="Corner size in inches (distance along each side from the vertex)" />
+                <span class="kc-mini-btns">
+                  <button type="button" class="kc-mini" data-ct-corner-preset data-index="${i}" data-value="0.25" title="Set 1/4 inch">1/4"</button>
+                  <button type="button" class="kc-mini" data-ct-corner-preset data-index="${i}" data-value="0.5" title="Set 1/2 inch">1/2"</button>
+                  <button type="button" class="kc-mini" data-ct-corner-preset data-index="${i}" data-value="1" title="Set 1 inch">1"</button>
+                  <button type="button" class="kc-mini" data-ct-corner-preset data-index="${i}" data-value="2" title="Set 2 inches">2"</button>
+                </span>
               </label>`;
               list.appendChild(row);
             };
@@ -1335,6 +1341,25 @@
       const mode = (s.corners[idx]?.mode)||'square';
       let v = parseInt((el).value||'0',10); if (!isFinite(v)||v<0) v=0; if (v>48) v=48;
       s.corners[idx] = { mode, value: v };
+      updateSummary(); save(); draw();
+    });
+    // Corner presets handler
+    root.addEventListener('click', (ev)=>{
+      const btn = ev.target;
+      if (!(btn instanceof HTMLElement)) return;
+      if (!btn.matches('[data-ct-corner-preset]')) return;
+      if (active<0) return; const s = shapes[active]; if (s.type!=='poly') return;
+      ev.preventDefault();
+      const idx = parseInt(btn.getAttribute('data-index')||'0',10);
+      const v = parseFloat(btn.getAttribute('data-value')||'0');
+      const n = Array.isArray(s.points)?s.points.length:0; if (idx<0||idx>=n) return;
+      pushHistory();
+      if (!Array.isArray(s.corners)) s.corners = new Array(n).fill(null);
+      const mode = (s.corners[idx]?.mode)||'radius';
+      s.corners[idx] = { mode, value: Math.max(0, Math.min(48, v)) };
+      // sync UI
+      const valEl = sel(`[data-ct-corner-val="${idx}"]`, root); if (valEl) valEl.value = String(s.corners[idx].value||0);
+      const selEl = sel(`[data-ct-corner-mode="${idx}"]`, root); if (selEl && selEl.value==='square') selEl.value='radius';
       updateSummary(); save(); draw();
     });
     // L flip binding
