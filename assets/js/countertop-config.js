@@ -52,15 +52,20 @@
         if (txt){ const t=document.createElementNS(ns,'text'); t.setAttribute('x', String((x1+x2)/2)); t.setAttribute('y', String((y1+y2)/2 - 6)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=txt; parent.appendChild(t); }
       };
 
-  const addHandle=(idx, cx, cy, rot, key)=>{
-        handles.push({ idx, cx, cy, rot, key, r:8 });
-        // visual circle
-        const g=document.createElementNS(ns,'g');
-        g.setAttribute('transform', `rotate(${rot} ${cx} ${cy})`);
+      const addHandle=(idx, cx, cy, rot, key)=>{
+        // Rotate the given point around the shape center so handles follow the side when the shape is rotated
+        const sh = shapes[idx];
+        const scx = sh?.pos?.x ?? cx; const scy = sh?.pos?.y ?? cy;
+        const rad = (rot||0) * Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad);
+        const dx = cx - scx, dy = cy - scy;
+        const rx = scx + dx*cos - dy*sin;
+        const ry = scy + dx*sin + dy*cos;
+        handles.push({ idx, cx: rx, cy: ry, rot, key, r:8 });
+        // visual circle at rotated position (no extra group rotation needed)
         const c=document.createElementNS(ns,'circle');
-        c.setAttribute('cx', String(cx)); c.setAttribute('cy', String(cy)); c.setAttribute('r','6');
+        c.setAttribute('cx', String(rx)); c.setAttribute('cy', String(ry)); c.setAttribute('r','6');
         c.setAttribute('fill','#fff'); c.setAttribute('stroke','#4f6bd8'); c.setAttribute('stroke-width','2');
-        if (idx===active) gRoot.appendChild(g), g.appendChild(c);
+        if (idx===active) gRoot.appendChild(c);
       };
 
       const labelNumbers=(parent, cx, cy, cur, dims)=>{
@@ -536,12 +541,12 @@
 
           // active highlight: draw small handles at vertices
           if (idx===active){
-            ptsIn.forEach((p,i)=>{ const w = toWorld(p.x, p.y); addHandle(idx, w.x, w.y, rotation||0, `V-${i}`); });
+            ptsIn.forEach((p,i)=>{ const w = toWorld(p.x, p.y); addHandle(idx, w.x, w.y, 0, `V-${i}`); });
             // also midpoint handles per edge for resizing length
             for (let i=0;i<ptsIn.length;i++){
               const aP = ptsIn[i], bP = ptsIn[(i+1)%ptsIn.length];
               const mid={ x:(aP.x+bP.x)/2, y:(aP.y+bP.y)/2 };
-              const w = toWorld(mid.x, mid.y); addHandle(idx, w.x, w.y, rotation||0, `P-${i}`);
+              const w = toWorld(mid.x, mid.y); addHandle(idx, w.x, w.y, 0, `P-${i}`);
             }
           }
 
