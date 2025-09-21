@@ -169,6 +169,23 @@ add_action( 'wp_enqueue_scripts', function() {
   }
 }, 99 );
 
+// Minimal Kitchen Layout MVP: shortcode and conditional assets
+add_shortcode( 'kitchen_layout', function( $atts = array(), $content = '' ) {
+  // Enqueue minimal assets only when shortcode is used
+  wp_enqueue_style( 'kl-css', get_stylesheet_directory_uri() . '/assets/css/kitchen-layout.css', array(), kc_asset_ver( 'assets/css/kitchen-layout.css' ) );
+  wp_enqueue_script( 'kl-js', get_stylesheet_directory_uri() . '/assets/js/kitchen-layout.js', array(), kc_asset_ver( 'assets/js/kitchen-layout.js' ), true );
+  ob_start();
+  ?>
+  <div class="kl-wrap">
+    <div class="kl-toolbar"><span class="note">Drag to move. Switch to resize by grabbing any blue handle. Measurements are in inches.</span></div>
+    <div class="kl-canvas">
+      <svg class="kl-svg" aria-label="Kitchen Layout Canvas"></svg>
+    </div>
+  </div>
+  <?php
+  return ob_get_clean();
+} );
+
 // Load kitchen designer assets inside the block editor when pattern block is present
 add_action( 'enqueue_block_editor_assets', function() {
   // Editor: always load configurator assets if editing
