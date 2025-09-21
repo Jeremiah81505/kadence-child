@@ -76,27 +76,32 @@
           const rightTxt=document.createElementNS(ns,'text'); rightTxt.setAttribute('x', String(cx + (aPx/2) + 22)); rightTxt.setAttribute('y', String(cy)); rightTxt.setAttribute('text-anchor','start'); rightTxt.setAttribute('font-size','12'); rightTxt.textContent = `${b}"`; parent.appendChild(rightTxt);
         }
         if (cur.type==='l'){
-          // Segment-aware: show C along bottom inner run (length c), D along inner vertical (height d), and B at left outer
           const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
-          // left outer B
+          // Numbers on all four: A top, B left, C inner bottom run, D right outer
+          // B left
           const leftTxt=document.createElementNS(ns,'text'); leftTxt.setAttribute('x', String(cx - (aPx/2) - 22)); leftTxt.setAttribute('y', String(cy)); leftTxt.setAttribute('text-anchor','end'); leftTxt.setAttribute('font-size','12'); leftTxt.textContent = `${b}\"`; parent.appendChild(leftTxt);
-          // C bottom inner segment centered between left edge and inner notch start
+          // C bottom inner run
           const cMidX = cx - aPx/2 + cPx/2; const cY = cy + bPx/2 + 14; mk(cMidX, cY, `${c}\"`);
-          // D inner vertical centered from top to inner notch depth
-          const dX = cx - aPx/2 + cPx; const dMidY = cy - bPx/2 + dPx/2; mk(dX - 16, dMidY, `${d}\"`);
+          // D right outer side number
+          const rightTxt=document.createElementNS(ns,'text'); rightTxt.setAttribute('x', String(cx + (aPx/2) + 22)); rightTxt.setAttribute('y', String(cy)); rightTxt.setAttribute('text-anchor','start'); rightTxt.setAttribute('font-size','12'); rightTxt.textContent = `${b}\"`; parent.appendChild(rightTxt);
           return;
         }
         if (cur.type==='u'){
           const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
-          // Outer left B
+          // B on both outer left and right
           const leftTxt=document.createElementNS(ns,'text'); leftTxt.setAttribute('x', String(cx - (aPx/2) - 22)); leftTxt.setAttribute('y', String(cy)); leftTxt.setAttribute('text-anchor','end'); leftTxt.setAttribute('font-size','12'); leftTxt.textContent = `${b}\"`; parent.appendChild(leftTxt);
-          // Inner top C centered between returns (E/H if available)
+          const rightTxt=document.createElementNS(ns,'text'); rightTxt.setAttribute('x', String(cx + (aPx/2) + 22)); rightTxt.setAttribute('y', String(cy)); rightTxt.setAttribute('text-anchor','start'); rightTxt.setAttribute('font-size','12'); rightTxt.textContent = `${b}\"`; parent.appendChild(rightTxt);
+          // Inner top C centered between returns
           const e = Number(cur.len?.E||Math.max(0, (a - c)/2));
           const h = Number(cur.len?.H||Math.max(0, (a - c)/2));
           const xiL = cx - aPx/2 + px(e);
           const xiR = cx + aPx/2 - px(h);
-          const innerTopY = cy - bPx/2 + dPx; mk((xiL+xiR)/2, innerTopY - 6, `${c}"`);
-          // F/G (inner verticals) label near centers, E/H (returns) along bottom will be covered by inline inputs; labels optional here
+          const innerTopY = cy - bPx/2 + dPx; mk((xiL+xiR)/2, innerTopY - 6, `${c}\"`);
+          // D offset label near the middle above inner top to avoid C overlap
+          mk((xiL+xiR)/2, innerTopY - 26, `${d}\"`);
+          // E/H along bottom near returns
+          const eMidX = cx - aPx/2 + px(e)/2; mk(eMidX, cy + bPx/2 + 14, `${e}\"`);
+          const hMidX = cx + aPx/2 - px(h)/2; mk(hMidX, cy + bPx/2 + 14, `${h}\"`);
           return;
         }
       };
@@ -264,7 +269,7 @@
             rotG.appendChild(hi);
           }
 
-          // L-guides for A(top), B(left), C(bottom inner run), D(inner vertical)
+          // L-guides for A(top), B(left), C(bottom inner run), D(right outer side)
           const m=18;
           // A top full width
           drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + m, 'A');
@@ -272,8 +277,8 @@
           drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY + b/2 - m, 'B');
           // C bottom inner run from left to notch start
           drawGuideLine(rotG, centerX - a/2 + m, centerY + b/2 - m, centerX - a/2 + c - m, centerY + b/2 - m, 'C');
-          // D inner vertical at notch
-          drawGuideLine(rotG, centerX - a/2 + c - m, centerY - b/2 + m, centerX - a/2 + c - m, centerY - b/2 + d - m, 'D');
+          // D outer right full height
+          drawGuideLine(rotG, centerX + a/2 - m, centerY - b/2 + m, centerX + a/2 - m, centerY + b/2 - m, 'D');
           gRoot.appendChild(rotG);
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
@@ -508,6 +513,8 @@
           const name = b.getAttribute('data-ct-tool') || 'move';
           b.classList.toggle('is-active', name === toolMode);
         });
+  // Open Measurements panel when choosing resize from left tiles
+  if (toolMode==='resize'){ const mbtn = sel('[data-ct-panel="measure"]', root); if (mbtn) mbtn.click(); }
       });
     });
     root.querySelectorAll('[data-ct-panel]').forEach(btn=>{
@@ -1003,6 +1010,9 @@
           toolMode='move'; mode='move';
           root.querySelectorAll('[data-ct-tool-mode]').forEach(b=> b.classList.toggle('is-active', (b.getAttribute('data-ct-tool-mode')||'move')==='move'));
           return;
+        }
+        if (type==='resize'){
+          const panelBtn = sel('[data-ct-panel="measure"]', root); if (panelBtn) panelBtn.click();
         }
         root.querySelectorAll('.kc-ct-toolbar .kc-tool').forEach(b=> b.classList.remove('is-active'));
         btn.classList.add('is-active');

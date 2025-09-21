@@ -31,6 +31,7 @@
             <button class="kc-tile" type="button" data-ct-tool-mode="resize"><span>Resize</span></button>
             <button class="kc-tile" type="button" data-ct-panel="layouts"><span>Layouts</span></button>
             <button class="kc-tile" type="button" data-ct-panel="shapes"><span>Shapes</span></button>
+            <button class="kc-tile" type="button" data-ct-panel="measure"><span>Measurements</span></button>
             <button class="kc-tile" type="button" data-ct-panel="backsplash"><span>Backsplash</span></button>
             <button class="kc-tile" type="button" data-ct-panel="sinks"><span>Sinks</span></button>
             <button class="kc-tile" type="button" data-ct-panel="seams"><span>Seams</span></button>
@@ -62,13 +63,16 @@
                 <button class="kc-tile" type="button" data-ct-shape="poly" data-ct-poly="custom">Custom Polygon</button>
                 <button class="kc-tile" type="button" data-ct-poly="free">Free Draw</button>
               </div>
+              <p class="kc-muted">Tip: For Custom Polygon, select and use the white handles to move vertices. Use Duplicate to copy; Rotate works too.</p>
+            </div>
+
+            <div class="kc-panel kc-panel-measure" hidden>
               <section class="kc-section">
                 <h3>Measurements</h3>
                 <div class="kc-meas" data-ct-meas-list>
                   <!-- Dynamic per-side inputs injected by JS -->
                 </div>
               </section>
-              <p class="kc-muted">Tip: For Custom Polygon, select and use the white handles to move vertices. Use Duplicate to copy; Rotate works too.</p>
             </div>
 
             <div class="kc-panel kc-panel-backsplash" hidden>
