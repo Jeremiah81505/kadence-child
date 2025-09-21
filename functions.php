@@ -379,10 +379,22 @@ add_action( 'wp_footer', function() {
     . ' ct_css_exists: ' . json_encode( $ct_css_exists ) . ', ct_js_exists: ' . json_encode( $ct_js_exists ) . ','
     . ' ct_css_enqueued: ' . json_encode( $ct_css_enq ) . ', ct_js_enqueued: ' . json_encode( $ct_js_enq ) . ','
     . ' ct_css_url: ' . json_encode( $ct_css_url ) . ', ct_js_url: ' . json_encode( $ct_js_url ) . ' });'
-    . ' if(typeof window.KC_CT === "undefined"){ console.warn("[kc][ct] runtime not detected - script missing or blocked"); }'
+    . ' console.log("[kc][ct] nodes present:", document.querySelectorAll(".kc-ct-configurator").length);'
     . '</script>'; // phpcs:ignore WordPress.Security.EscapeOutput
   echo '<div id="kc-footer-marker" data-ts="' . esc_attr( $ts ) . '" data-hero-css="' . esc_attr( $v_css ) . '" data-hero-js="' . esc_attr( $v_js ) . '" data-ct-css="' . esc_attr( $v_ct_css ) . '" data-ct-js="' . esc_attr( $v_ct_js ) . '" data-ct-css-exists="' . ( $ct_css_exists ? '1' : '0' ) . '" data-ct-js-exists="' . ( $ct_js_exists ? '1' : '0' ) . '" data-ct-css-enqueued="' . ( $ct_css_enq ? '1' : '0' ) . '" data-ct-js-enqueued="' . ( $ct_js_enq ? '1' : '0' ) . '" style="display:none"></div>' ; // phpcs:ignore WordPress.Security.EscapeOutput
 }, 999 );
+
+// Optional: append the configurator markup at footer for debugging with ?kc_ct_inline=1
+add_action( 'wp_footer', function() {
+  if ( empty( $_GET['kc_ct_inline'] ) ) { return; }
+  $file = get_stylesheet_directory() . '/patterns/countertop-configurator.php';
+  if ( file_exists( $file ) ) {
+    echo "\n<!-- kc-ct-inline injecting pattern markup for debug -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+    include $file; // phpcs:ignore WPThemeReview.CoreFunctionality.FileInclude.FileIncludeFound
+  } else {
+    echo "\n<!-- kc-ct-inline: pattern file missing -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+  }
+}, 998 );
 
 // Add diagnostics header early to confirm child theme is active and hooks run.
 add_action( 'send_headers', function( $wp ) {
