@@ -702,10 +702,23 @@
             if (c.mode==='clip'){
               dStr += ` L ${bW.x} ${bW.y}`;
             } else if (c.mode==='radius'){
-              // approximate fillet with a single SVG arc; radius ~ sz
-              const r = sz*2; // px scale handled by path coords already
-              const sweep=0; const large=0;
-              dStr += ` A ${r} ${r} 0 ${large} ${sweep} ${bW.x} ${bW.y}`;
+              // precise fillet radius: r = t / tan(phi/2), where t=offset along edges
+              const tOff = sz;
+              // unit vectors along incoming and outgoing edges
+              const u_in = { x: (p1.x - p0.x), y: (p1.y - p0.y) };
+              const u_out = { x: (p2.x - p1.x), y: (p2.y - p1.y) };
+              const uin_len = Math.hypot(u_in.x,u_in.y)||1; const uout_len=Math.hypot(u_out.x,u_out.y)||1;
+              const vin = { x: u_in.x/uin_len, y: u_in.y/uin_len };
+              const vout = { x: u_out.x/uout_len, y: u_out.y/uout_len };
+              let dot = vin.x*vout.x + vin.y*vout.y; if (dot>1) dot=1; if (dot<-1) dot=-1;
+              const phi = Math.acos(dot);
+              const tanHalf = Math.tan(phi/2) || 1;
+              const rPx = (tOff / tanHalf) * 2; // inches to px
+              const large=0;
+              // choose sweep based on turn direction (sign of cross of vin->vout)
+              const cross = vin.x*vout.y - vin.y*vout.x;
+              const sweep = cross>0 ? 1 : 0;
+              dStr += ` A ${rPx} ${rPx} 0 ${large} ${sweep} ${bW.x} ${bW.y}`;
             }
           }
           dStr += ' Z';
