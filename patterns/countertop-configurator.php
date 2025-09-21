@@ -80,11 +80,8 @@
             <div class="kc-panel kc-panel-backsplash" hidden>
               <section class="kc-section">
                 <h3>Backsplash</h3>
-                <div class="kc-option-grid">
-                  <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="A" /> Top (A)</label>
-                  <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="B" /> Left (B)</label>
-                  <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="C" /> Bottom (C)</label>
-                  <label class="kc-meas opt"><input type="checkbox" data-ct-backsplash="D" /> Right (D)</label>
+                <div class="kc-option-grid" data-ct-bs-list>
+                  <!-- Dynamic backsplash side checkboxes injected by JS -->
                 </div>
                 <div class="kc-fieldset">
                   <div class="kc-field-label">Backsplash Height (inches)</div>

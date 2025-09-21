@@ -638,8 +638,9 @@
     if (cur.type==='l'){
       cur.flipX = !cur.flipX;
     } else if (cur.type==='u'){
-      // swap returns E and H
-      const e = cur.len?.E||0, h = cur.len?.H||0; if (!cur.len) cur.len={}; cur.len.E = h; cur.len.H = e;
+  // mirror U visually by toggling flipX and swap backsplash flags for E/H
+  cur.flipX = !cur.flipX;
+  if (cur.bs){ const tmp = cur.bs.E; cur.bs.E = cur.bs.H; cur.bs.H = tmp; }
     } // rect/poly: no-op for now
     draw(); save();
   }));
@@ -722,7 +723,8 @@
       if (active<0 || !cur){
         all('[data-ct-len]', root).forEach(inp=>{ inp.value = '0'; inp.disabled = true; });
         all('[data-ct-wall]', root).forEach(inp=>{ inp.checked = false; inp.disabled = true; });
-        all('[data-ct-backsplash]', root).forEach(inp=>{ inp.checked = false; inp.disabled = true; });
+        // clear dynamic backsplash list
+        const bsList = sel('[data-ct-bs-list]', root); if (bsList) bsList.innerHTML = '';
         all('[data-ct-shape]', root).forEach(btn=> btn.classList.remove('is-active'));
   const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
   if (rowC) rowC.style.display='none'; if (rowD) rowD.style.display='none';
@@ -744,18 +746,49 @@
             const n = (Array.isArray(cur.points)?cur.points.length:0); for(let i=0;i<n;i++){ const letter=String.fromCharCode(65+i); addRow(`Side ${letter}`, `P${i}`); }
           }
         }
+        // Build dynamic backsplash options per shape
+        const bsList = sel('[data-ct-bs-list]', root);
+        if (bsList){
+          bsList.innerHTML = '';
+          const mk = (key, label)=>{
+            const lab = document.createElement('label'); lab.className='kc-meas opt';
+            const id = `bs_${key}`;
+            lab.innerHTML = `<input type="checkbox" id="${id}" data-ct-backsplash="${key}" /> ${label}`;
+            bsList.appendChild(lab);
+            const inp = lab.querySelector('input'); if (inp){ inp.checked = !!(cur.bs && cur.bs[key]); inp.disabled = false; }
+          };
+          if (cur.type==='rect' || cur.type==='l'){
+            ['A','B','C','D'].forEach(s=> mk(s, sideLabel(s)));
+          } else if (cur.type==='u'){
+            if (!cur.bs) cur.bs = {A:false,B:false,C:false,D:false,E:false,H:false};
+            if (cur.bs.E==null) cur.bs.E=false; if (cur.bs.H==null) cur.bs.H=false;
+            ['A','B','C','D','E','H'].forEach(s=> mk(s, sideLabel(s)));
+          } else {
+            // default to A-D if unknown
+            ['A','B','C','D'].forEach(s=> mk(s, sideLabel(s)));
+          }
+        }
     // Show L flip control for L shapes
     const flipWrap = sel('[data-ct-l-flip-wrap]', root);
     const flipInp = sel('[data-ct-l-flip]', root);
     if (flipWrap && flipInp){ flipWrap.hidden = cur.type!=='l'; flipInp.checked = !!cur.flipX; }
   all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); let v=0; if (cur.type==='poly' && k && k.startsWith('P')){ const idx=parseInt(k.slice(1)||'0',10); const pts=cur.points||[]; if (pts.length>=2){ const a=pts[idx], b=pts[(idx+1)%pts.length]; v=Math.round(Math.hypot((b.x-a.x),(b.y-a.y))); } } else { v = (cur.len && k in cur.len) ? cur.len[k] : 0; } const activeEl=document.activeElement; inp.value = String(v||0); if (activeEl===inp) inp.focus(); });
         all('[data-ct-wall]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-wall'); inp.checked = !!cur.wall[k]; });
-        all('[data-ct-backsplash]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-backsplash'); inp.checked = !!cur.bs[k]; });
         all('[data-ct-shape]', root).forEach(btn=> btn.classList.toggle('is-active', btn.getAttribute('data-ct-shape')===cur.type));
     const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
   if (rowC) rowC.style.display='none'; if (rowD) rowD.style.display='none';
       }
       const bsH = sel('[data-ct-bs-height]', root); if (bsH) bsH.value = String(opts.bsHeight||0);
+    }
+
+    function sideLabel(s){
+      if (s==='A') return 'Top (A)';
+      if (s==='B') return 'Left (B)';
+      if (s==='C') return 'Bottom/Inner (C)';
+      if (s==='D') return 'Right (D)';
+      if (s==='E') return 'Bottom Left (E)';
+      if (s==='H') return 'Bottom Right (H)';
+      return s;
     }
 
     // Shape picker updates current
@@ -787,13 +820,17 @@
         updateSummary(); save(); draw();
       });
     });
-    // Per-side backsplash controls
-    all('[data-ct-backsplash]', root).forEach(inp=>{
-      inp.addEventListener('change', ()=>{
-        const k = inp.getAttribute('data-ct-backsplash');
-        shapes[active].bs[k] = !!inp.checked;
-        updateSummary(); save(); draw();
-      });
+    // Per-side backsplash controls (delegated for dynamic checkboxes)
+    root.addEventListener('change', (ev)=>{
+      const inp = ev.target;
+      if (!(inp instanceof HTMLElement)) return;
+      if (!inp.matches('[data-ct-backsplash]')) return;
+      if (active<0) return;
+      const k = inp.getAttribute('data-ct-backsplash'); if (!k) return;
+      if (!shapes[active].bs) shapes[active].bs = {};
+  const checked = (inp.tagName === 'INPUT') ? (inp).checked : !!inp.getAttribute('checked');
+  shapes[active].bs[k] = !!checked;
+      updateSummary(); save(); draw();
     });
     // L flip binding
     sel('[data-ct-l-flip]', root)?.addEventListener('change', (e)=>{
