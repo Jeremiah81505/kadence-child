@@ -480,12 +480,31 @@
           outerStroke.setAttribute('stroke-width', '2');
           rotG.appendChild(outerStroke);
 
-          // wall sides as red lines along outer bounding box
+          // backsplash along U edges (render above countertop)
+          { const aBox=a; const bh = px(Number(opts.bsHeight||0)); if (bh>0){
+            if (cur.bs.A){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(yTop - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
+            if (cur.bs.BL){ const rL=document.createElementNS(ns,'rect'); rL.setAttribute('x', String(centerX - aBox/2 - bh)); rL.setAttribute('y', String(yTop)); rL.setAttribute('width', String(bh)); rL.setAttribute('height', String(blPx)); rL.setAttribute('fill','#e6f2ff'); rL.setAttribute('stroke','#7fb3ff'); rL.setAttribute('stroke-width','1'); rotG.appendChild(rL); }
+            if (cur.bs.BR){ const rR=document.createElementNS(ns,'rect'); rR.setAttribute('x', String(centerX + aBox/2)); rR.setAttribute('y', String(yTop)); rR.setAttribute('width', String(bh)); rR.setAttribute('height', String(brPx)); rR.setAttribute('fill','#e6f2ff'); rR.setAttribute('stroke','#7fb3ff'); rR.setAttribute('stroke-width','1'); rotG.appendChild(rR); }
+            if (cur.bs.C){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(xiL)); r.setAttribute('y', String(yInnerTop)); r.setAttribute('width', String(xiR - xiL)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
+            if (cur.bs && (cur.bs.E || cur.bs.H)){
+              const eLen = px(Math.max(0, Number(len.E||0)));
+              const hLen = px(Math.max(0, Number(len.H||0)));
+              if (cur.bs.E && eLen>0){ const rE = document.createElementNS(ns,'rect'); rE.setAttribute('x', String(centerX - a/2)); rE.setAttribute('y', String(yTop + blPx)); rE.setAttribute('width', String(eLen)); rE.setAttribute('height', String(bh)); rE.setAttribute('fill','#e6f2ff'); rE.setAttribute('stroke','#7fb3ff'); rE.setAttribute('stroke-width','1'); rotG.appendChild(rE); }
+              if (cur.bs.H && hLen>0){ const rH = document.createElementNS(ns,'rect'); rH.setAttribute('x', String(centerX + a/2 - hLen)); rH.setAttribute('y', String(yTop + brPx)); rH.setAttribute('width', String(hLen)); rH.setAttribute('height', String(bh)); rH.setAttribute('fill','#e6f2ff'); rH.setAttribute('stroke','#7fb3ff'); rH.setAttribute('stroke-width','1'); rotG.appendChild(rH); }
+            }
+          } }
+
+          // wall sides as red lines along outer perimeter; split bottom into left/right, not across opening
           const sideColor = '#d32f2f';
           const mkLine = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke', sideColor); l.setAttribute('stroke-width','3'); return l; };
       if (cur.wall.A) rotG.appendChild(mkLine(centerX - a/2, yTop, centerX + a/2, yTop));
       if (cur.wall.B) rotG.appendChild(mkLine(centerX - a/2, yTop, centerX - a/2, yTop + blPx));
-      if (cur.wall.C) rotG.appendChild(mkLine(centerX - a/2, yTop + hMax, centerX + a/2, yTop + hMax));
+      if (cur.wall.C){
+        // left bottom to xiL
+        rotG.appendChild(mkLine(centerX - a/2, yTop + blPx, xiL, yTop + blPx));
+        // right bottom from xiR
+        rotG.appendChild(mkLine(xiR, yTop + brPx, centerX + a/2, yTop + brPx));
+      }
       if (cur.wall.D) rotG.appendChild(mkLine(centerX + a/2, yTop, centerX + a/2, yTop + brPx));
 
           if (idx===active){
@@ -1414,7 +1433,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T4';
+  window.KC_CT.version = '2025-09-21T5';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
