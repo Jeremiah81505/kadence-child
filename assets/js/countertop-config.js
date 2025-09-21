@@ -463,16 +463,22 @@
           }
       // U shape as outer trapezoid (BL/BR) minus inner notch polygon (evenodd)
           const path = document.createElementNS(ns, 'path');
-          const dPath = [
-            `M ${x} ${yTop} L ${x + a} ${yTop} L ${x + a} ${yTop + brPx} L ${x} ${yTop + blPx} Z`,
-            `M ${xiL} ${yInnerTop} L ${xiR} ${yInnerTop} L ${xiR} ${yBotR} L ${xiL} ${yBotL} Z`
-          ].join(' ');
+          const outerD = `M ${x} ${yTop} L ${x + a} ${yTop} L ${x + a} ${yTop + brPx} L ${x} ${yTop + blPx} Z`;
+          const innerD = `M ${xiL} ${yInnerTop} L ${xiR} ${yInnerTop} L ${xiR} ${yBotR} L ${xiL} ${yBotL} Z`;
+          const dPath = [outerD, innerD].join(' ');
           path.setAttribute('d', dPath);
           path.setAttribute('fill', '#f8c4a0');
           path.setAttribute('fill-rule', 'evenodd');
-          path.setAttribute('stroke', '#ccc');
-          path.setAttribute('stroke-width', '2');
+          // Avoid stroking inner subpath to prevent diagonal; draw outer stroke separately
+          path.setAttribute('stroke', 'none');
           rotG.appendChild(path);
+
+          const outerStroke = document.createElementNS(ns, 'path');
+          outerStroke.setAttribute('d', outerD);
+          outerStroke.setAttribute('fill', 'none');
+          outerStroke.setAttribute('stroke', '#ccc');
+          outerStroke.setAttribute('stroke-width', '2');
+          rotG.appendChild(outerStroke);
 
           // wall sides as red lines along outer bounding box
           const sideColor = '#d32f2f';
@@ -1408,7 +1414,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T3';
+  window.KC_CT.version = '2025-09-21T4';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
