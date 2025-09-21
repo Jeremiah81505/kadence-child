@@ -49,7 +49,10 @@
         l.setAttribute('x2',String(x2)); l.setAttribute('y2',String(y2));
         l.setAttribute('stroke','#bdc6da'); l.setAttribute('stroke-width','2');
         parent.appendChild(l);
-        if (txt){ const t=document.createElementNS(ns,'text'); t.setAttribute('x', String((x1+x2)/2)); t.setAttribute('y', String((y1+y2)/2 - 6)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=txt; parent.appendChild(t); }
+        if (txt){
+          const mx=(x1+x2)/2, my=(y1+y2)/2 - 6; const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI;
+          const t=document.createElementNS(ns,'text'); t.setAttribute('x', String(mx)); t.setAttribute('y', String(my)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=txt; t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`); parent.appendChild(t);
+        }
       };
 
       const addHandle=(idx, cx, cy, rot, key)=>{
@@ -530,7 +533,7 @@
           const labelEdge=(x1,y1,x2,y2,txt)=>{ const mx=(x1+x2)/2, my=(y1+y2)/2 - 6; const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI; const t=document.createElementNS(ns,'text'); t.setAttribute('x', String(mx)); t.setAttribute('y', String(my)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`); gRoot.appendChild(t); };
           // draw dynamic side guides and letters A.. as needed
           const m=10; let letterCode=65; // 'A'
-          const drawGuide=(x1,y1,x2,y2,letTxt)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',String(x1)); l.setAttribute('y1',String(y1)); l.setAttribute('x2',String(x2)); l.setAttribute('y2',String(y2)); l.setAttribute('stroke','#bdc6da'); l.setAttribute('stroke-width','2'); gRoot.appendChild(l); const t=document.createElementNS(ns,'text'); t.setAttribute('x', String((x1+x2)/2)); t.setAttribute('y', String((y1+y2)/2 - 6)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=letTxt; gRoot.appendChild(t); };
+          const drawGuide=(x1,y1,x2,y2,letTxt)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',String(x1)); l.setAttribute('y1',String(y1)); l.setAttribute('x2',String(x2)); l.setAttribute('y2',String(y2)); l.setAttribute('stroke','#bdc6da'); l.setAttribute('stroke-width','2'); gRoot.appendChild(l); const mx=(x1+x2)/2, my=(y1+y2)/2 - 6; const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI; const t=document.createElementNS(ns,'text'); t.setAttribute('x', String(mx)); t.setAttribute('y', String(my)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=letTxt; t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`); gRoot.appendChild(t); };
           for (let i=0;i<ptsIn.length;i++){
             const aP = ptsIn[i]; const bP = ptsIn[(i+1)%ptsIn.length];
             const lenIn = Math.round(Math.hypot(bP.x - aP.x, bP.y - aP.y));
