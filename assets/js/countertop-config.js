@@ -31,6 +31,7 @@
     'corner-small': 0, 'corner-medium': 0, 'corner-large': 0,
     removal: 'Countertops Only',
     color: '',
+  bsOn: true,
   bsHeight: 4,
   snap: true,
   showSeams: false
@@ -344,7 +345,7 @@
           // overhang removed
 
           // backsplash precise for L: A full top, B full left, C bottom segment length=c, D right-top segment length=d (mirrors with flipX)
-          { const bh = px(Number(opts.bsHeight||0)); if (bh>0){
+          { const bh = px(Number(opts.bsHeight||0)); if (opts.bsOn && bh>0){
               const addRect=(x,y,w,h)=>{ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(x)); r.setAttribute('y', String(y)); r.setAttribute('width', String(w)); r.setAttribute('height', String(h)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); };
               if (cur.bs.A){ addRect(centerX - a/2, centerY - b/2 - bh, a, bh); }
               if (cur.bs.B){ addRect(centerX - a/2 - bh, centerY - b/2, bh, b); }
@@ -489,7 +490,7 @@
           // overhang removed
 
   // backsplash along U edges with precise segments: A top full; BL/BR sides to each depth; C inner top; E/H returns (no D on U)
-  { const aBox=a; const bh = px(Number(opts.bsHeight||0)); if (bh>0){
+  { const aBox=a; const bh = px(Number(opts.bsHeight||0)); if (opts.bsOn && bh>0){
         // A top
         if (cur.bs.A){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(yTop - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
         // BL/BR sides toggles independently
@@ -571,7 +572,7 @@
           rightLeg.setAttribute('stroke', '#ccc'); rightLeg.setAttribute('stroke-width','2'); rotG.appendChild(rightLeg);
 
           // backsplash along U edges (render above countertop)
-          { const aBox=a; const bh = px(Number(opts.bsHeight||0)); if (bh>0){
+          { const aBox=a; const bh = px(Number(opts.bsHeight||0)); if (opts.bsOn && bh>0){
             if (cur.bs.A){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(yTop - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
             if (cur.bs.BL){ const rL=document.createElementNS(ns,'rect'); rL.setAttribute('x', String(centerX - aBox/2 - bh)); rL.setAttribute('y', String(yTop)); rL.setAttribute('width', String(bh)); rL.setAttribute('height', String(blPx)); rL.setAttribute('fill','#e6f2ff'); rL.setAttribute('stroke','#7fb3ff'); rL.setAttribute('stroke-width','1'); rotG.appendChild(rL); }
             if (cur.bs.BR){ const rR=document.createElementNS(ns,'rect'); rR.setAttribute('x', String(centerX + aBox/2)); rR.setAttribute('y', String(yTop)); rR.setAttribute('width', String(bh)); rR.setAttribute('height', String(brPx)); rR.setAttribute('fill','#e6f2ff'); rR.setAttribute('stroke','#7fb3ff'); rR.setAttribute('stroke-width','1'); rotG.appendChild(rR); }
@@ -689,7 +690,7 @@
           // backsplash along selected polygon edges (render above countertop)
           {
             const bhPx = Number(opts.bsHeight||0) * 2; // pixels
-            if (bhPx>0 && Array.isArray(cur.bsPoly)){
+            if (opts.bsOn && bhPx>0 && Array.isArray(cur.bsPoly)){
               // orientation via signed area (local inches)
               let area=0; for (let i=0;i<ptsIn.length;i++){ const a=ptsIn[i], b=ptsIn[(i+1)%ptsIn.length]; area += (a.x*b.y - b.x*a.y); }
               const isCCW = area > 0;
@@ -1252,6 +1253,30 @@
       let v = parseInt(e.target.value||'0',10); if(!isFinite(v)||v<0) v=0; if (v>24) v=24; opts.bsHeight = v; updateSummary(); save(); draw();
     });
 
+    // Global backsplash toggle
+    const bsOnEl = sel('[data-ct-bs-on]', root);
+    if (bsOnEl){ bsOnEl.checked = !!opts.bsOn; bsOnEl.addEventListener('change', ()=>{ pushHistory(); opts.bsOn = !!bsOnEl.checked; updateSummary(); save(); draw(); }); }
+
+    // Select/Clear all backsplash sides for current shape
+    sel('[data-ct-bs-select]', root)?.addEventListener('click', ()=>{
+      if (active<0 || !shapes[active]) return; pushHistory(); const s=shapes[active];
+      if (s.type==='poly' && Array.isArray(s.points)){
+        const n=s.points.length; if (!Array.isArray(s.bsPoly)) s.bsPoly=new Array(n).fill(false); s.bsPoly = new Array(n).fill(true);
+      } else {
+        s.bs = s.bs || {}; ['A','BL','BR','B','C','D','E','H'].forEach(k=>{ if (k in (s.len||{}) || ['A','B','C','D'].includes(k)) s.bs[k]=true; });
+      }
+      updateSummary(); save(); draw();
+    });
+    sel('[data-ct-bs-clear]', root)?.addEventListener('click', ()=>{
+      if (active<0 || !shapes[active]) return; pushHistory(); const s=shapes[active];
+      if (s.type==='poly' && Array.isArray(s.points)){
+        const n=s.points.length; if (!Array.isArray(s.bsPoly)) s.bsPoly=new Array(n).fill(false); s.bsPoly = new Array(n).fill(false);
+      } else {
+        s.bs = s.bs || {}; Object.keys(s.bs).forEach(k=> s.bs[k]=false);
+      }
+      updateSummary(); save(); draw();
+    });
+
     // Reset/Delete actions (bind to all matching buttons)
     all('[data-ct-reset]', root).forEach(el=> el.addEventListener('click', ()=>{
       if(active<0) return;
@@ -1737,7 +1762,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T15';
+  window.KC_CT.version = '2025-09-21T16';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}

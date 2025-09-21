@@ -81,6 +81,11 @@
             <div class="kc-panel kc-panel-backsplash" hidden>
               <section class="kc-section">
                 <h3>Backsplash</h3>
+                <div class="kc-option-grid" style="align-items:center;gap:12px">
+                  <label class="kc-meas opt"><input type="checkbox" data-ct-bs-on /> Enable Backsplash</label>
+                  <button type="button" class="kc-opt" data-ct-bs-select>Select All Sides</button>
+                  <button type="button" class="kc-opt" data-ct-bs-clear>Clear All Sides</button>
+                </div>
                 <div class="kc-option-grid" data-ct-bs-list>
                   <!-- Dynamic backsplash side checkboxes injected by JS -->
                 </div>
