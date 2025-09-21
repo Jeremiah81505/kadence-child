@@ -34,7 +34,6 @@
             <button class="kc-tile" type="button" data-ct-panel="measure"><span>Measurements</span></button>
             <button class="kc-tile" type="button" data-ct-panel="backsplash"><span>Backsplash</span></button>
             <button class="kc-tile" type="button" data-ct-panel="sinks"><span>Sinks</span></button>
-            <button class="kc-tile" type="button" data-ct-panel="seams"><span>Seams</span></button>
           </div>
           <div class="kc-panels">
             <div class="kc-panel kc-panel-layouts" hidden>
@@ -72,6 +71,9 @@
                 <div class="kc-meas" data-ct-meas-list>
                   <!-- Dynamic per-side inputs injected by JS -->
                 </div>
+                <div class="kc-option-grid" data-ct-l-flip-wrap hidden>
+                  <label class="kc-meas opt"><input type="checkbox" data-ct-l-flip /> Flip L orientation</label>
+                </div>
               </section>
             </div>
 
@@ -101,16 +103,7 @@
               </section>
             </div>
 
-            <div class="kc-panel kc-panel-seams" hidden>
-              <section class="kc-section">
-                <h3>Seams</h3>
-                <div class="kc-option-grid">
-                  <button class="kc-btn" type="button" data-ct-seam-suggest>Suggest Seams</button>
-                  <button class="kc-btn" type="button" data-ct-seam-clear>Clear Seams</button>
-                  <label class="kc-toggle"><input type="checkbox" data-ct-seam-show /> <span>Show Seams</span></label>
-                </div>
-              </section>
-            </div>
+            <!-- Seams panel removed per request -->
             
           </div>
         </div>
@@ -124,6 +117,7 @@
             <button type="button" class="kc-tool" data-ct-tool="shapes" title="Shapes">Shapes</button>
             <button type="button" class="kc-tool" data-ct-rotate-left title="Rotate Left">⟲</button>
             <button type="button" class="kc-tool" data-ct-rotate-right title="Rotate Right">⟳</button>
+            <button type="button" class="kc-tool" data-ct-mirror title="Mirror">Mirror</button>
             <button type="button" class="kc-tool" data-ct-duplicate title="Duplicate">Duplicate</button>
             <button type="button" class="kc-tool danger" data-ct-delete title="Delete">Delete</button>
             <div class="kc-tool-split"></div>

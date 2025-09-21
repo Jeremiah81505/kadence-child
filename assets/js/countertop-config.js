@@ -81,7 +81,7 @@
           // B left
           const leftTxt=document.createElementNS(ns,'text'); leftTxt.setAttribute('x', String(cx - (aPx/2) - 22)); leftTxt.setAttribute('y', String(cy)); leftTxt.setAttribute('text-anchor','end'); leftTxt.setAttribute('font-size','12'); leftTxt.textContent = `${b}\"`; parent.appendChild(leftTxt);
           // C bottom inner run
-          const cMidX = cx - aPx/2 + cPx/2; const cY = cy + bPx/2 + 14; mk(cMidX, cY, `${c}\"`);
+          const flipX = !!cur.flipX; const cMidX = !flipX ? (cx - aPx/2 + cPx/2) : (cx + aPx/2 - cPx/2); const cY = cy + bPx/2 + 14; mk(cMidX, cY, `${c}\"`);
           // D right outer side number
           const rightTxt=document.createElementNS(ns,'text'); rightTxt.setAttribute('x', String(cx + (aPx/2) + 22)); rightTxt.setAttribute('y', String(cy)); rightTxt.setAttribute('text-anchor','start'); rightTxt.setAttribute('font-size','12'); rightTxt.textContent = `${b}\"`; parent.appendChild(rightTxt);
           return;
@@ -96,9 +96,10 @@
           const h = Number(cur.len?.H||Math.max(0, (a - c)/2));
           const xiL = cx - aPx/2 + px(e);
           const xiR = cx + aPx/2 - px(h);
-          const innerTopY = cy - bPx/2 + dPx; mk((xiL+xiR)/2, innerTopY - 6, `${c}\"`);
-          // D offset label near the middle above inner top to avoid C overlap
-          mk((xiL+xiR)/2, innerTopY - 26, `${d}\"`);
+          const innerTopY = cy - bPx/2 + dPx;
+          // Stagger C and D horizontally to avoid stacking
+          const cX = xiL + (xiR - xiL) * 0.35; mk(cX, innerTopY - 6, `${c}\"`);
+          const dX = xiL + (xiR - xiL) * 0.65; mk(dX, innerTopY - 26, `${d}\"`);
           // E/H along bottom near returns
           const eMidX = cx - aPx/2 + px(e)/2; mk(eMidX, cy + bPx/2 + 14, `${e}\"`);
           const hMidX = cx + aPx/2 - px(h)/2; mk(hMidX, cy + bPx/2 + 14, `${h}\"`);
@@ -128,7 +129,7 @@
 
           // backsplash per side
           const bh = px(Number(opts.bsHeight||0));
-          if (bh>0){
+      if (bh>0){
             ['A','B','C','D'].forEach(side=>{
               if (cur.bs[side]){
                 const r = document.createElementNS(ns,'rect');
@@ -136,7 +137,7 @@
                 if (side==='B'){ r.setAttribute('x', String(centerX - w/2 - bh)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(h)); }
                 if (side==='C'){ r.setAttribute('x', String(centerX - w/2)); r.setAttribute('y', String(centerY + h/2)); r.setAttribute('width', String(w)); r.setAttribute('height', String(bh)); }
                 if (side==='D'){ r.setAttribute('x', String(centerX + w/2)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(h)); }
-                r.setAttribute('fill', '#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r);
+        r.setAttribute('fill', '#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r);
               }
             });
           }
@@ -214,7 +215,12 @@
           if (dIn >= bIn) dIn = Math.max(0, bIn - 1);
           const a = px(aIn), b = px(bIn), c = px(cIn), d = px(dIn);
           const x = centerX - a/2, y = centerY - b/2;
-          const xi = centerX - a/2 + c, yi = centerY - b/2 + d, wi = a - c, hi = b - d;
+          const flipX = !!cur.flipX;
+          // Inner removal rectangle anchors to right (default) or left (when flipped)
+          const xi = flipX ? (centerX - a/2) : (centerX - a/2 + c);
+          const yi = centerY - b/2 + d;
+          const wi = a - c;
+          const hi = b - d;
           const path = document.createElementNS(ns, 'path');
           const dPath = [
             `M ${x} ${y} h ${a} v ${b} h ${-a} Z`,
@@ -231,7 +237,7 @@
           // overhang removed
 
           // backsplash approx for L bounding box
-          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
+          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); } }); } }
           // seams for L (bounding-box approximation)
           if (opts.showSeams && Array.isArray(cur.seams)){
             cur.seams.forEach(seam=>{
@@ -275,10 +281,20 @@
           drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + m, 'A');
           // B left full height
           drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY + b/2 - m, 'B');
-          // C bottom inner run from left to notch start
-          drawGuideLine(rotG, centerX - a/2 + m, centerY + b/2 - m, centerX - a/2 + c - m, centerY + b/2 - m, 'C');
-          // D outer right full height
-          drawGuideLine(rotG, centerX + a/2 - m, centerY - b/2 + m, centerX + a/2 - m, centerY + b/2 - m, 'D');
+          // C bottom inner run to notch start (mirrors when flipped)
+          if (!flipX){
+            drawGuideLine(rotG, centerX - a/2 + m, centerY + b/2 - m, centerX - a/2 + c - m, centerY + b/2 - m, 'C');
+          } else {
+            drawGuideLine(rotG, centerX + a/2 - c + m, centerY + b/2 - m, centerX + a/2 - m, centerY + b/2 - m, 'C');
+          }
+          // D inner vertical length shown on the adjacent outer edge segment only
+          if (!flipX){
+            // Notch on right: D is top segment on right outer edge, length = d
+            drawGuideLine(rotG, centerX + a/2 - m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + d - m, 'D');
+          } else {
+            // Notch on left: D is top segment on left outer edge, length = d
+            drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY - b/2 + d - m, 'D');
+          }
           gRoot.appendChild(rotG);
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
@@ -288,9 +304,11 @@
             addHandle(idx, centerX - a/2, centerY, rotation, 'A-left');
             addHandle(idx, centerX, centerY + b/2, rotation, 'B-bottom');
             // L-shape inner handles: C bottom inner run midpoint, D inner vertical midpoint
-            const ciMidX = centerX - a/2 + c/2; const bottomY = centerY + b/2;
+            const bottomY = centerY + b/2;
+            const ciMidX = !flipX ? (centerX - a/2 + c/2) : (centerX + a/2 - c/2);
             addHandle(idx, ciMidX, bottomY, rotation, 'C');
-            const dX = centerX - a/2 + c; const dMidY = centerY - b/2 + d/2;
+            const dX = !flipX ? (centerX - a/2 + c) : (centerX + a/2 - c);
+            const dMidY = centerY - b/2 + d/2;
             addHandle(idx, dX, dMidY, rotation, 'D');
           }
 
@@ -331,7 +349,7 @@
           // overhang removed
 
           // backsplash along outer bounding box
-          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#ffd8a6'); r.setAttribute('stroke','none'); rotG.appendChild(r); } }); } }
+          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); } }); } }
           // seams for U (bounding-box approximation)
           if (opts.showSeams && Array.isArray(cur.seams)){
             cur.seams.forEach(seam=>{
@@ -614,6 +632,17 @@
   // Bind rotate controls across toolbar/sidebar
   all('[data-ct-rotate-left]', root).forEach(el=> el.addEventListener('click', ()=>{ if(active<0) return; shapes[active].rot = (shapes[active].rot + 270)%360; draw(); }));
   all('[data-ct-rotate-right]', root).forEach(el=> el.addEventListener('click', ()=>{ if(active<0) return; shapes[active].rot = (shapes[active].rot + 90)%360; draw(); }));
+  // Mirror (horizontal) control
+  all('[data-ct-mirror]', root).forEach(el=> el.addEventListener('click', ()=>{
+    if (active<0) return; const cur = shapes[active];
+    if (cur.type==='l'){
+      cur.flipX = !cur.flipX;
+    } else if (cur.type==='u'){
+      // swap returns E and H
+      const e = cur.len?.E||0, h = cur.len?.H||0; if (!cur.len) cur.len={}; cur.len.E = h; cur.len.H = e;
+    } // rect/poly: no-op for now
+    draw(); save();
+  }));
 
     // Delegated input handling for dynamic measurement fields
     root.addEventListener('input', (ev)=>{
@@ -695,8 +724,9 @@
         all('[data-ct-wall]', root).forEach(inp=>{ inp.checked = false; inp.disabled = true; });
         all('[data-ct-backsplash]', root).forEach(inp=>{ inp.checked = false; inp.disabled = true; });
         all('[data-ct-shape]', root).forEach(btn=> btn.classList.remove('is-active'));
-    const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
-    if (rowC) rowC.style.display='none'; if (rowD) rowD.style.display='none';
+  const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
+  if (rowC) rowC.style.display='none'; if (rowD) rowD.style.display='none';
+  const flipWrap = sel('[data-ct-l-flip-wrap]', root); if (flipWrap) flipWrap.hidden = true;
     const list = sel('[data-ct-meas-list]', root); if (list) list.innerHTML='';
       } else {
         // Build dynamic per-side inputs
@@ -706,7 +736,7 @@
           const addRow=(label,key)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="${key}" /></label>`; list.appendChild(row); };
           if (cur.type==='rect'){
             addRow('Top (A)','A'); addRow('Left (B)','B'); addRow('Bottom (C)','C'); addRow('Right (D)','D');
-          } else if (cur.type==='l'){
+      } else if (cur.type==='l'){
             addRow('Top (A)','A'); addRow('Left (B)','B'); addRow('Inner bottom run (C)','C'); addRow('Inner vertical (D)','D');
           } else if (cur.type==='u'){
             ['A','B','C','D','E','H'].forEach(k=> addRow(`${k}`, k));
@@ -714,6 +744,10 @@
             const n = (Array.isArray(cur.points)?cur.points.length:0); for(let i=0;i<n;i++){ const letter=String.fromCharCode(65+i); addRow(`Side ${letter}`, `P${i}`); }
           }
         }
+    // Show L flip control for L shapes
+    const flipWrap = sel('[data-ct-l-flip-wrap]', root);
+    const flipInp = sel('[data-ct-l-flip]', root);
+    if (flipWrap && flipInp){ flipWrap.hidden = cur.type!=='l'; flipInp.checked = !!cur.flipX; }
   all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); let v=0; if (cur.type==='poly' && k && k.startsWith('P')){ const idx=parseInt(k.slice(1)||'0',10); const pts=cur.points||[]; if (pts.length>=2){ const a=pts[idx], b=pts[(idx+1)%pts.length]; v=Math.round(Math.hypot((b.x-a.x),(b.y-a.y))); } } else { v = (cur.len && k in cur.len) ? cur.len[k] : 0; } const activeEl=document.activeElement; inp.value = String(v||0); if (activeEl===inp) inp.focus(); });
         all('[data-ct-wall]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-wall'); inp.checked = !!cur.wall[k]; });
         all('[data-ct-backsplash]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-backsplash'); inp.checked = !!cur.bs[k]; });
@@ -761,23 +795,16 @@
         updateSummary(); save(); draw();
       });
     });
+    // L flip binding
+    sel('[data-ct-l-flip]', root)?.addEventListener('change', (e)=>{
+      const cur = shapes[active]; if (!cur || cur.type!=='l') return;
+      cur.flipX = !!e.target.checked; draw(); updateSummary(); save();
+    });
     // Backsplash height input
     sel('[data-ct-bs-height]', root)?.addEventListener('input', (e)=>{
   // Overhang removed
 
-    // Seams
-    sel('[data-ct-seam-show]', root)?.addEventListener('change', (e)=>{ opts.showSeams = !!e.target.checked; save(); draw(); });
-    sel('[data-ct-seam-clear]', root)?.addEventListener('click', ()=>{ shapes.forEach(s=> s.seams=[]); save(); draw(); });
-    sel('[data-ct-seam-suggest]', root)?.addEventListener('click', ()=>{
-      // simple suggestion: add vertical seams every 96 inches if A > 120
-      shapes.forEach(s=>{
-        const A = Number(s.len?.A||0);
-        const seams=[];
-        if (A>120){ const span=96; for(let x=span; x<A; x+=span){ seams.push({type:'v', atIn: x - A/2}); } }
-        s.seams = seams;
-      });
-      save(); draw();
-    });
+  // Seams UI removed
       let v = parseInt(e.target.value||'0',10); if(!isFinite(v)||v<0) v=0; if (v>24) v=24; opts.bsHeight = v; updateSummary(); save(); draw();
     });
 

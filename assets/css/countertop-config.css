@@ -57,7 +57,7 @@
 .kc-ct-legend{position:absolute;right:12px;bottom:12px;display:flex;gap:12px;align-items:center;background:#ffffffcc;border:1px solid #e7ecf7;border-radius:8px;padding:6px 10px;color:#21306a;font:600 12px system-ui;pointer-events:none}
 .kc-ct-legend .lg{display:inline-block;width:16px;height:8px;border-radius:2px;margin-right:6px}
 .kc-ct-legend .lg-wall{background:#d32f2f}
-.kc-ct-legend .lg-bs{background:#ffd8a6;border:1px solid #ffbf6a}
+.kc-ct-legend .lg-bs{background:#e6f2ff;border:1px solid #7fb3ff}
 
 /* Inline measurement inputs (compact) */
 .kc-ct-inline{position:absolute;inset:0;pointer-events:none}
