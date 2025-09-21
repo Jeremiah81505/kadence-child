@@ -348,8 +348,35 @@
 
           // overhang removed
 
-          // backsplash along outer bounding box
-          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){ ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); } }); } }
+          // backsplash along outer bounding box A-D plus precise returns E/H
+          { const aBox=a, bBox=b; const bh = px(Number(opts.bsHeight||0)); if (bh>0){
+              // A-D bounding box splash
+              ['A','B','C','D'].forEach(side=>{ if (cur.bs[side]){ const r = document.createElementNS(ns,'rect'); if (side==='A'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY - bBox/2 - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='B'){ r.setAttribute('x', String(centerX - aBox/2 - bh)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } if (side==='C'){ r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(centerY + bBox/2)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); } if (side==='D'){ r.setAttribute('x', String(centerX + aBox/2)); r.setAttribute('y', String(centerY - bBox/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(bBox)); } r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); } });
+              // E (bottom left return) and H (bottom right return) precise lengths
+              if (cur.bs && (cur.bs.E || cur.bs.H)){
+                const eLen = px(Math.max(0, Number(len.E||0)));
+                const hLen = px(Math.max(0, Number(len.H||0)));
+                // world coords for returns along bottom outer edge
+                if (cur.bs.E && eLen>0){
+                  const rE = document.createElementNS(ns,'rect');
+                  rE.setAttribute('x', String(centerX - a/2));
+                  rE.setAttribute('y', String(centerY + b/2));
+                  rE.setAttribute('width', String(eLen));
+                  rE.setAttribute('height', String(bh));
+                  rE.setAttribute('fill','#e6f2ff'); rE.setAttribute('stroke','#7fb3ff'); rE.setAttribute('stroke-width','1');
+                  rotG.appendChild(rE);
+                }
+                if (cur.bs.H && hLen>0){
+                  const rH = document.createElementNS(ns,'rect');
+                  rH.setAttribute('x', String(centerX + a/2 - hLen));
+                  rH.setAttribute('y', String(centerY + b/2));
+                  rH.setAttribute('width', String(hLen));
+                  rH.setAttribute('height', String(bh));
+                  rH.setAttribute('fill','#e6f2ff'); rH.setAttribute('stroke','#7fb3ff'); rH.setAttribute('stroke-width','1');
+                  rotG.appendChild(rH);
+                }
+              }
+          } }
           // seams for U (bounding-box approximation)
           if (opts.showSeams && Array.isArray(cur.seams)){
             cur.seams.forEach(seam=>{
@@ -638,8 +665,10 @@
     if (cur.type==='l'){
       cur.flipX = !cur.flipX;
     } else if (cur.type==='u'){
-  // mirror U visually by toggling flipX and swap backsplash flags for E/H
-  cur.flipX = !cur.flipX;
+  // Mirror U: swap return lengths E/H and swap backsplash flags E/H
+  const eVal = Number(cur.len?.E||0), hVal = Number(cur.len?.H||0);
+  if (!cur.len) cur.len = {};
+  cur.len.E = hVal; cur.len.H = eVal;
   if (cur.bs){ const tmp = cur.bs.E; cur.bs.E = cur.bs.H; cur.bs.H = tmp; }
     } // rect/poly: no-op for now
     draw(); save();
