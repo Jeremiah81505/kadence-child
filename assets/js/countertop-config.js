@@ -10,12 +10,15 @@
     const shapeLabel = sel('[data-ct-shape-label]', root);
   const actions = root;
   let mode = 'move'; // move | resize
+  let isGestureActive = false; // disables undo/redo during active drag/resize
+  let gestureHintTimer = null;
 
   // Simple multi-shape state
   let shapes = [];
   let active = -1;
   let hover = -1;
   let handles = [];
+  let hoverHandle = null; // {i,h} from pickHandle
   let inlineHost = sel('[data-ct-inline]', root);
   // Poly drawing state
   let drawingPoly = false; // when true, clicks add vertices to the active poly
@@ -35,6 +38,45 @@
   const STATE_KEY = 'kcCountertopConfig:v1';
   let toolMode = 'move';
   let zoom = 1;
+  // Debounce timer for measurement input history
+  let lenEditTimer = null;
+  // Lightweight announcer for a11y status updates
+  const announce = (msg)=>{ try{ const live = sel('[data-ct-live]', root); if (live){ live.textContent=''; setTimeout(()=>{ live.textContent = String(msg||''); }, 10); } }catch(e){} };
+  // Simple visual toast for quick feedback
+  let toastTimer = null;
+  const toast = (msg)=>{
+    try{
+      const el = sel('[data-ct-toast]', root);
+      if (!el) return;
+      el.textContent = String(msg||'');
+      el.classList.add('is-show');
+      el.setAttribute('aria-hidden', 'false');
+      if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.classList.remove('is-show'); el.setAttribute('aria-hidden','true'); }, 900);
+    }catch(e){}
+  };
+
+    // Simple undo/redo history
+    const HISTORY_LIMIT = 50;
+    let _past = [];
+    let _future = [];
+    const snapshot = ()=> JSON.parse(JSON.stringify({ shapes, active, opts }));
+    function restore(state){
+      shapes = Array.isArray(state?.shapes) ? state.shapes : [];
+      active = Math.max(-1, Math.min(Number(state?.active ?? -1), shapes.length-1));
+      const restoredOpts = state?.opts || {};
+      // mutate opts (const) back to restored state
+      Object.keys(opts).forEach(k=>{ delete opts[k]; });
+      Object.assign(opts, restoredOpts);
+      renderTabs(); syncInputs(); syncOptionsUI(); draw(); updateOversize(); updateActionStates(); updateSummary(); save();
+    }
+    function pushHistory(){
+      try{ _past.push(snapshot()); if (_past.length>HISTORY_LIMIT) _past.shift(); _future.length = 0; }catch(e){}
+      // reflect new history availability in UI
+      try{ updateActionStates(); }catch(e){}
+    }
+  function undo(){ if(!_past.length) return; try{ _future.push(snapshot()); const st=_past.pop(); restore(st); updateActionStates(); announce('Undid last change'); toast('Undid'); }catch(e){} }
+  function redo(){ if(!_future.length) return; try{ _past.push(snapshot()); const st=_future.pop(); restore(st); updateActionStates(); announce('Redid last change'); toast('Redid'); }catch(e){} }
 
     function draw(){
   svg.innerHTML = '';
@@ -60,10 +102,50 @@
       const addHandle=(idx, cx, cy, rot, key)=>{
         // Expect world-space coordinates; no extra rotation here (alignment handled by localToWorld upstream)
         handles.push({ idx, cx, cy, rot, key, r:8 });
+  // Only render visible handles when Resize mode is active on the selected shape
+  if (!(idx===active && toolMode==='resize')) return;
         const c=document.createElementNS(ns,'circle');
         c.setAttribute('cx', String(cx)); c.setAttribute('cy', String(cy)); c.setAttribute('r','6');
         c.setAttribute('fill','#fff'); c.setAttribute('stroke','#4f6bd8'); c.setAttribute('stroke-width','2');
+        // Add an accessible tooltip describing the handle purpose
+        const t=document.createElementNS(ns,'title');
+        let tip='Adjust';
+        const keyStr=String(key||'');
+        if (keyStr==='A-right') tip='Drag to change A (increase)';
+        else if (keyStr==='A-left') tip='Drag to change A (decrease)';
+        else if (keyStr==='B-top') tip='Drag to change B (decrease)';
+        else if (keyStr==='B-bottom') tip='Drag to change B (increase)';
+        else if (keyStr==='C') tip='Drag to adjust C';
+        else if (keyStr==='D') tip='Drag to adjust D';
+        else if (keyStr==='BL') tip='Drag to adjust Left depth (BL)';
+        else if (keyStr==='BR') tip='Drag to adjust Right depth (BR)';
+        else if (keyStr==='E') tip='Drag to adjust Left return (E)';
+        else if (keyStr==='H') tip='Drag to adjust Right return (H)';
+        else if (keyStr.startsWith('P-')) tip='Drag to scale this side length';
+        else if (keyStr.startsWith('V-')) tip='Drag to move this vertex';
+        t.textContent=tip; c.appendChild(t);
         if (idx===active) gRoot.appendChild(c);
+        // Draw a small label near the handle for clarity
+        const label=document.createElementNS(ns,'text');
+        label.setAttribute('x', String(cx + 10));
+        label.setAttribute('y', String(cy - 10));
+        label.setAttribute('font-size','11');
+        label.setAttribute('font-weight','700');
+        label.setAttribute('fill','#1f2b56');
+        label.setAttribute('class','kc-hlabel');
+        let ltxt='';
+        if (keyStr==='A-right' || keyStr==='A-left') ltxt='A';
+        else if (keyStr==='B-top' || keyStr==='B-bottom') ltxt='B';
+        else if (keyStr==='BL') ltxt='BL';
+        else if (keyStr==='BR') ltxt='BR';
+        else if (keyStr==='C') ltxt='C';
+        else if (keyStr==='D') ltxt='D';
+        else if (keyStr==='E') ltxt='E';
+        else if (keyStr==='H') ltxt='H';
+        else if (keyStr.startsWith('P-')) ltxt='Side';
+        else if (keyStr.startsWith('V-')) ltxt='Pt';
+        label.textContent = ltxt;
+        if (idx===active) gRoot.appendChild(label);
       };
 
       const labelNumbers=(parent, cx, cy, cur, dims)=>{
@@ -649,6 +731,39 @@
   }
   // After drawing vectors, sync inline numeric inputs
   renderInlineInputs();
+      // Hover value badge in Resize mode
+      if (toolMode==='resize' && hoverHandle && handles.length>0){
+        const hh = hoverHandle.h; const s = shapes[hoverHandle.idx];
+        if (s && hh){
+          const keyStr = String(hh.key||'');
+          const fmt = (v)=> `${Math.max(0, Math.round(Number(v||0)))}"`;
+          let txt = '';
+          if (keyStr==='A-right' || keyStr==='A-left') txt = fmt(s.len?.A||0);
+          else if (keyStr==='B-top' || keyStr==='B-bottom') txt = fmt(s.len?.B||0);
+          else if (keyStr==='C') txt = fmt(s.len?.C||0);
+          else if (keyStr==='D') txt = fmt(s.len?.D||0);
+          else if (keyStr==='BL') { const v=(s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25); txt = fmt(v); }
+          else if (keyStr==='BR') { const v=(s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25); txt = fmt(v); }
+          else if (keyStr==='E') txt = fmt(s.len?.E||0);
+          else if (keyStr==='H') txt = fmt(s.len?.H||0);
+          else if (keyStr.startsWith('P-')){
+            const i = parseInt(keyStr.split('-')[1]||'-1',10);
+            if (Array.isArray(s.points) && i>=0){ const a=s.points[i], b=s.points[(i+1)%s.points.length]; txt = fmt(Math.hypot((b.x-a.x),(b.y-a.y))); }
+          }
+          if (txt){
+            const padX=12, padY=14;
+            const t=document.createElementNS(ns,'text');
+            t.setAttribute('x', String(hh.cx + padX));
+            t.setAttribute('y', String(hh.cy - padY));
+            t.setAttribute('font-size','12');
+            t.setAttribute('font-weight','800');
+            t.setAttribute('fill','#0f172a');
+            t.setAttribute('class','kc-hval');
+            t.textContent = txt;
+            gRoot.appendChild(t);
+          }
+        }
+      }
     }
     // Tool mode and panels (left palette)
     root.querySelectorAll('[data-ct-tool-mode]').forEach(btn=>{
@@ -665,6 +780,8 @@
         });
   // Open Measurements panel when choosing resize from left tiles
   if (toolMode==='resize'){ const mbtn = sel('[data-ct-panel="measure"]', root); if (mbtn) mbtn.click(); }
+        // redraw to reflect handle visibility for the new mode
+        draw();
       });
     });
     root.querySelectorAll('[data-ct-panel]').forEach(btn=>{
@@ -672,12 +789,15 @@
         const p = btn.getAttribute('data-ct-panel');
         root.querySelectorAll('.kc-panel').forEach(panel=> panel.hidden = true);
         const pane = sel('.kc-panel-' + p, root); if (pane) pane.hidden = false;
+        // When switching to Measurements, refresh constraint hints
+        if (p==='measure'){ try{ updateConstraintsUI(); }catch(e){} }
       });
     });
 
     // Create shapes from panel
   root.querySelectorAll('[data-ct-shape]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
+        pushHistory();
   const type = btn.getAttribute('data-ct-shape')||'rect';
   const a = parseInt(btn.getAttribute('data-ct-len-a')||'60',10);
   const b = parseInt(btn.getAttribute('data-ct-len-b')||'25',10);
@@ -699,6 +819,7 @@
     // Free draw: click the tile to start adding vertices on canvas until Enter or double-click to finish
     root.querySelectorAll('[data-ct-poly="free"]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
+          pushHistory();
         const id='s'+(shapes.length+1);
         const s={ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:[], len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] };
         shapes.push(s); active=shapes.length-1; drawingPoly=true; drawingIdx=active; shapeLabel.textContent=s.name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
@@ -708,6 +829,7 @@
     // Layout presets
     root.querySelectorAll('[data-ct-layout]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
+          pushHistory();
         const layout = btn.getAttribute('data-ct-layout');
         const add = (type,len,pos)=>{ const id='s'+(shapes.length+1); shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:pos||{x:300,y:300}, len, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] }); active=shapes.length-1; };
         if (layout==='straight'){
@@ -733,6 +855,7 @@
     // Duplicate handler (reused for toolbar + sidebar)
     const onDuplicate = ()=>{
       if (active<0) return;
+      pushHistory();
       const s=shapes[active];
       const copy=JSON.parse(JSON.stringify(s));
       copy.id='s'+(shapes.length+1);
@@ -762,11 +885,12 @@
   // (shape selection handled below in a single place)
 
   // Bind rotate controls across toolbar/sidebar
-  all('[data-ct-rotate-left]', root).forEach(el=> el.addEventListener('click', ()=>{ if(active<0) return; shapes[active].rot = (shapes[active].rot + 270)%360; draw(); }));
-  all('[data-ct-rotate-right]', root).forEach(el=> el.addEventListener('click', ()=>{ if(active<0) return; shapes[active].rot = (shapes[active].rot + 90)%360; draw(); }));
+  all('[data-ct-rotate-left]', root).forEach(el=> el.addEventListener('click', ()=>{ if(active<0) return; pushHistory(); shapes[active].rot = (shapes[active].rot + 270)%360; draw(); }));
+  all('[data-ct-rotate-right]', root).forEach(el=> el.addEventListener('click', ()=>{ if(active<0) return; pushHistory(); shapes[active].rot = (shapes[active].rot + 90)%360; draw(); }));
   // Mirror (horizontal) control
   all('[data-ct-mirror]', root).forEach(el=> el.addEventListener('click', ()=>{
     if (active<0) return; const cur = shapes[active];
+    pushHistory();
     if (cur.type==='l'){
       cur.flipX = !cur.flipX;
     } else if (cur.type==='u'){
@@ -782,7 +906,7 @@
     const tmpB = cur.bs.BL; cur.bs.BL = cur.bs.BR; cur.bs.BR = tmpB;
   }
     } // rect/poly: no-op for now
-    draw(); save();
+    draw(); updateConstraintsUI(); save();
   }));
 
     // Delegated input handling for dynamic measurement fields
@@ -791,6 +915,10 @@
       if (!(inp instanceof HTMLElement)) return;
       if (!inp.matches('[data-ct-len]')) return;
       if (active<0) return;
+      // Debounce history: record once per burst of input changes
+      if (!lenEditTimer){ pushHistory(); }
+  if (lenEditTimer) clearTimeout(lenEditTimer);
+  lenEditTimer = setTimeout(()=>{ lenEditTimer = null; }, 500);
       const s = shapes[active];
       const k = inp.getAttribute('data-ct-len');
       let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0;
@@ -835,7 +963,7 @@
           }
         }
       }
-      draw(); updateOversize(); updateSummary(); save();
+      draw(); updateOversize(); updateSummary(); updateConstraintsUI(); save();
     });
 
     function updateOversize(){
@@ -860,6 +988,15 @@
   const rst = sel('[data-ct-reset]', root);
   if (del) del.disabled = shapes.length <= 0;
   if (rst) rst.disabled = (active<0);
+  // Undo/Redo availability
+  const u = sel('[data-ct-undo]', root);
+  const r = sel('[data-ct-redo]', root);
+  const lock = !!isGestureActive;
+  if (u) u.disabled = lock || (_past.length <= 0);
+  if (r) r.disabled = lock || (_future.length <= 0);
+  // Gesture hint
+  const gh = sel('[data-ct-gesture-hint]', root);
+  if (gh) gh.hidden = !lock;
     }
 
     // Tabs handling
@@ -945,8 +1082,34 @@
         all('[data-ct-shape]', root).forEach(btn=> btn.classList.toggle('is-active', btn.getAttribute('data-ct-shape')===cur.type));
     const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
   if (rowC) rowC.style.display='none'; if (rowD) rowD.style.display='none';
+        // Update constraint hints for current selection
+        try{ updateConstraintsUI(); }catch(e){}
       }
       const bsH = sel('[data-ct-bs-height]', root); if (bsH) bsH.value = String(opts.bsHeight||0);
+    }
+
+    // Show light constraint hints in the Measurements panel
+    function updateConstraintsUI(){
+      const box = sel('[data-ct-constraints]', root);
+      if (!box){ return; }
+      if (active<0 || !shapes[active]){ box.hidden = true; box.textContent = ''; return; }
+      const s = shapes[active];
+      if (s.type==='u'){
+        const A = Number(s.len?.A||0);
+        const BL = Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25));
+        const BR = Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25));
+        const C = Number(s.len?.C||0);
+        const minSide = Math.max(0, Math.min(BL, BR));
+        const dMax = Math.max(0, minSide - 1);
+        box.innerHTML = `D ≤ min(BL, BR) − 1 = <strong>${dMax}</strong>. E + H = A − C = <strong>${Math.max(0, A - C)}</strong>`;
+        box.hidden = false;
+      } else if (s.type==='l'){
+        const B = Number(s.len?.B||0);
+        box.innerHTML = `D ≤ B − 1 = <strong>${Math.max(0, B-1)}</strong>. C ≤ A − 1`;
+        box.hidden = false;
+      } else {
+        box.hidden = true; box.textContent = '';
+      }
     }
 
     function sideLabel(s){
@@ -985,6 +1148,7 @@
     // Wall / backsplash bindings
     all('[data-ct-wall]', root).forEach(inp=>{
       inp.addEventListener('change', ()=>{
+          pushHistory();
         const k = inp.getAttribute('data-ct-wall');
         shapes[active].wall[k] = !!inp.checked;
         updateSummary(); save(); draw();
@@ -996,6 +1160,7 @@
       if (!(inp instanceof HTMLElement)) return;
       if (!inp.matches('[data-ct-backsplash]')) return;
       if (active<0) return;
+        pushHistory();
       const k = inp.getAttribute('data-ct-backsplash'); if (!k) return;
       if (!shapes[active].bs) shapes[active].bs = {};
   const checked = (inp.tagName === 'INPUT') ? (inp).checked : !!inp.getAttribute('checked');
@@ -1005,6 +1170,7 @@
     // L flip binding
     sel('[data-ct-l-flip]', root)?.addEventListener('change', (e)=>{
       const cur = shapes[active]; if (!cur || cur.type!=='l') return;
+        pushHistory();
       cur.flipX = !!e.target.checked; draw(); updateSummary(); save();
     });
     // Backsplash height input
@@ -1012,19 +1178,22 @@
   // Overhang removed
 
   // Seams UI removed
+        pushHistory();
       let v = parseInt(e.target.value||'0',10); if(!isFinite(v)||v<0) v=0; if (v>24) v=24; opts.bsHeight = v; updateSummary(); save(); draw();
     });
 
     // Reset/Delete actions (bind to all matching buttons)
     all('[data-ct-reset]', root).forEach(el=> el.addEventListener('click', ()=>{
       if(active<0) return;
+        pushHistory();
       const cur = shapes[active];
       cur.len = {A:60,B:25,C:0,D:0};
       cur.rot = 0;
       syncInputs(); draw(); updateOversize(); updateSummary();
     }));
     all('[data-ct-delete]', root).forEach(el=> el.addEventListener('click', ()=>{
-      if (shapes.length <= 1) { shapes = []; active=-1; shapeLabel.textContent='No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary(); save(); return; }
+        pushHistory();
+        if (shapes.length <= 1) { shapes = []; active=-1; shapeLabel.textContent='No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary(); save(); return; }
       shapes.splice(active, 1);
       if (active >= shapes.length) active = shapes.length - 1;
       shapes.forEach((s,i)=> s.name = 'Shape ' + (i+1));
@@ -1037,6 +1206,7 @@
     // single-select buttons: data-ct-opt
   root.querySelectorAll('[data-ct-opt]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
+        pushHistory();
         const key = btn.getAttribute('data-ct-opt'); const val = btn.getAttribute('data-value');
         opts[key] = val;
         // activate visual
@@ -1048,6 +1218,7 @@
   // radio groups: data-ct-radio
   root.querySelectorAll('[data-ct-radio]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
+        pushHistory();
         const key = btn.getAttribute('data-ct-radio'); const val = btn.getAttribute('data-value');
         opts[key] = val;
     root.querySelectorAll(`[data-ct-radio="${key}"]`).forEach(b=>{ b.classList.remove('is-active'); b.setAttribute('aria-pressed','false'); });
@@ -1058,6 +1229,7 @@
   // multi-select toggles: data-ct-multi
   root.querySelectorAll('[data-ct-multi]').forEach(btn=>{
       btn.addEventListener('click', ()=>{
+        pushHistory();
         const key = btn.getAttribute('data-ct-multi'); const val = btn.getAttribute('data-value');
         if (!Array.isArray(opts[key])) opts[key] = opts[key] ? [opts[key]] : [];
         const idx = opts[key].indexOf(val);
@@ -1110,6 +1282,7 @@
         const pt=getPoint(ev);
         // Handle free-draw polygon creation clicks
         if (drawingPoly && drawingIdx>=0 && shapes[drawingIdx] && shapes[drawingIdx].type==='poly'){
+          if (shapes[drawingIdx].points.length===0){ pushHistory(); }
           const s=shapes[drawingIdx];
           if (s.points.length===0){
             s.pos = { x: pt.x, y: pt.y };
@@ -1123,12 +1296,12 @@
         }
         if (toolMode==='resize'){
           const ph = pickHandle(pt);
-          if (ph){ const {h}=ph; resizeIdx=h.idx; resizeKey=h.key; resizing=true; start=pt; const s=shapes[resizeIdx]; startLocal = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot); orig = { len: JSON.parse(JSON.stringify(s.len)), pos: {x:s.pos.x,y:s.pos.y} }; ev.preventDefault(); return; }
+          if (ph){ pushHistory(); const {h}=ph; resizeIdx=h.idx; resizeKey=h.key; resizing=true; isGestureActive=true; updateActionStates(); if (gestureHintTimer) clearTimeout(gestureHintTimer); gestureHintTimer=setTimeout(()=>{ const gh=sel('[data-ct-gesture-hint]', root); if (gh && isGestureActive) gh.hidden=true; }, 2000); start=pt; const s=shapes[resizeIdx]; startLocal = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot); orig = { len: JSON.parse(JSON.stringify(s.len)), pos: {x:s.pos.x,y:s.pos.y} }; ev.preventDefault(); return; }
         }
         const idx=pickIndex(pt, 28);
         if (idx!==-1){
           if (idx!==active){ active=idx; shapeLabel.textContent=shapes[active].name; renderTabs(); syncInputs(); draw(); }
-      if (toolMode==='move'){ dragging=true; start=pt; orig={...shapes[active].pos}; dragIdx=active; ev.preventDefault(); }
+  if (toolMode==='move'){ pushHistory(); dragging=true; isGestureActive=true; updateActionStates(); if (gestureHintTimer) clearTimeout(gestureHintTimer); gestureHintTimer=setTimeout(()=>{ const gh=sel('[data-ct-gesture-hint]', root); if (gh && isGestureActive) gh.hidden=true; }, 2000); start=pt; orig={...shapes[active].pos}; dragIdx=active; ev.preventDefault(); }
         }
       };
       const snapper = (val)=> opts.snap ? Math.round(val/10)*10 : val;
@@ -1233,21 +1406,45 @@
         }
         if(!dragging){
           const idx=pickIndex(pt, 28);
-          if (hover!==idx){ hover=idx; draw(); }
-          if (toolMode==='resize' && pickHandle(pt)) svgEl.style.cursor='nwse-resize'; else svgEl.style.cursor = hover!==-1 ? 'move' : 'default';
+          if (hover!==idx){ hover=idx; }
+          let changed=false;
+          let ph = null;
+          if (toolMode==='resize'){
+            ph = pickHandle(pt);
+            svgEl.style.cursor = ph ? 'nwse-resize' : (hover!==-1 ? 'move' : 'default');
+          } else {
+            svgEl.style.cursor = hover!==-1 ? 'move' : 'default';
+          }
+          const newSig = ph ? (ph.h.key+':'+ph.i) : '';
+          const oldSig = hoverHandle ? (hoverHandle.h.key+':'+hoverHandle.i) : '';
+          if (newSig !== oldSig){ hoverHandle = ph; changed=true; }
+          if (changed){ draw(); }
           return;
         }
         const dx=pt.x-start.x, dy=pt.y-start.y; shapes[dragIdx].pos={x:snapper(orig.x+dx),y:snapper(orig.y+dy)}; draw();
       };
-  const onUp=()=>{ if(resizing){ resizing=false; resizeIdx=-1; resizeKey=null; save(); return; } if(!dragging) return; dragging=false; dragIdx=-1; save(); };
+  const onUp=()=>{ if(resizing){ resizing=false; resizeIdx=-1; resizeKey=null; hoverHandle=null; isGestureActive=false; if (gestureHintTimer) clearTimeout(gestureHintTimer); try{ const pop=sel('[data-ct-gesture-pop]', root); if (pop) pop.hidden=true; }catch(e){} updateActionStates(); save(); return; } if(!dragging) return; dragging=false; dragIdx=-1; isGestureActive=false; if (gestureHintTimer) clearTimeout(gestureHintTimer); try{ const pop=sel('[data-ct-gesture-pop]', root); if (pop) pop.hidden=true; }catch(e){} updateActionStates(); save(); };
       svgEl.addEventListener('mousedown', onDown);
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup', onUp);
       svgEl.addEventListener('touchstart', onDown, {passive:false});
       window.addEventListener('touchmove', onMove, {passive:false});
       window.addEventListener('touchend', onUp);
+      // ESC to cancel active drag/resize gesture
+      window.addEventListener('keydown', (ev)=>{
+        if (ev.key !== 'Escape') return;
+        // Close help if open
+        try{ const pop = sel('[data-ct-gesture-pop]', root); if (pop && !pop.hidden){ pop.hidden = true; } }catch(e){}
+        if (!dragging && !resizing) return;
+        ev.preventDefault();
+        // restore snapshot from start of gesture
+        undo();
+        dragging=false; dragIdx=-1; resizing=false; resizeIdx=-1; resizeKey=null; hoverHandle=null; isGestureActive=false; updateActionStates();
+        announce('Canceled');
+        try{ toast('Canceled'); }catch(e){}
+      });
       // finish free draw on double click
-      svgEl.addEventListener('dblclick', ()=>{ if(drawingPoly){ drawingPoly=false; drawingIdx=-1; save(); draw(); } });
+  svgEl.addEventListener('dblclick', ()=>{ if(drawingPoly){ pushHistory(); drawingPoly=false; drawingIdx=-1; save(); draw(); } });
     })();
   // Reposition inline inputs on resize/scroll
   window.addEventListener('resize', ()=>{ if (inlineHost) { try{ renderInlineInputs(); }catch(e){} } });
@@ -1278,8 +1475,17 @@
           b.classList.toggle('is-active', name===toolMode);
         });
         mode = toolMode;
+        // redraw to reflect handle visibility for the new mode
+        draw();
       });
     });
+  // Undo / Redo toolbar buttons
+  sel('[data-ct-undo]', root)?.addEventListener('click', ()=>{ undo(); });
+  sel('[data-ct-redo]', root)?.addEventListener('click', ()=>{ redo(); });
+  // Gesture cancel button
+  sel('[data-ct-gesture-cancel]', root)?.addEventListener('click', (e)=>{ e.preventDefault(); if (isGestureActive) { undo(); isGestureActive=false; updateActionStates(); announce('Canceled'); try{ toast('Canceled'); }catch(e){} } });
+  // Help popover toggle
+  sel('[data-ct-gesture-help]', root)?.addEventListener('click', (e)=>{ e.preventDefault(); const pop = sel('[data-ct-gesture-pop]', root); if (!pop) return; pop.hidden = !pop.hidden; });
     // Duplicate already bound to all matching buttons above
     const svgEl = sel('[data-ct-svg]', root);
     function applyZoom(){ svgEl.setAttribute('viewBox', `0 0 ${600/zoom} ${600/zoom}`); }
@@ -1289,25 +1495,29 @@
       const key = box.getAttribute('data-ct-counter');
       const valEl = box.querySelector('.kc-ctr-val');
       const sync = ()=>{ valEl.textContent = String(opts[key]); };
-      box.querySelector('.kc-ctr-inc')?.addEventListener('click', ()=>{ opts[key] = (opts[key]||0)+1; sync(); updateSummary(); save(); });
-      box.querySelector('.kc-ctr-dec')?.addEventListener('click', ()=>{ opts[key] = Math.max(0,(opts[key]||0)-1); sync(); updateSummary(); save(); });
+  box.querySelector('.kc-ctr-inc')?.addEventListener('click', ()=>{ pushHistory(); opts[key] = (opts[key]||0)+1; sync(); updateSummary(); save(); });
+  box.querySelector('.kc-ctr-dec')?.addEventListener('click', ()=>{ pushHistory(); opts[key] = Math.max(0,(opts[key]||0)-1); sync(); updateSummary(); save(); });
       sync();
     });
 
     // keyboard nudging for active shape
     root.addEventListener('keydown', (e)=>{
       if (drawingPoly){
-        if (e.key==='Enter'){ drawingPoly=false; drawingIdx=-1; draw(); save(); }
+        if (e.key==='Enter'){ pushHistory(); drawingPoly=false; drawingIdx=-1; draw(); save(); }
         if (e.key==='Escape'){ // cancel drawing: remove empty poly
           if (drawingIdx>=0 && shapes[drawingIdx] && Array.isArray(shapes[drawingIdx].points) && shapes[drawingIdx].points.length<3){ shapes.splice(drawingIdx,1); active=Math.max(-1, Math.min(active, shapes.length-1)); }
           drawingPoly=false; drawingIdx=-1; draw(); save();
         }
         return;
       }
+      // Undo/Redo shortcuts
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); return; }
+      if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase()==='y' || (e.shiftKey && e.key.toLowerCase()==='z'))){ e.preventDefault(); redo(); return; }
       if (active<0) return;
       const step = opts.snap ? 10 : 2;
       if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
         e.preventDefault();
+        pushHistory();
         const p = shapes[active].pos;
         if (e.key==='ArrowLeft') p.x -= step;
         if (e.key==='ArrowRight') p.x += step;
@@ -1369,7 +1579,7 @@
         }
         return acc + (A*B);
       }, 0);
-      const sqFt = totalSqIn/144; if (areaEl) areaEl.textContent = (Math.round(sqFt*10)/10).toFixed(1);
+  const sqFt = totalSqIn/144; const sqFtTxt = (Math.round(sqFt*10)/10).toFixed(1); if (areaEl) areaEl.textContent = sqFtTxt;
   if (matEl) matEl.textContent = Array.isArray(opts.material)? (opts.material.join(', ')||'') : (opts.material||'');
       if (edgeEl) edgeEl.textContent = opts.edge||'';
       if (sinksEl) sinksEl.textContent = opts.sinks||'';
@@ -1379,6 +1589,10 @@
       if (cutOtherEl) cutOtherEl.textContent = String(opts['cutout-other']||0);
   if (removalEl) removalEl.textContent = opts.removal||'';
   if (seamsEl){ const seamCount = shapes.reduce((acc,s)=> acc + (Array.isArray(s.seams)? s.seams.length:0), 0); seamsEl.textContent = String(seamCount); }
+      // Mini summary mirrors
+      const pMini = sel('[data-ct-sum-pieces-mini]', root); if (pMini) pMini.textContent = String(shapes.length);
+      const aMini = sel('[data-ct-sum-area-mini]', root); if (aMini) aMini.textContent = sqFtTxt;
+      const sMini = sel('[data-ct-sum-seams-mini]', root); if (sMini){ const seamCount = shapes.reduce((acc,s)=> acc + (Array.isArray(s.seams)? s.seams.length:0), 0); sMini.textContent = String(seamCount); }
     }
 
     // Load saved state if present
@@ -1409,7 +1623,7 @@
     const origSyncInputs = syncInputs; syncInputs = saveAnd(syncInputs);
 
     // Snap toggle
-    const snapEl = sel('[data-ct-snap]', root); if (snapEl){ snapEl.checked = !!opts.snap; snapEl.addEventListener('change', ()=>{ opts.snap = !!snapEl.checked; save(); }); }
+  const snapEl = sel('[data-ct-snap]', root); if (snapEl){ snapEl.checked = !!opts.snap; snapEl.addEventListener('change', ()=>{ pushHistory(); opts.snap = !!snapEl.checked; save(); }); }
 
     // Export current config
     sel('[data-ct-export]', root)?.addEventListener('click', ()=>{
@@ -1441,7 +1655,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T6';
+  window.KC_CT.version = '2025-09-21T14';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}

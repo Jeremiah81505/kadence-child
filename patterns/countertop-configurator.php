@@ -71,6 +71,7 @@
                 <div class="kc-meas" data-ct-meas-list>
                   <!-- Dynamic per-side inputs injected by JS -->
                 </div>
+                <p class="kc-muted" data-ct-constraints hidden></p>
                 <div class="kc-option-grid" data-ct-l-flip-wrap hidden>
                   <label class="kc-meas opt"><input type="checkbox" data-ct-l-flip /> Flip L orientation</label>
                 </div>
@@ -112,6 +113,9 @@
             <button type="button" class="kc-tool is-active" data-ct-tool="move" title="Move">Move</button>
             <button type="button" class="kc-tool" data-ct-tool="resize" title="Resize">Resize</button>
             <button type="button" class="kc-tool" data-ct-tool="shapes" title="Shapes">Shapes</button>
+            <div class="kc-tool-split"></div>
+            <button type="button" class="kc-tool" data-ct-undo title="Undo (Ctrl+Z / ⌘Z)">Undo</button>
+            <button type="button" class="kc-tool" data-ct-redo title="Redo (Ctrl+Y or Shift+Ctrl+Z / ⌘Shift+Z)">Redo</button>
             <button type="button" class="kc-tool" data-ct-rotate-left title="Rotate Left">⟲</button>
             <button type="button" class="kc-tool" data-ct-rotate-right title="Rotate Right">⟳</button>
             <button type="button" class="kc-tool" data-ct-mirror title="Mirror">Mirror</button>
@@ -121,11 +125,32 @@
             <button type="button" class="kc-tool" data-ct-zoom-in title="Zoom In">＋</button>
             <button type="button" class="kc-tool" data-ct-zoom-out title="Zoom Out">－</button>
           </div>
+          <div class="kc-gesture-hint" data-ct-gesture-hint hidden>
+            <span>Press Esc to cancel</span>
+            <button type="button" class="kc-gest-cancel" data-ct-gesture-cancel>Cancel</button>
+            <button type="button" class="kc-gest-help" title="Tips" data-ct-gesture-help>?</button>
+            <div class="kc-gest-pop" data-ct-gesture-pop hidden>
+              <div><strong>Tips</strong></div>
+              <ul>
+                <li>Snap: toggle in top-left (Smoother moves when off).</li>
+                <li>Arrows: nudge active shape (respects snap).</li>
+                <li>Undo/Redo: Ctrl/⌘+Z, Ctrl+Y or Shift+Ctrl/⌘+Z.</li>
+                <li>Esc or Cancel: exit current drag/resize.</li>
+              </ul>
+            </div>
+          </div>
           <svg viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet" data-ct-svg>
             <!-- Drawing injected by JS -->
           </svg>
+          <div class="kc-ct-sticky-sum" aria-live="polite">
+            <div class="itm"><span>Pieces</span><strong data-ct-sum-pieces-mini>0</strong></div>
+            <div class="itm"><span>Area</span><strong data-ct-sum-area-mini>0.0</strong><small>sq ft</small></div>
+            <div class="itm"><span>Seams</span><strong data-ct-sum-seams-mini>0</strong></div>
+          </div>
           <div class="kc-ct-inline" data-ct-inline aria-live="polite" aria-label="Inline measurement inputs"></div>
           <div class="kc-ct-shape-label" data-ct-shape-label>No shape selected</div>
+          <div class="kc-visually-hidden" data-ct-live aria-live="polite"></div>
+          <div class="kc-toast" data-ct-toast aria-hidden="true"></div>
           <div class="kc-ct-legend" aria-hidden="true">
             <span class="lg lg-wall"></span> Wall side
             <span class="lg lg-bs"></span> Backsplash
