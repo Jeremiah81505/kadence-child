@@ -201,7 +201,26 @@
           let rafId=0;
           const schedule = ()=>{ cancelAnimationFrame(rafId); rafId = requestAnimationFrame(()=>{ renderInlineInputs(); updateSummary(); }); };
           inp.addEventListener('input', ()=>{
-            let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0; s.len[k]=v; schedule(); save();
+            let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0;
+            if (s.type==='u'){
+              const A = Number(s.len.A||0), B = Number(s.len.B||0);
+              if (k==='E'){ s.len.E = Math.max(0, Math.min(v, Math.max(0, A - 1 - (s.len.H||0)))); s.len.C = Math.max(1, A - (s.len.E||0) - (s.len.H||0)); }
+              else if (k==='H'){ s.len.H = Math.max(0, Math.min(v, Math.max(0, A - 1 - (s.len.E||0)))); s.len.C = Math.max(1, A - (s.len.E||0) - (s.len.H||0)); }
+              else if (k==='F' || k==='G' || k==='D'){
+                s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, B-1)));
+                const maxVert = Math.max(0, B - s.len.D - 1);
+                if (k==='F'){ s.len.F = Math.max(0, Math.min(v, maxVert)); }
+                if (k==='G'){ s.len.G = Math.max(0, Math.min(v, maxVert)); }
+                if (k==='D'){ s.len.D = Math.max(0, Math.min(v, Math.max(0, B-1))); }
+              } else if (k==='C'){
+                const newC = Math.max(1, Math.min(v, Math.max(1, A-1)));
+                const spare = Math.max(0, A - newC);
+                const e = Math.floor(spare/2), h = spare - e; s.len.C=newC; s.len.E=e; s.len.H=h;
+              } else { s.len[k]=v; }
+            } else {
+              s.len[k]=v;
+            }
+            schedule(); save();
           });
           inp.addEventListener('blur', ()=>{ draw(); });
         });
@@ -398,21 +417,24 @@
           let gIn = Number(len.G != null ? len.G :  Math.max(0, (bIn - dIn)/2));
           // clamp each independently
           if (dIn < 0) dIn = 0; if (dIn > bIn-1) dIn = bIn-1;
-          if (eIn < 0) eIn = 0; if (hIn < 0) hIn = 0; if (eIn + hIn > aIn-1){ const spare=aIn-1; if (eIn>spare) eIn=spare; hIn = Math.max(0, spare - eIn); }
+          // compute local clamped values (do not mutate stored lengths here)
+          const eMax = Math.max(0, aIn - 1 - Math.max(0,hIn));
+          const hMax = Math.max(0, aIn - 1 - Math.max(0,eIn));
+          const eLocal = Math.min(Math.max(eIn,0), eMax);
+          const hLocal = Math.min(Math.max(hIn,0), hMax);
           const maxVert = Math.max(0, bIn - dIn - 1);
-          if (fIn < 0) fIn = 0; if (gIn < 0) gIn = 0; if (fIn>maxVert) fIn=maxVert; if (gIn>maxVert) gIn=maxVert;
-          // derive C from returns and keep stored
-          const cIn = Math.max(1, aIn - (eIn + hIn)); cur.len.C = cIn;
-          // write back clamped values so UI stays in sync
-          cur.len.D = dIn; cur.len.E = eIn; cur.len.H = hIn; cur.len.F = fIn; cur.len.G = gIn;
+          const fLocal = Math.min(Math.max(fIn,0), maxVert);
+          const gLocal = Math.min(Math.max(gIn,0), maxVert);
+          // derived C used only for rendering
+          const cIn = Math.max(1, aIn - (eLocal + hLocal));
           const a = px(aIn), b = px(bIn);
           const x = centerX - a/2, y = centerY - b/2;
           // inner notch polygon (may be slanted at bottom if F != G)
-          const xiL = x + px(eIn);                // left inner x
-          const xiR = x + px(aIn - hIn);          // right inner x
+          const xiL = x + px(eLocal);                // left inner x
+          const xiR = x + px(aIn - hLocal);          // right inner x
           const yTop = y + px(dIn);               // inner top y
-          const yBotL = yTop + px(fIn);           // left vertical bottom y
-          const yBotR = yTop + px(gIn);           // right vertical bottom y
+          const yBotL = yTop + px(fLocal);           // left vertical bottom y
+          const yBotR = yTop + px(gLocal);           // right vertical bottom y
 
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
@@ -733,7 +755,27 @@
           pts[(idx+1)%n] = { x: Math.round(a.x + ux * v), y: Math.round(a.y + uy * v) };
         }
       } else {
+        // Default assignment, then shape-specific clamps
         s.len[k] = v;
+        if (s.type==='u'){
+          const A = Number(s.len.A||0), B = Number(s.len.B||0);
+          if (k==='E' || k==='H'){
+            if (k==='E'){ s.len.E = Math.max(0, Math.min(v, Math.max(0, A - 1 - (s.len.H||0)))); }
+            if (k==='H'){ s.len.H = Math.max(0, Math.min(v, Math.max(0, A - 1 - (s.len.E||0)))); }
+            s.len.C = Math.max(1, A - Math.max(0, (s.len.E||0)) - Math.max(0, (s.len.H||0)));
+          } else if (k==='F' || k==='G' || k==='D'){
+            s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, B-1)));
+            const maxVert = Math.max(0, B - s.len.D - 1);
+            if (k==='F'){ s.len.F = Math.max(0, Math.min(v, maxVert)); }
+            if (k==='G'){ s.len.G = Math.max(0, Math.min(v, maxVert)); }
+          } else if (k==='C'){
+            // Update C by rebalancing E/H symmetrically to keep notch centered
+            const newC = Math.max(1, Math.min(v, Math.max(1, A-1)));
+            const spare = Math.max(0, A - newC);
+            const e = Math.floor(spare/2), h = spare - e;
+            s.len.C = newC; s.len.E = e; s.len.H = h;
+          }
+        }
       }
       draw(); updateOversize(); updateSummary(); save();
     });
