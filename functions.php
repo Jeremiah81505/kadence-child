@@ -174,6 +174,32 @@ add_action( 'wp_enqueue_scripts', function() {
   }
 }, 99 );
 
+// Runtime-safe detection: enqueue configurator assets when the pattern actually renders
+add_filter( 'render_block', function( $block_content, $block ) {
+  if ( is_admin() ) { return $block_content; }
+  // Quick checks against block metadata
+  $hit = false;
+  if ( isset( $block['blockName'] ) ) {
+    // The pattern wrapper itself
+    if ( $block['blockName'] === 'core/pattern' && ! empty( $block['attrs']['slug'] ) && $block['attrs']['slug'] === 'kadence-child/countertop-configurator' ) {
+      $hit = true;
+    }
+    // Or a group with our marker class
+    if ( ! $hit && $block['blockName'] === 'core/group' && ! empty( $block['attrs']['className'] ) && strpos( $block['attrs']['className'], 'kc-ct-configurator' ) !== false ) {
+      $hit = true;
+    }
+  }
+  // Fallback: string check of rendered HTML (covers nested/third-party wrappers)
+  if ( ! $hit && is_string( $block_content ) && strpos( $block_content, 'kc-ct-configurator' ) !== false ) {
+    $hit = true;
+  }
+  if ( $hit ) {
+    wp_enqueue_style( 'kc-ct-css', get_stylesheet_directory_uri() . '/assets/css/countertop-config.css', array(), kc_asset_ver( 'assets/css/countertop-config.css' ) );
+    wp_enqueue_script( 'kc-ct-js', get_stylesheet_directory_uri() . '/assets/js/countertop-config.js', array(), kc_asset_ver( 'assets/js/countertop-config.js' ), true );
+  }
+  return $block_content;
+}, 20, 2 );
+
 // Minimal Kitchen Layout MVP: renderer, shortcode, and optional preview via ?kl=1
 if ( ! function_exists( 'kc_render_kitchen_layout_block' ) ) {
   function kc_render_kitchen_layout_block() {
