@@ -842,11 +842,6 @@
           drawGuideLine(rotG, centerX - a/2 + m, yTop + blPx - m, xiL - m, yTop + blPx - m, 'E');
           // H bottom right return
           drawGuideLine(rotG, xiR + m, yTop + brPx - m, centerX + a/2 - m, yTop + brPx - m, 'H');
-          // Faint inner-opening guides for clarity
-          const guide = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',String(x1)); l.setAttribute('y1',String(y1)); l.setAttribute('x2',String(x2)); l.setAttribute('y2',String(y2)); l.setAttribute('stroke','#cdd6ea'); l.setAttribute('stroke-width','1.5'); l.setAttribute('stroke-dasharray','4 4'); rotG.appendChild(l); };
-          guide(xiL, yInnerTop, xiL, yTop + blPx);
-          guide(xiR, yInnerTop, xiR, yTop + brPx);
-          guide(xiL, yTop + Math.min(blPx, brPx), xiR, yTop + Math.min(blPx, brPx));
           gRoot.appendChild(rotG);
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,BL:blIn,BR:brIn,C:cIn,D:dIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:Math.max(blPx, brPx), rot:rotation });
@@ -894,8 +889,11 @@
             const iBLm = toWorld(-a/2 + px(eIn) + itpx('iBL')/2,  hMax/2 - itpx('iBL')/2);
             addHandle(idx, iTLm.x, iTLm.y, 0, 'IC-TL');
             addHandle(idx, iTRm.x, iTRm.y, 0, 'IC-TR');
-            addHandle(idx, iBRm.x, iBRm.y, 0, 'IC-BR');
-            addHandle(idx, iBLm.x, iBLm.y, 0, 'IC-BL');
+            // Only show bottom inside-corner handles if there is a true inner bottom
+            if (blPx === brPx){
+              addHandle(idx, iBRm.x, iBRm.y, 0, 'IC-BR');
+              addHandle(idx, iBLm.x, iBLm.y, 0, 'IC-BL');
+            }
           }
         } else if (shape==='poly'){
           // Custom polygon defined by local-inch points: [{x,y}, ...] in inches
@@ -1621,6 +1619,14 @@
             const c = cur.icCorners[k]||{mode:'square',value:0};
             if (selEl) selEl.value = c.mode||'square';
             if (valEl) valEl.value = String(c.value||0);
+              // For U with no true inner bottom, disable iBL/iBR controls
+              if (cur.type==='u' && (k==='iBL' || k==='iBR')){
+                const BL = Number((cur.len?.BL!=null)?cur.len.BL:((cur.len?.B!=null)?cur.len.B:25));
+                const BR = Number((cur.len?.BR!=null)?cur.len.BR:((cur.len?.B!=null)?cur.len.B:25));
+                const hasBottom = (BL === BR);
+                if (selEl) selEl.disabled = !hasBottom;
+                if (valEl) valEl.disabled = !hasBottom;
+              }
           });
         }
       }
@@ -2449,7 +2455,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-22T26';
+  window.KC_CT.version = '2025-09-22T27';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
