@@ -621,8 +621,9 @@
           const xiL = x + px(eLocal);                // left inner x
           const xiR = x + px(aIn - hLocal);          // right inner x
           const yInnerTop = yTop + px(dIn);          // inner top y
-          const yBotL = yTop + blPx;                 // left vertical bottom
-          const yBotR = yTop + brPx;                 // right vertical bottom
+          const yBotL = yTop + blPx;                 // left vertical bottom (outer)
+          const yBotR = yTop + brPx;                 // right vertical bottom (outer)
+          const yInnerBottom = yTop + Math.min(blPx, brPx); // inner bottom y (top of base)
 
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
@@ -729,7 +730,7 @@
   const I_TR={mode:(ic.iTR?.mode)||'square', t:it('iTR')};
   const I_BR={mode:(ic.iBR?.mode)||'square', t:it('iBR')};
   const I_BL={mode:(ic.iBL?.mode)||'square', t:it('iBL')};
-  const ipTL={x:xiL,y:yInnerTop}, ipTR={x:xiR,y:yInnerTop}, ipBR={x:xiR,y:yTop+hMax}, ipBL={x:xiL,y:yTop+hMax};
+  const ipTL={x:xiL,y:yInnerTop}, ipTR={x:xiR,y:yInnerTop}, ipBR={x:xiR,y:yInnerBottom}, ipBL={x:xiL,y:yInnerBottom};
   const offI=(pA,pB,dist)=>{ const L=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/L, uy=(pB.y-pA.y)/L; return { x:pA.x+ux*dist, y:pA.y+uy*dist }; };
   const iaTL=offI(ipTL,ipTR,I_TL.t), ibTL=offI(ipTL,ipBL,I_TL.t);
   const iaTR=offI(ipTR,ipBR,I_TR.t), ibTR=offI(ipTR,ipTL,I_TR.t);
