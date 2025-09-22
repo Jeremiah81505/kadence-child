@@ -593,6 +593,7 @@
           let blIn = Number((len.BL!=null ? len.BL : (len.B!=null ? len.B : 25)));
           let brIn = Number((len.BR!=null ? len.BR : (len.B!=null ? len.B : 25)));
           let dIn = Number(len.D||10);
+          let baseIn = Number(len.BASE!=null ? len.BASE : 1);
           let eIn = Number(len.E != null ? len.E :  Math.round((aIn - (len.C||20))/2));
           let hIn = Number(len.H != null ? len.H :  Math.round((aIn - (len.C||20))/2));
           // clamp independently
@@ -623,7 +624,8 @@
           const yInnerTop = yTop + px(dIn);          // inner top y
           const yBotL = yTop + blPx;                 // left vertical bottom (outer)
           const yBotR = yTop + brPx;                 // right vertical bottom (outer)
-          const yInnerBottom = yTop + Math.min(blPx, brPx); // inner bottom y (top of base)
+          const basePx = px(Math.max(0, Math.min(baseIn, Math.min(blIn, brIn)-1)));
+          const yInnerBottom = yTop + Math.min(blPx, brPx) - basePx; // inner bottom y (top of base)
 
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
@@ -1423,6 +1425,7 @@
             addRow('Right depth (BR)','BR');
             addRow('Inner opening width (C)','C');
             addRow('Inner setback (D)','D');
+            addRow('Base thickness (BASE)','BASE');
             addRow('Left return (E)','E');
             addRow('Right return (H)','H');
             // Outside corner controls for U
@@ -2413,7 +2416,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T22';
+  window.KC_CT.version = '2025-09-21T23';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
