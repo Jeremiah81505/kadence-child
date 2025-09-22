@@ -732,15 +732,20 @@
   const it=(k)=> Math.min(Math.max(0, Number(ic[k]?.value||0))*2, tMaxPx);
   const I_TL={mode:(ic.iTL?.mode)||'square', t:it('iTL')};
   const I_TR={mode:(ic.iTR?.mode)||'square', t:it('iTR')};
-  const I_BR={mode:(ic.iBR?.mode)||'square', t:it('iBR')};
-  const I_BL={mode:(ic.iBL?.mode)||'square', t:it('iBL')};
+  let I_BR={mode:(ic.iBR?.mode)||'square', t:it('iBR')};
+  let I_BL={mode:(ic.iBL?.mode)||'square', t:it('iBL')};
+  // If the inner bottom is truncated (true U), suppress bottom inner radiuses
+  if (yInnerBottom < (yTop + hMax - 0.001)){
+    I_BR = { mode:'square', t:0 };
+    I_BL = { mode:'square', t:0 };
+  }
   const ipTL={x:xiL,y:yInnerTop}, ipTR={x:xiR,y:yInnerTop}, ipBR={x:xiR,y:yInnerBottom}, ipBL={x:xiL,y:yInnerBottom};
   const offI=(pA,pB,dist)=>{ const L=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/L, uy=(pB.y-pA.y)/L; return { x:pA.x+ux*dist, y:pA.y+uy*dist }; };
   const iaTL=offI(ipTL,ipTR,I_TL.t), ibTL=offI(ipTL,ipBL,I_TL.t);
   const iaTR=offI(ipTR,ipBR,I_TR.t), ibTR=offI(ipTR,ipTL,I_TR.t);
   const iaBR=offI(ipBR,ipBL,I_BR.t), ibBR=offI(ipBR,ipTR,I_BR.t);
   const iaBL=offI(ipBL,ipTL,I_BL.t), ibBL=offI(ipBL,ipBR,I_BL.t);
-  const arcI=(r,to)=> `A ${r} ${r} 0 0 0 ${to.x} ${to.y}`;
+  const arcI=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
   const inner=[];
   inner.push(`M ${iaTL.x} ${iaTL.y}`);
   inner.push(`L ${ibTR.x} ${ibTR.y}`);
@@ -2444,7 +2449,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-22T25';
+  window.KC_CT.version = '2025-09-22T26';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
