@@ -739,7 +739,7 @@
   const iaTR=offI(ipTR,ipBR,I_TR.t), ibTR=offI(ipTR,ipTL,I_TR.t);
   const iaBR=offI(ipBR,ipBL,I_BR.t), ibBR=offI(ipBR,ipTR,I_BR.t);
   const iaBL=offI(ipBL,ipTL,I_BL.t), ibBL=offI(ipBL,ipBR,I_BL.t);
-  const arcI=(r,to)=> `A ${r} ${r} 0 0 0 ${to.x} ${to.y}`;
+  const arcI=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
   const inner=[];
   inner.push(`M ${iaTL.x} ${iaTL.y}`);
   inner.push(`L ${ibTR.x} ${ibTR.y}`);
