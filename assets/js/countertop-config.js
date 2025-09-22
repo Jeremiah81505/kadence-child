@@ -727,18 +727,9 @@
   // Build inner opening with inside-corner ops
   const ic = cur.icCorners || { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
   const innerW = Math.max(0, xiR - xiL);
-  // Available vertical headroom to each leg's outer bottom from the inner-top
-  const availL = Math.max(0, (yBotL - yInnerTop));
-  const availR = Math.max(0, (yBotR - yInnerTop));
-  const tMaxTL = Math.max(0, Math.min(innerW/2, availL));
-  const tMaxTR = Math.max(0, Math.min(innerW/2, availR));
-  const tMaxBL = tMaxTL;
-  const tMaxBR = tMaxTR;
-  const it=(k)=>{
-    const raw = Math.max(0, Number(ic[k]?.value||0))*2;
-    const cap = (k==='iTL'?tMaxTL : k==='iTR'?tMaxTR : k==='iBL'?tMaxBL : tMaxBR);
-    return Math.min(raw, cap);
-  };
+  const innerH = Math.max(0, yInnerBottom - yInnerTop);
+  const tMaxPx = Math.max(0, Math.min(innerW/2, innerH/2));
+  const it=(k)=> Math.min(Math.max(0, Number(ic[k]?.value||0))*2, tMaxPx);
   const I_TL={mode:(ic.iTL?.mode)||'square', t:it('iTL')};
   const I_TR={mode:(ic.iTR?.mode)||'square', t:it('iTR')};
   const I_BR={mode:(ic.iBR?.mode)||'square', t:it('iBR')};
@@ -749,7 +740,7 @@
   const iaTR=offI(ipTR,ipBR,I_TR.t), ibTR=offI(ipTR,ipTL,I_TR.t);
   const iaBR=offI(ipBR,ipBL,I_BR.t), ibBR=offI(ipBR,ipTR,I_BR.t);
   const iaBL=offI(ipBL,ipTL,I_BL.t), ibBL=offI(ipBL,ipBR,I_BL.t);
-  const arcI=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
+  const arcI=(r,to)=> `A ${r} ${r} 0 0 0 ${to.x} ${to.y}`;
   const inner=[];
   inner.push(`M ${iaTL.x} ${iaTL.y}`);
   inner.push(`L ${ibTR.x} ${ibTR.y}`);
@@ -2453,7 +2444,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T24';
+  window.KC_CT.version = '2025-09-22T25';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
