@@ -266,13 +266,13 @@
             const d=[];
             // start at top edge from TL toward TR
             d.push(`M ${aTL.x} ${aTL.y}`);
-            if (TL.mode==='clip') d.push(`L ${bTL.x} ${bTL.y}`); else if (TL.mode==='radius'){ const r=TL.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 0 ${bTL.x} ${bTL.y}`); }
+            if (TL.mode==='clip') d.push(`L ${bTL.x} ${bTL.y}`); else if (TL.mode==='radius'){ const r=TL.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 1 ${bTL.x} ${bTL.y}`); }
             d.push(`L ${bTR.x} ${bTR.y}`);
-            if (TR.mode==='clip') d.push(`L ${aTR.x} ${aTR.y}`); else if (TR.mode==='radius'){ const r=TR.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 0 ${aTR.x} ${aTR.y}`); }
+            if (TR.mode==='clip') d.push(`L ${aTR.x} ${aTR.y}`); else if (TR.mode==='radius'){ const r=TR.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 1 ${aTR.x} ${aTR.y}`); }
             d.push(`L ${aBR.x} ${aBR.y}`);
-            if (BR.mode==='clip') d.push(`L ${bBR.x} ${bBR.y}`); else if (BR.mode==='radius'){ const r=BR.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 0 ${bBR.x} ${bBR.y}`); }
+            if (BR.mode==='clip') d.push(`L ${bBR.x} ${bBR.y}`); else if (BR.mode==='radius'){ const r=BR.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 1 ${bBR.x} ${bBR.y}`); }
             d.push(`L ${bBL.x} ${bBL.y}`);
-            if (BL.mode==='clip') d.push(`L ${aBL.x} ${aBL.y}`); else if (BL.mode==='radius'){ const r=BL.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 0 ${aBL.x} ${aBL.y}`); }
+            if (BL.mode==='clip') d.push(`L ${aBL.x} ${aBL.y}`); else if (BL.mode==='radius'){ const r=BL.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 1 ${aBL.x} ${aBL.y}`); }
             d.push('Z');
             const p=document.createElementNS(ns,'path'); p.setAttribute('d', d.join(' ')); p.setAttribute('fill','#f8c4a0'); p.setAttribute('stroke','#ccc'); p.setAttribute('stroke-width','2'); rotG.appendChild(p);
           }
@@ -380,7 +380,7 @@
             const aTR = off(pTR,pBR, TR.t), bTR = off(pTR,pTL, TR.t);
             const aBR = off(pBR,pBL, BR.t), bBR = off(pBR,pTR, BR.t);
             const aBL = off(pBL,pTL, BL.t), bBL = off(pBL,pBR, BL.t);
-            const arc = (r, to)=> `A ${r} ${r} 0 0 0 ${to.x} ${to.y}`; // 90° outside fillet, sweep 0
+            const arc = (r, to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`; // outside sweep
             const dSeg=[];
             dSeg.push(`M ${aTL.x} ${aTL.y}`);
             if (TL.mode==='clip') dSeg.push(`L ${bTL.x} ${bTL.y}`); else if (TL.mode==='radius'){ const r = TL.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, bTL)); }
@@ -632,7 +632,7 @@
     const aTR=off(pTR,pBR,C_TR.t), bTR=off(pTR,pTL,C_TR.t);
     const aBR=off(pBR,pBL,C_BR.t), bBR=off(pBR,pTR,C_BR.t);
     const aBL=off(pBL,pTL,C_BL.t), bBL=off(pBL,pBR,C_BL.t);
-    const arc=(r,to)=> `A ${r} ${r} 0 0 0 ${to.x} ${to.y}`;
+  const arc=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
     const outer=[];
     outer.push(`M ${aTL.x} ${aTL.y}`);
     if (C_TL.mode==='clip') outer.push(`L ${bTL.x} ${bTL.y}`); else if (C_TL.mode==='radius'){ const r=C_TL.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,bTL)); }
@@ -770,6 +770,9 @@
           };
           // build path with corner operations (clip/radius)
           const polyPath = document.createElementNS(ns, 'path');
+          // Determine orientation once for outside arc sweep
+          let orientArea=0; for (let i=0;i<ptsIn.length;i++){ const a=ptsIn[i], b=ptsIn[(i+1)%ptsIn.length]; orientArea += (a.x*b.y - b.x*a.y); }
+          const isCCW = orientArea > 0;
           let dStr='';
           const nPts = ptsIn.length;
           const getCorner = (i)=>{ const s=cur; if (!Array.isArray(s.corners)) return {mode:'square', value:0}; const c=s.corners[i]; return c||{mode:'square', value:0}; };
@@ -810,9 +813,8 @@
               const tanHalf = Math.tan(phi/2) || 1;
               const rPx = (tOff / tanHalf) * 2; // inches to px
               const large=0;
-              // choose sweep based on turn direction (sign of cross of vin->vout)
-              const cross = vin.x*vout.y - vin.y*vout.x;
-              const sweep = cross>0 ? 1 : 0;
+              // outside radius sweep: CW=1, CCW=0
+              const sweep = isCCW ? 0 : 1;
               dStr += ` A ${rPx} ${rPx} 0 ${large} ${sweep} ${bW.x} ${bW.y}`;
             }
           }
@@ -2193,7 +2195,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T18';
+  window.KC_CT.version = '2025-09-21T19';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
