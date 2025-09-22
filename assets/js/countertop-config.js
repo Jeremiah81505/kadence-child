@@ -623,8 +623,8 @@
           const yInnerTop = yTop + px(dIn);          // inner top y
           const yBotL = yTop + blPx;                 // left vertical bottom (outer)
           const yBotR = yTop + brPx;                 // right vertical bottom (outer)
-          // Always keep the center open: extend inner opening below both leg bottoms
-          const yInnerBottom = yTop + hMax + px(2);
+          // Inner bottom aligns to the shallower leg so each side ends at its own depth
+          const yInnerBottom = yTop + Math.min(blPx, brPx);
 
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
@@ -761,6 +761,22 @@
   inner.push(`L ${ibTL.x} ${ibTL.y}`);
   if (I_TL.mode==='radius'){ const r=I_TL.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaTL)); } else if (I_TL.mode==='clip'){ inner.push(`L ${iaTL.x} ${iaTL.y}`); }
   inner.push('Z');
+  // Subtract the extra bottom overhang below each leg so the outer fill
+  // does not extend to the deeper side's depth.
+  if (blPx < hMax){
+    inner.push(`M ${x} ${yTop + blPx}`);           // left outer bottom start
+    inner.push(`L ${xiL} ${yTop + blPx}`);         // to notch start
+    inner.push(`L ${xiL} ${yTop + hMax}`);         // down to outer bbox bottom
+    inner.push(`L ${x} ${yTop + hMax}`);           // back to left outer bbox bottom
+    inner.push('Z');
+  }
+  if (brPx < hMax){
+    inner.push(`M ${xiR} ${yTop + brPx}`);         // notch end on right
+    inner.push(`L ${x + a} ${yTop + brPx}`);       // to right outer bottom
+    inner.push(`L ${x + a} ${yTop + hMax}`);       // down to outer bbox bottom
+    inner.push(`L ${xiR} ${yTop + hMax}`);         // back to notch x
+    inner.push('Z');
+  }
   uPath.setAttribute('d', `${outer.join(' ')} ${inner.join(' ')}`);
     uPath.setAttribute('fill', '#f8c4a0');
     uPath.setAttribute('fill-rule', 'evenodd');
