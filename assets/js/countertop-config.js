@@ -777,6 +777,14 @@
     inner.push(`L ${xiR} ${yTop + hMax}`);         // back to notch x
     inner.push('Z');
   }
+  // Central strip under the inner bottom (between legs) — remove it
+  if (yInnerBottom < yTop + hMax){
+    inner.push(`M ${xiL} ${yInnerBottom}`);
+    inner.push(`L ${xiR} ${yInnerBottom}`);
+    inner.push(`L ${xiR} ${yTop + hMax}`);
+    inner.push(`L ${xiL} ${yTop + hMax}`);
+    inner.push('Z');
+  }
   uPath.setAttribute('d', `${outer.join(' ')} ${inner.join(' ')}`);
     uPath.setAttribute('fill', '#f8c4a0');
     uPath.setAttribute('fill-rule', 'evenodd');
