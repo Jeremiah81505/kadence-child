@@ -263,16 +263,26 @@
             const aTR = off(pTR,pBR, TR.t), bTR = off(pTR,pTL, TR.t);
             const aBR = off(pBR,pBL, BR.t), bBR = off(pBR,pTR, BR.t);
             const aBL = off(pBL,pTL, BL.t), bBL = off(pBL,pBR, BL.t);
+            const arcTo = (r, to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
             const d=[];
-            // start at top edge from TL toward TR
+            // Start at top edge, after TL
             d.push(`M ${aTL.x} ${aTL.y}`);
-            if (TL.mode==='clip') d.push(`L ${bTL.x} ${bTL.y}`); else if (TL.mode==='radius'){ const r=TL.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 1 ${bTL.x} ${bTL.y}`); }
+            // Top edge to before TR
             d.push(`L ${bTR.x} ${bTR.y}`);
-            if (TR.mode==='clip') d.push(`L ${aTR.x} ${aTR.y}`); else if (TR.mode==='radius'){ const r=TR.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 1 ${aTR.x} ${aTR.y}`); }
-            d.push(`L ${aBR.x} ${aBR.y}`);
-            if (BR.mode==='clip') d.push(`L ${bBR.x} ${bBR.y}`); else if (BR.mode==='radius'){ const r=BR.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 1 ${bBR.x} ${bBR.y}`); }
+            // TR corner
+            if (TR.mode==='radius'){ const r=TR.t/Math.tan(Math.PI/4)||0; d.push(arcTo(r, aTR)); } else if (TR.mode==='clip'){ d.push(`L ${aTR.x} ${aTR.y}`); }
+            // Right edge to before BR
+            d.push(`L ${bBR.x} ${bBR.y}`);
+            // BR corner
+            if (BR.mode==='radius'){ const r=BR.t/Math.tan(Math.PI/4)||0; d.push(arcTo(r, aBR)); } else if (BR.mode==='clip'){ d.push(`L ${aBR.x} ${aBR.y}`); }
+            // Bottom edge to before BL
             d.push(`L ${bBL.x} ${bBL.y}`);
-            if (BL.mode==='clip') d.push(`L ${aBL.x} ${aBL.y}`); else if (BL.mode==='radius'){ const r=BL.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 1 ${aBL.x} ${aBL.y}`); }
+            // BL corner
+            if (BL.mode==='radius'){ const r=BL.t/Math.tan(Math.PI/4)||0; d.push(arcTo(r, aBL)); } else if (BL.mode==='clip'){ d.push(`L ${aBL.x} ${aBL.y}`); }
+            // Left edge to before TL
+            d.push(`L ${bTL.x} ${bTL.y}`);
+            // TL corner closing back to start
+            if (TL.mode==='radius'){ const r=TL.t/Math.tan(Math.PI/4)||0; d.push(arcTo(r, aTL)); } else if (TL.mode==='clip'){ d.push(`L ${aTL.x} ${aTL.y}`); }
             d.push('Z');
             const p=document.createElementNS(ns,'path'); p.setAttribute('d', d.join(' ')); p.setAttribute('fill','#f8c4a0'); p.setAttribute('stroke','#ccc'); p.setAttribute('stroke-width','2'); rotG.appendChild(p);
           }
@@ -382,14 +392,24 @@
             const aBL = off(pBL,pTL, BL.t), bBL = off(pBL,pBR, BL.t);
             const arc = (r, to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`; // outside sweep
             const dSeg=[];
+            // Start on top edge after TL
             dSeg.push(`M ${aTL.x} ${aTL.y}`);
-            if (TL.mode==='clip') dSeg.push(`L ${bTL.x} ${bTL.y}`); else if (TL.mode==='radius'){ const r = TL.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, bTL)); }
+            // Top edge to before TR
             dSeg.push(`L ${bTR.x} ${bTR.y}`);
-            if (TR.mode==='clip') dSeg.push(`L ${aTR.x} ${aTR.y}`); else if (TR.mode==='radius'){ const r = TR.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, aTR)); }
-            dSeg.push(`L ${aBR.x} ${aBR.y}`);
-            if (BR.mode==='clip') dSeg.push(`L ${bBR.x} ${bBR.y}`); else if (BR.mode==='radius'){ const r = BR.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, bBR)); }
+            // TR corner
+            if (TR.mode==='radius'){ const r=TR.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, aTR)); } else if (TR.mode==='clip'){ dSeg.push(`L ${aTR.x} ${aTR.y}`); }
+            // Right edge to before BR
+            dSeg.push(`L ${bBR.x} ${bBR.y}`);
+            // BR corner
+            if (BR.mode==='radius'){ const r=BR.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, aBR)); } else if (BR.mode==='clip'){ dSeg.push(`L ${aBR.x} ${aBR.y}`); }
+            // Bottom edge to before BL
             dSeg.push(`L ${bBL.x} ${bBL.y}`);
-            if (BL.mode==='clip') dSeg.push(`L ${aBL.x} ${aBL.y}`); else if (BL.mode==='radius'){ const r = BL.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, aBL)); }
+            // BL corner
+            if (BL.mode==='radius'){ const r=BL.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, aBL)); } else if (BL.mode==='clip'){ dSeg.push(`L ${aBL.x} ${aBL.y}`); }
+            // Left edge to before TL
+            dSeg.push(`L ${bTL.x} ${bTL.y}`);
+            // TL corner back to start
+            if (TL.mode==='radius'){ const r=TL.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, aTL)); } else if (TL.mode==='clip'){ dSeg.push(`L ${aTL.x} ${aTL.y}`); }
             dSeg.push('Z');
             outerD = dSeg.join(' ');
           }
@@ -633,16 +653,26 @@
     const aBR=off(pBR,pBL,C_BR.t), bBR=off(pBR,pTR,C_BR.t);
     const aBL=off(pBL,pTL,C_BL.t), bBL=off(pBL,pBR,C_BL.t);
   const arc=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
-    const outer=[];
-    outer.push(`M ${aTL.x} ${aTL.y}`);
-    if (C_TL.mode==='clip') outer.push(`L ${bTL.x} ${bTL.y}`); else if (C_TL.mode==='radius'){ const r=C_TL.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,bTL)); }
-    outer.push(`L ${bTR.x} ${bTR.y}`);
-    if (C_TR.mode==='clip') outer.push(`L ${aTR.x} ${aTR.y}`); else if (C_TR.mode==='radius'){ const r=C_TR.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aTR)); }
-    outer.push(`L ${aBR.x} ${aBR.y}`);
-    if (C_BR.mode==='clip') outer.push(`L ${bBR.x} ${bBR.y}`); else if (C_BR.mode==='radius'){ const r=C_BR.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,bBR)); }
-    outer.push(`L ${bBL.x} ${bBL.y}`);
-    if (C_BL.mode==='clip') outer.push(`L ${aBL.x} ${aBL.y}`); else if (C_BL.mode==='radius'){ const r=C_BL.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aBL)); }
-    outer.push('Z');
+  const outer=[];
+  // Start at top edge after TL
+  outer.push(`M ${aTL.x} ${aTL.y}`);
+  // Top edge to before TR
+  outer.push(`L ${bTR.x} ${bTR.y}`);
+  // TR corner
+  if (C_TR.mode==='radius'){ const r=C_TR.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aTR)); } else if (C_TR.mode==='clip'){ outer.push(`L ${aTR.x} ${aTR.y}`); }
+  // Right edge to before BR
+  outer.push(`L ${bBR.x} ${bBR.y}`);
+  // BR corner
+  if (C_BR.mode==='radius'){ const r=C_BR.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,bBR)); } else if (C_BR.mode==='clip'){ outer.push(`L ${bBR.x} ${bBR.y}`); }
+  // Bottom edge to before BL
+  outer.push(`L ${bBL.x} ${bBL.y}`);
+  // BL corner
+  if (C_BL.mode==='radius'){ const r=C_BL.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aBL)); } else if (C_BL.mode==='clip'){ outer.push(`L ${aBL.x} ${aBL.y}`); }
+  // Left edge to before TL
+  outer.push(`L ${bTL.x} ${bTL.y}`);
+  // TL corner back to start
+  if (C_TL.mode==='radius'){ const r=C_TL.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aTL)); } else if (C_TL.mode==='clip'){ outer.push(`L ${aTL.x} ${aTL.y}`); }
+  outer.push('Z');
     // Inner opening rectangle (sharp corners; keep notch straight)
     const inner = `M ${xiL} ${yInnerTop} L ${xiR} ${yInnerTop} L ${xiR} ${yTop} L ${x} ${yTop} L ${x} ${yTop+blPx} L ${xiL} ${yTop+blPx} Z`;
     // Note: above path reconstructs the inner opening polygon top edge and side bottoms; but simpler is a rect spanning xiL..xiR at yInnerTop..yMax.
@@ -2195,7 +2225,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T19';
+  window.KC_CT.version = '2025-09-21T20';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
