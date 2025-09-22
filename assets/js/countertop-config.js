@@ -593,7 +593,6 @@
           let blIn = Number((len.BL!=null ? len.BL : (len.B!=null ? len.B : 25)));
           let brIn = Number((len.BR!=null ? len.BR : (len.B!=null ? len.B : 25)));
           let dIn = Number(len.D||10);
-          let baseIn = Number(len.BASE!=null ? len.BASE : 1);
           let eIn = Number(len.E != null ? len.E :  Math.round((aIn - (len.C||20))/2));
           let hIn = Number(len.H != null ? len.H :  Math.round((aIn - (len.C||20))/2));
           // clamp independently
@@ -624,8 +623,8 @@
           const yInnerTop = yTop + px(dIn);          // inner top y
           const yBotL = yTop + blPx;                 // left vertical bottom (outer)
           const yBotR = yTop + brPx;                 // right vertical bottom (outer)
-          const basePx = px(Math.max(0, Math.min(baseIn, Math.min(blIn, brIn)-1)));
-          const yInnerBottom = yTop + Math.min(blPx, brPx) - basePx; // inner bottom y (top of base)
+          // Always keep the center open: extend inner opening below both leg bottoms
+          const yInnerBottom = yTop + hMax + px(2);
 
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
@@ -728,9 +727,18 @@
   // Build inner opening with inside-corner ops
   const ic = cur.icCorners || { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
   const innerW = Math.max(0, xiR - xiL);
-  const innerH = Math.max(0, yInnerBottom - yInnerTop);
-  const tMaxPx = Math.max(0, Math.min(innerW/2, innerH/2));
-  const it=(k)=> Math.min(Math.max(0, Number(ic[k]?.value||0))*2, tMaxPx);
+  // Available vertical headroom to each leg's outer bottom from the inner-top
+  const availL = Math.max(0, (yBotL - yInnerTop));
+  const availR = Math.max(0, (yBotR - yInnerTop));
+  const tMaxTL = Math.max(0, Math.min(innerW/2, availL));
+  const tMaxTR = Math.max(0, Math.min(innerW/2, availR));
+  const tMaxBL = tMaxTL;
+  const tMaxBR = tMaxTR;
+  const it=(k)=>{
+    const raw = Math.max(0, Number(ic[k]?.value||0))*2;
+    const cap = (k==='iTL'?tMaxTL : k==='iTR'?tMaxTR : k==='iBL'?tMaxBL : tMaxBR);
+    return Math.min(raw, cap);
+  };
   const I_TL={mode:(ic.iTL?.mode)||'square', t:it('iTL')};
   const I_TR={mode:(ic.iTR?.mode)||'square', t:it('iTR')};
   const I_BR={mode:(ic.iBR?.mode)||'square', t:it('iBR')};
@@ -814,6 +822,11 @@
           drawGuideLine(rotG, centerX - a/2 + m, yTop + blPx - m, xiL - m, yTop + blPx - m, 'E');
           // H bottom right return
           drawGuideLine(rotG, xiR + m, yTop + brPx - m, centerX + a/2 - m, yTop + brPx - m, 'H');
+          // Faint inner-opening guides for clarity
+          const guide = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',String(x1)); l.setAttribute('y1',String(y1)); l.setAttribute('x2',String(x2)); l.setAttribute('y2',String(y2)); l.setAttribute('stroke','#cdd6ea'); l.setAttribute('stroke-width','1.5'); l.setAttribute('stroke-dasharray','4 4'); rotG.appendChild(l); };
+          guide(xiL, yInnerTop, xiL, yTop + blPx);
+          guide(xiR, yInnerTop, xiR, yTop + brPx);
+          guide(xiL, yTop + Math.min(blPx, brPx), xiR, yTop + Math.min(blPx, brPx));
           gRoot.appendChild(rotG);
           labelNumbers(rotG, centerX, centerY, cur, {A:aIn,BL:blIn,BR:brIn,C:cIn,D:dIn});
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:Math.max(blPx, brPx), rot:rotation });
@@ -1425,7 +1438,7 @@
             addRow('Right depth (BR)','BR');
             addRow('Inner opening width (C)','C');
             addRow('Inner setback (D)','D');
-            addRow('Base thickness (BASE)','BASE');
+            // Center is always open on U; no base thickness control
             addRow('Left return (E)','E');
             addRow('Right return (H)','H');
             // Outside corner controls for U
@@ -2416,7 +2429,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T23';
+  window.KC_CT.version = '2025-09-21T24';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
