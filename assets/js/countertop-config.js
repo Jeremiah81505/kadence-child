@@ -247,16 +247,35 @@
             });
           }
 
-          // main top surface
-          const rect = document.createElementNS(ns, 'rect');
-          rect.setAttribute('x', String(centerX - w/2));
-          rect.setAttribute('y', String(centerY - h/2));
-          rect.setAttribute('width', String(w));
-          rect.setAttribute('height', String(h));
-          rect.setAttribute('fill', '#f8c4a0');
-          rect.setAttribute('stroke', '#ccc');
-          rect.setAttribute('stroke-width', '2');
-          rotG.appendChild(rect);
+          // main top surface with optional corner ops
+          let useCorners = cur.rcCorners;
+          if (!useCorners){
+            const rect = document.createElementNS(ns, 'rect');
+            rect.setAttribute('x', String(centerX - w/2)); rect.setAttribute('y', String(centerY - h/2)); rect.setAttribute('width', String(w)); rect.setAttribute('height', String(h)); rect.setAttribute('fill', '#f8c4a0'); rect.setAttribute('stroke', '#ccc'); rect.setAttribute('stroke-width', '2'); rotG.appendChild(rect);
+          } else {
+            const t = (k)=> Math.max(0, Number(useCorners[k]?.value||0))*2; // inches->px along edges
+            const mTL = useCorners.TL?.mode||'square', mTR=useCorners.TR?.mode||'square', mBR=useCorners.BR?.mode||'square', mBL=useCorners.BL?.mode||'square';
+            const TL = {mode:mTL, t:t('TL')}, TR={mode:mTR, t:t('TR')}, BR={mode:mBR, t:t('BR')}, BL={mode:mBL, t:t('BL')};
+            const x0 = centerX - w/2, y0 = centerY - h/2, x1 = centerX + w/2, y1 = centerY + h/2;
+            const pTL = {x:x0, y:y0}, pTR={x:x1,y:y0}, pBR={x:x1,y:y1}, pBL={x:x0,y:y1};
+            const off = (pA,pB,t)=>{ const len=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/len, uy=(pB.y-pA.y)/len; return { x: pA.x + ux*t, y: pA.y + uy*t }; };
+            const aTL = off(pTL,pTR, TL.t), bTL = off(pTL,pBL, TL.t);
+            const aTR = off(pTR,pBR, TR.t), bTR = off(pTR,pTL, TR.t);
+            const aBR = off(pBR,pBL, BR.t), bBR = off(pBR,pTR, BR.t);
+            const aBL = off(pBL,pTL, BL.t), bBL = off(pBL,pBR, BL.t);
+            const d=[];
+            // start at top edge from TL toward TR
+            d.push(`M ${aTL.x} ${aTL.y}`);
+            if (TL.mode==='clip') d.push(`L ${bTL.x} ${bTL.y}`); else if (TL.mode==='radius'){ const r=TL.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 0 ${bTL.x} ${bTL.y}`); }
+            d.push(`L ${bTR.x} ${bTR.y}`);
+            if (TR.mode==='clip') d.push(`L ${aTR.x} ${aTR.y}`); else if (TR.mode==='radius'){ const r=TR.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 0 ${aTR.x} ${aTR.y}`); }
+            d.push(`L ${aBR.x} ${aBR.y}`);
+            if (BR.mode==='clip') d.push(`L ${bBR.x} ${bBR.y}`); else if (BR.mode==='radius'){ const r=BR.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 0 ${bBR.x} ${bBR.y}`); }
+            d.push(`L ${bBL.x} ${bBL.y}`);
+            if (BL.mode==='clip') d.push(`L ${aBL.x} ${aBL.y}`); else if (BL.mode==='radius'){ const r=BL.t/Math.tan(Math.PI/4)||0; d.push(`A ${r} ${r} 0 0 0 ${aBL.x} ${aBL.y}`); }
+            d.push('Z');
+            const p=document.createElementNS(ns,'path'); p.setAttribute('d', d.join(' ')); p.setAttribute('fill','#f8c4a0'); p.setAttribute('stroke','#ccc'); p.setAttribute('stroke-width','2'); rotG.appendChild(p);
+          }
 
           // wall side overlays (red if against wall)
           const sideColor = '#d32f2f';
@@ -314,6 +333,17 @@
             addHandle(idx, pRight.x, pRight.y, 0, 'A-right');
             addHandle(idx, pLeft.x, pLeft.y, 0, 'A-left');
             addHandle(idx, pBottom.x, pBottom.y, 0, 'B-bottom');
+            // Corner size handles (midpoint of offset points)
+            const rc = cur.rcCorners || {TL:{value:0},TR:{value:0},BR:{value:0},BL:{value:0}};
+            const tpx=(k)=> Math.max(0, Number(rc[k]?.value||0))*2;
+            const TLm = toWorld(-w/2 + tpx('TL')/2, -h/2 + tpx('TL')/2);
+            const TRm = toWorld( w/2 - tpx('TR')/2, -h/2 + tpx('TR')/2);
+            const BRm = toWorld( w/2 - tpx('BR')/2,  h/2 - tpx('BR')/2);
+            const BLm = toWorld(-w/2 + tpx('BL')/2,  h/2 - tpx('BL')/2);
+            addHandle(idx, TLm.x, TLm.y, 0, 'RC-TL');
+            addHandle(idx, TRm.x, TRm.y, 0, 'RC-TR');
+            addHandle(idx, BRm.x, BRm.y, 0, 'RC-BR');
+            addHandle(idx, BLm.x, BLm.y, 0, 'RC-BL');
           }
 
   } else if (shape==='l'){
@@ -330,10 +360,41 @@
           const wi = a - c;
           const hi = b - d;
           const path = document.createElementNS(ns, 'path');
-          const dPath = [
-            `M ${x} ${y} h ${a} v ${b} h ${-a} Z`,
-            `M ${xi} ${yi} h ${wi} v ${hi} h ${-wi} Z`
-          ].join(' ');
+          // Build outer path with optional corner operations
+          let outerD = '';
+          if (!cur.rcCorners){
+            outerD = `M ${x} ${y} h ${a} v ${b} h ${-a} Z`;
+          } else {
+            const rc = cur.rcCorners || {};
+            const t = (k)=> Math.max(0, Number(rc[k]?.value||0)) * 2; // inches->px along edges
+            const TL = { mode: (rc.TL?.mode)||'square', t: t('TL') };
+            const TR = { mode: (rc.TR?.mode)||'square', t: t('TR') };
+            const BR = { mode: (rc.BR?.mode)||'square', t: t('BR') };
+            const BL = { mode: (rc.BL?.mode)||'square', t: t('BL') };
+            const pTL = { x:x,     y:y };
+            const pTR = { x:x + a, y:y };
+            const pBR = { x:x + a, y:y + b };
+            const pBL = { x:x,     y:y + b };
+            const off = (pA,pB,dist)=>{ const L=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/L, uy=(pB.y-pA.y)/L; return { x: pA.x + ux*dist, y: pA.y + uy*dist }; };
+            const aTL = off(pTL,pTR, TL.t), bTL = off(pTL,pBL, TL.t);
+            const aTR = off(pTR,pBR, TR.t), bTR = off(pTR,pTL, TR.t);
+            const aBR = off(pBR,pBL, BR.t), bBR = off(pBR,pTR, BR.t);
+            const aBL = off(pBL,pTL, BL.t), bBL = off(pBL,pBR, BL.t);
+            const arc = (r, to)=> `A ${r} ${r} 0 0 0 ${to.x} ${to.y}`; // 90° outside fillet, sweep 0
+            const dSeg=[];
+            dSeg.push(`M ${aTL.x} ${aTL.y}`);
+            if (TL.mode==='clip') dSeg.push(`L ${bTL.x} ${bTL.y}`); else if (TL.mode==='radius'){ const r = TL.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, bTL)); }
+            dSeg.push(`L ${bTR.x} ${bTR.y}`);
+            if (TR.mode==='clip') dSeg.push(`L ${aTR.x} ${aTR.y}`); else if (TR.mode==='radius'){ const r = TR.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, aTR)); }
+            dSeg.push(`L ${aBR.x} ${aBR.y}`);
+            if (BR.mode==='clip') dSeg.push(`L ${bBR.x} ${bBR.y}`); else if (BR.mode==='radius'){ const r = BR.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, bBR)); }
+            dSeg.push(`L ${bBL.x} ${bBL.y}`);
+            if (BL.mode==='clip') dSeg.push(`L ${aBL.x} ${aBL.y}`); else if (BL.mode==='radius'){ const r = BL.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, aBL)); }
+            dSeg.push('Z');
+            outerD = dSeg.join(' ');
+          }
+          const innerD = `M ${xi} ${yi} h ${wi} v ${hi} h ${-wi} Z`;
+          const dPath = `${outerD} ${innerD}`;
           path.setAttribute('d', dPath);
           path.setAttribute('fill', '#f8c4a0');
           path.setAttribute('fill-rule', 'evenodd');
@@ -445,6 +506,17 @@
             const dYlocal = -b/2 + d/2; const dXlocal = !flipX ? (a/2) : (-a/2);
             const dP = toWorld(dXlocal, dYlocal);
             addHandle(idx, dP.x, dP.y, 0, 'D');
+            // Corner size handles for L (outer rect corners)
+            const rc = cur.rcCorners || {TL:{value:0},TR:{value:0},BR:{value:0},BL:{value:0}};
+            const tpx=(k)=> Math.max(0, Number(rc[k]?.value||0))*2;
+            const TLm = toWorld(-a/2 + tpx('TL')/2, -b/2 + tpx('TL')/2);
+            const TRm = toWorld( a/2 - tpx('TR')/2, -b/2 + tpx('TR')/2);
+            const BRm = toWorld( a/2 - tpx('BR')/2,  b/2 - tpx('BR')/2);
+            const BLm = toWorld(-a/2 + tpx('BL')/2,  b/2 - tpx('BL')/2);
+            addHandle(idx, TLm.x, TLm.y, 0, 'RC-TL');
+            addHandle(idx, TRm.x, TRm.y, 0, 'RC-TR');
+            addHandle(idx, BRm.x, BRm.y, 0, 'RC-BR');
+            addHandle(idx, BLm.x, BLm.y, 0, 'RC-BL');
           }
 
   } else if (shape==='u'){
@@ -544,32 +616,44 @@
               rotG.appendChild(line);
             });
           }
-    // U shape as three filled pieces to avoid any diagonal artifacts
-      const fillColor = '#f8c4a0';
-      // Top bar: full width, height = dIn
-      const topBar = document.createElementNS(ns,'rect');
-      topBar.setAttribute('x', String(x));
-      topBar.setAttribute('y', String(yTop));
-      topBar.setAttribute('width', String(a));
-      topBar.setAttribute('height', String(px(dIn)));
-      topBar.setAttribute('fill', fillColor);
-          topBar.setAttribute('stroke', '#ccc'); topBar.setAttribute('stroke-width','2'); rotG.appendChild(topBar);
-      // Left leg: from left edge to xiL, full BL depth
-      const leftLeg = document.createElementNS(ns,'rect');
-      leftLeg.setAttribute('x', String(x));
-      leftLeg.setAttribute('y', String(yTop));
-      leftLeg.setAttribute('width', String(xiL - x));
-      leftLeg.setAttribute('height', String(blPx));
-      leftLeg.setAttribute('fill', fillColor);
-          leftLeg.setAttribute('stroke', '#ccc'); leftLeg.setAttribute('stroke-width','2'); rotG.appendChild(leftLeg);
-      // Right leg: from xiR to right edge, full BR depth
-      const rightLeg = document.createElementNS(ns,'rect');
-      rightLeg.setAttribute('x', String(xiR));
-      rightLeg.setAttribute('y', String(yTop));
-      rightLeg.setAttribute('width', String((x + a) - xiR));
-      rightLeg.setAttribute('height', String(brPx));
-      rightLeg.setAttribute('fill', fillColor);
-          rightLeg.setAttribute('stroke', '#ccc'); rightLeg.setAttribute('stroke-width','2'); rotG.appendChild(rightLeg);
+    // U shape as a single path: outer rounded rect (rcCorners) minus inner opening (even-odd)
+    const uPath = document.createElementNS(ns,'path');
+    const x0 = x, y0 = yTop, x1 = x + a, y1 = yTop + hMax; // outer box
+    // Build rounded outer rectangle path using rcCorners (similar to Rect/L)
+    const rc = cur.rcCorners || {};
+    const t = (k)=> Math.max(0, Number(rc[k]?.value||0)) * 2; // inches->px
+    const C_TL = { mode:(rc.TL?.mode)||'square', t:t('TL') };
+    const C_TR = { mode:(rc.TR?.mode)||'square', t:t('TR') };
+    const C_BR = { mode:(rc.BR?.mode)||'square', t:t('BR') };
+    const C_BL = { mode:(rc.BL?.mode)||'square', t:t('BL') };
+    const pTL = {x:x0,y:y0}, pTR={x:x1,y:y0}, pBR={x:x1,y:y1}, pBL={x:x0,y:y1};
+    const off=(pA,pB,dist)=>{ const L=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/L, uy=(pB.y-pA.y)/L; return { x:pA.x+ux*dist, y:pA.y+uy*dist }; };
+    const aTL=off(pTL,pTR,C_TL.t), bTL=off(pTL,pBL,C_TL.t);
+    const aTR=off(pTR,pBR,C_TR.t), bTR=off(pTR,pTL,C_TR.t);
+    const aBR=off(pBR,pBL,C_BR.t), bBR=off(pBR,pTR,C_BR.t);
+    const aBL=off(pBL,pTL,C_BL.t), bBL=off(pBL,pBR,C_BL.t);
+    const arc=(r,to)=> `A ${r} ${r} 0 0 0 ${to.x} ${to.y}`;
+    const outer=[];
+    outer.push(`M ${aTL.x} ${aTL.y}`);
+    if (C_TL.mode==='clip') outer.push(`L ${bTL.x} ${bTL.y}`); else if (C_TL.mode==='radius'){ const r=C_TL.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,bTL)); }
+    outer.push(`L ${bTR.x} ${bTR.y}`);
+    if (C_TR.mode==='clip') outer.push(`L ${aTR.x} ${aTR.y}`); else if (C_TR.mode==='radius'){ const r=C_TR.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aTR)); }
+    outer.push(`L ${aBR.x} ${aBR.y}`);
+    if (C_BR.mode==='clip') outer.push(`L ${bBR.x} ${bBR.y}`); else if (C_BR.mode==='radius'){ const r=C_BR.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,bBR)); }
+    outer.push(`L ${bBL.x} ${bBL.y}`);
+    if (C_BL.mode==='clip') outer.push(`L ${aBL.x} ${aBL.y}`); else if (C_BL.mode==='radius'){ const r=C_BL.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aBL)); }
+    outer.push('Z');
+    // Inner opening rectangle (sharp corners; keep notch straight)
+    const inner = `M ${xiL} ${yInnerTop} L ${xiR} ${yInnerTop} L ${xiR} ${yTop} L ${x} ${yTop} L ${x} ${yTop+blPx} L ${xiL} ${yTop+blPx} Z`;
+    // Note: above path reconstructs the inner opening polygon top edge and side bottoms; but simpler is a rect spanning xiL..xiR at yInnerTop..yMax.
+    // Since we want the classic inner rectangle only (top bar width = dIn), we can subtract just the central opening rectangle:
+    const innerRect = `M ${xiL} ${yInnerTop} h ${xiR - xiL} v ${hMax - (yInnerTop - yTop)} h ${-(xiR - xiL)} Z`;
+    uPath.setAttribute('d', `${outer.join(' ')} ${innerRect}`);
+    uPath.setAttribute('fill', '#f8c4a0');
+    uPath.setAttribute('fill-rule', 'evenodd');
+    uPath.setAttribute('stroke', '#ccc');
+    uPath.setAttribute('stroke-width', '2');
+    rotG.appendChild(uPath);
 
           // backsplash along U edges (render above countertop)
           { const aBox=a; const bh = px(Number(opts.bsHeight||0)); if (opts.bsOn && bh>0){
@@ -652,6 +736,17 @@
             const pH = toWorld( a/2 - px(hIn)/2, hMax/2);
             addHandle(idx, pE.x, pE.y, 0, 'E');
             addHandle(idx, pH.x, pH.y, 0, 'H');
+            // Corner size handles for U (outer box corners)
+            const rc = cur.rcCorners || {TL:{value:0},TR:{value:0},BR:{value:0},BL:{value:0}};
+            const tpx=(k)=> Math.max(0, Number(rc[k]?.value||0))*2;
+            const TLm = toWorld(-a/2 + tpx('TL')/2, -hMax/2 + tpx('TL')/2);
+            const TRm = toWorld( a/2 - tpx('TR')/2, -hMax/2 + tpx('TR')/2);
+            const BRm = toWorld( a/2 - tpx('BR')/2,  hMax/2 - tpx('BR')/2);
+            const BLm = toWorld(-a/2 + tpx('BL')/2,  hMax/2 - tpx('BL')/2);
+            addHandle(idx, TLm.x, TLm.y, 0, 'RC-TL');
+            addHandle(idx, TRm.x, TRm.y, 0, 'RC-TR');
+            addHandle(idx, BRm.x, BRm.y, 0, 'RC-BR');
+            addHandle(idx, BLm.x, BLm.y, 0, 'RC-BL');
           }
         } else if (shape==='poly'){
           // Custom polygon defined by local-inch points: [{x,y}, ...] in inches
@@ -781,6 +876,23 @@
               const mid={ x:(aP.x+bP.x)/2, y:(aP.y+bP.y)/2 };
               const w = toWorld(mid.x, mid.y); addHandle(idx, w.x, w.y, 0, `P-${i}`);
             }
+            // Corner size handles (midpoint between the two offset points per corner)
+            const getCorner = (i)=>{ const s=cur; if (!Array.isArray(s.corners)) return {mode:'square', value:0}; const c=s.corners[i]; return c||{mode:'square', value:0}; };
+            for (let i=0;i<ptsIn.length;i++){
+              const p0 = ptsIn[(i-1+ptsIn.length)%ptsIn.length];
+              const p1 = ptsIn[i];
+              const p2 = ptsIn[(i+1)%ptsIn.length];
+              const c = getCorner(i);
+              const tIn = Math.max(0, Number(c.value||0));
+              const v10 = { x: p0.x - p1.x, y: p0.y - p1.y };
+              const v12 = { x: p2.x - p1.x, y: p2.y - p1.y };
+              const l10 = Math.hypot(v10.x, v10.y)||1; const l12=Math.hypot(v12.x, v12.y)||1;
+              const a = { x: p1.x + v10.x*(tIn/l10), y: p1.y + v10.y*(tIn/l10) };
+              const b = { x: p1.x + v12.x*(tIn/l12), y: p1.y + v12.y*(tIn/l12) };
+              const m = { x: (a.x+b.x)/2, y: (a.y+b.y)/2 };
+              const w = toWorld(m.x, m.y);
+              addHandle(idx, w.x, w.y, 0, `RC-P-${i}`);
+            }
           }
 
           // hit area: bounding box in local inches -> px, rotated like others
@@ -828,6 +940,14 @@
           else if (keyStr.startsWith('P-')){
             const i = parseInt(keyStr.split('-')[1]||'-1',10);
             if (Array.isArray(s.points) && i>=0){ const a=s.points[i], b=s.points[(i+1)%s.points.length]; txt = fmt(Math.hypot((b.x-a.x),(b.y-a.y))); }
+          } else if (keyStr.startsWith('RC-')){
+            if (s.type==='poly'){
+              const i = parseInt(keyStr.split('-')[2]||'-1',10);
+              const v = (Array.isArray(s.corners) && s.corners[i]) ? s.corners[i].value : 0; txt = fmt(v);
+            } else {
+              const map = { 'RC-TL':'TL','RC-TR':'TR','RC-BR':'BR','RC-BL':'BL' };
+              const k = map[keyStr]||'TL'; const v = s.rcCorners?.[k]?.value || 0; txt = fmt(v);
+            }
           }
           if (txt){
             const padX=12, padY=14;
@@ -1112,8 +1232,52 @@
           const addRow=(label,key)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="${key}" /></label>`; list.appendChild(row); };
           if (cur.type==='rect'){
             addRow('Top (A)','A'); addRow('Left (B)','B'); addRow('Bottom (C)','C'); addRow('Right (D)','D');
+            // Corner controls (outside corners)
+            const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners'; list.appendChild(cornersHdr);
+            // Apply to all (Rect)
+            const allRowR=document.createElement('div'); allRowR.className='row';
+            allRowR.innerHTML = `<label><span>Apply to all</span>
+              <select data-ct-rc-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-all-val placeholder="size (in)" />
+              <button type="button" class="kc-mini" data-ct-rc-corner-apply-all>Apply</button>
+            </label>`;
+            list.appendChild(allRowR);
+            const mkC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+              <select data-ct-rc-corner-mode="${key}" title="Corner mode">
+                <option value="square">Square</option>
+                <option value="radius">Radius</option>
+                <option value="clip">Clip</option>
+              </select>
+              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-val="${key}" placeholder="size (in)" />
+              <span class="kc-mini-btns">
+                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.25">1/4"</button>
+                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.5">1/2"</button>
+                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="1">1"</button>
+                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="2">2"</button>
+              </span>
+            </label>`; list.appendChild(row); };
+            mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
       } else if (cur.type==='l'){
             addRow('Top (A)','A'); addRow('Left (B)','B'); addRow('Inner bottom run (C)','C'); addRow('Inner vertical (D)','D');
+            const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners (outside)'; list.appendChild(cornersHdr);
+            const allRowL=document.createElement('div'); allRowL.className='row';
+            allRowL.innerHTML = `<label><span>Apply to all</span>
+              <select data-ct-rc-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-all-val placeholder="size (in)" />
+              <button type="button" class="kc-mini" data-ct-rc-corner-apply-all>Apply</button>
+            </label>`;
+            list.appendChild(allRowL);
+            const mkC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+              <select data-ct-rc-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-val="${key}" placeholder="size (in)" />
+              <span class="kc-mini-btns">
+                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.25">1/4"</button>
+                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.5">1/2"</button>
+                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="1">1"</button>
+                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="2">2"</button>
+              </span>
+            </label>`; list.appendChild(row); };
+            mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
           } else if (cur.type==='u'){
             addRow('Top (A)','A');
             addRow('Left depth (BL)','BL');
@@ -1122,10 +1286,38 @@
             addRow('Inner setback (D)','D');
             addRow('Left return (E)','E');
             addRow('Right return (H)','H');
+            // Outside corner controls for U
+            const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners (outside)'; list.appendChild(cornersHdr);
+            const allRowU=document.createElement('div'); allRowU.className='row';
+            allRowU.innerHTML = `<label><span>Apply to all</span>
+              <select data-ct-rc-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-all-val placeholder="size (in)" />
+              <button type="button" class="kc-mini" data-ct-rc-corner-apply-all>Apply</button>
+            </label>`;
+            list.appendChild(allRowU);
+            const mkC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+              <select data-ct-rc-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-val="${key}" placeholder="size (in)" />
+              <span class="kc-mini-btns">
+                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.25">1/4"</button>
+                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.5">1/2"</button>
+                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="1">1"</button>
+                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="2">2"</button>
+              </span>
+            </label>`; list.appendChild(row); };
+            mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
           } else if (cur.type==='poly'){
             const n = (Array.isArray(cur.points)?cur.points.length:0); for(let i=0;i<n;i++){ const letter=String.fromCharCode(65+i); addRow(`Side ${letter}`, `P${i}`); }
             // Corner controls for polygon
             const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners'; list.appendChild(cornersHdr);
+            // Apply to all (Poly)
+            const allRowP=document.createElement('div'); allRowP.className='row';
+            allRowP.innerHTML = `<label><span>Apply to all</span>
+              <select data-ct-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-corner-all-val placeholder="size (in)" />
+              <button type="button" class="kc-mini" data-ct-corner-apply-all>Apply</button>
+            </label>`;
+            list.appendChild(allRowP);
             const mkCorner=(i)=>{
               const letter=String.fromCharCode(65+i);
               const row=document.createElement('div'); row.className='row';
@@ -1216,6 +1408,17 @@
         try{ updateConstraintsUI(); }catch(e){}
       }
       const bsH = sel('[data-ct-bs-height]', root); if (bsH) bsH.value = String(opts.bsHeight||0);
+      // Sync Rect/L/U outside corner controls
+      if (cur && (cur.type==='rect' || cur.type==='l' || cur.type==='u')){
+        if (!cur.rcCorners) cur.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
+        ['TL','TR','BR','BL'].forEach(k=>{
+          const selEl = sel(`[data-ct-rc-corner-mode="${k}"]`, root);
+          const valEl = sel(`[data-ct-rc-corner-val="${k}"]`, root);
+          const c = cur.rcCorners[k]||{mode:'square',value:0};
+          if (selEl) selEl.value = c.mode||'square';
+          if (valEl) valEl.value = String(c.value||0);
+        });
+      }
       // Sync polygon corner controls
       if (cur && cur.type==='poly'){
         const n = Array.isArray(cur.points)?cur.points.length:0;
@@ -1338,6 +1541,15 @@
       s.corners[idx] = { mode, value: Number(cur.value||0) };
       updateSummary(); save(); draw();
     });
+    // Rect/L/U corner mode change
+    root.addEventListener('change', (ev)=>{
+      const el = ev.target; if (!(el instanceof HTMLElement)) return;
+      if (!el.matches('[data-ct-rc-corner-mode]')) return; if (active<0) return;
+      const s=shapes[active]; if (!(s.type==='rect' || s.type==='l' || s.type==='u')) return; pushHistory();
+      if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
+      const key = el.getAttribute('data-ct-rc-corner-mode'); const mode=(el).value||'square';
+      const prev = s.rcCorners[key]||{mode:'square',value:0}; s.rcCorners[key]={mode, value:Number(prev.value||0)}; updateSummary(); save(); draw();
+    });
     // Polygon corner value edit
     root.addEventListener('input', (ev)=>{
       const el = ev.target;
@@ -1354,6 +1566,28 @@
       const mode = (s.corners[idx]?.mode)||'square';
       let v = parseInt((el).value||'0',10); if (!isFinite(v)||v<0) v=0; if (v>48) v=48;
       s.corners[idx] = { mode, value: v };
+      updateSummary(); save(); draw();
+    });
+    // Rect/L/U corner value edit
+    root.addEventListener('input', (ev)=>{
+      const el = ev.target; if (!(el instanceof HTMLElement)) return;
+      if (!el.matches('[data-ct-rc-corner-val]')) return; if (active<0) return;
+      const s=shapes[active]; if (!(s.type==='rect' || s.type==='l' || s.type==='u')) return;
+      if ((el).value==='') return; if (!lenEditTimer){ pushHistory(); } if (lenEditTimer) clearTimeout(lenEditTimer); lenEditTimer=setTimeout(()=>{ lenEditTimer=null; }, 500);
+      if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
+      const key = el.getAttribute('data-ct-rc-corner-val'); let v=parseFloat((el).value||'0'); if(!isFinite(v)||v<0)v=0; if(v>12)v=12;
+      const mode = s.rcCorners[key]?.mode || 'square'; s.rcCorners[key]={mode, value:v}; updateSummary(); save(); draw();
+    });
+    // Rect/L/U corner presets
+    root.addEventListener('click', (ev)=>{
+      const btn = ev.target; if (!(btn instanceof HTMLElement)) return;
+      if (!btn.matches('[data-ct-rc-corner-preset]')) return; if (active<0) return;
+      const s=shapes[active]; if (!(s.type==='rect' || s.type==='l' || s.type==='u')) return; ev.preventDefault(); pushHistory();
+      if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
+      const key=btn.getAttribute('data-key'); const v=Math.max(0, Math.min(12, parseFloat(btn.getAttribute('data-value')||'0')));
+      const mode = s.rcCorners[key]?.mode || 'radius'; s.rcCorners[key]={mode, value:v};
+      const valEl = sel(`[data-ct-rc-corner-val="${key}"]`, root); if (valEl) valEl.value=String(v);
+      const selEl = sel(`[data-ct-rc-corner-mode="${key}"]`, root); if (selEl && selEl.value==='square') selEl.value='radius';
       updateSummary(); save(); draw();
     });
     // Corner presets handler
@@ -1373,6 +1607,35 @@
       // sync UI
       const valEl = sel(`[data-ct-corner-val="${idx}"]`, root); if (valEl) valEl.value = String(s.corners[idx].value||0);
       const selEl = sel(`[data-ct-corner-mode="${idx}"]`, root); if (selEl && selEl.value==='square') selEl.value='radius';
+      updateSummary(); save(); draw();
+    });
+    // Apply-to-all: Rect/L/U
+    root.addEventListener('click', (ev)=>{
+      const btn = ev.target; if (!(btn instanceof HTMLElement)) return;
+      if (!btn.matches('[data-ct-rc-corner-apply-all]')) return; if (active<0) return;
+      const s=shapes[active]; if (!(s.type==='rect' || s.type==='l' || s.type==='u')) return;
+      const modeSel = sel('[data-ct-rc-corner-all-mode]', root);
+      const valInp = sel('[data-ct-rc-corner-all-val]', root);
+      const mode = modeSel ? modeSel.value : 'square';
+      const val = valInp ? Math.max(0, Math.min(12, parseFloat(valInp.value||'0'))) : 0;
+      pushHistory();
+      if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
+      ['TL','TR','BR','BL'].forEach(k=>{ s.rcCorners[k] = { mode, value: val }; });
+      updateSummary(); save(); draw();
+    });
+    // Apply-to-all: Polygon
+    root.addEventListener('click', (ev)=>{
+      const btn = ev.target; if (!(btn instanceof HTMLElement)) return;
+      if (!btn.matches('[data-ct-corner-apply-all]')) return; if (active<0) return;
+      const s=shapes[active]; if (s.type!=='poly') return;
+      const modeSel = sel('[data-ct-corner-all-mode]', root);
+      const valInp = sel('[data-ct-corner-all-val]', root);
+      const mode = modeSel ? modeSel.value : 'square';
+      const val = valInp ? Math.max(0, Math.min(48, parseFloat(valInp.value||'0'))) : 0;
+      const n = Array.isArray(s.points)?s.points.length:0; if (n<=0) return;
+      pushHistory();
+      if (!Array.isArray(s.corners)) s.corners = new Array(n).fill(null);
+      for (let i=0;i<n;i++){ s.corners[i] = { mode, value: val }; }
       updateSummary(); save(); draw();
     });
     // L flip binding
@@ -1636,6 +1899,37 @@
               const nx = (op.x||0) + dxIn; const ny = (op.y||0) + dyIn;
               s.points[i] = { x: Math.round(nx), y: Math.round(ny) };
             }
+          } else if (resizeKey && String(resizeKey).startsWith('RC-P-') && s.type==='poly'){
+            // Corner size drag for polygon: adjust corner[i].value by projecting drag along bisector direction
+            const i = parseInt(String(resizeKey).split('-')[2]||'-1',10);
+            if (Array.isArray(s.points) && i>=0){
+              if (!orig.points) orig.points = s.points.map(p=> ({x:p.x, y:p.y}));
+              const pts = orig.points; const n=pts.length;
+              const p0 = pts[(i-1+n)%n], p1=pts[i], p2=pts[(i+1)%n];
+              const v10 = { x: p0.x - p1.x, y: p0.y - p1.y };
+              const v12 = { x: p2.x - p1.x, y: p2.y - p1.y };
+              const l10=Math.hypot(v10.x,v10.y)||1, l12=Math.hypot(v12.x,v12.y)||1;
+              const u10={x:v10.x/l10,y:v10.y/l10}, u12={x:v12.x/l12,y:v12.y/l12};
+              // unit bisector direction inward from p1
+              const bis = { x: u10.x + u12.x, y: u10.y + u12.y };
+              const bl=Math.hypot(bis.x,bis.y)||1; const ub={x:bis.x/bl,y:bis.y/bl};
+              const delta = (dxIn*ub.x + dyIn*ub.y);
+              const nOld = (Array.isArray(s.corners) && s.corners[i]) ? Number(s.corners[i].value||0) : 0;
+              const vNew = Math.max(0, Math.min(48, Math.round(nOld + delta)));
+              if (!Array.isArray(s.corners)) s.corners = new Array(n).fill(null);
+              const mode = (s.corners[i]?.mode)||'radius';
+              s.corners[i] = { mode, value: vNew };
+            }
+          } else if (resizeKey && String(resizeKey).startsWith('RC-') && (s.type==='rect' || s.type==='l' || s.type==='u')){
+            // Corner size drag for Rect/L/U: use average of dx,dy magnitude in local space as inches delta
+            const map = { 'RC-TL':'TL','RC-TR':'TR','RC-BR':'BR','RC-BL':'BL' };
+            const key = map[String(resizeKey)]||'TL';
+            const prev = (s.rcCorners && s.rcCorners[key]) ? Number(s.rcCorners[key].value||0) : 0;
+            const deltaIn = (Math.abs(dxIn) + Math.abs(dyIn)) / 2;
+            const vNew = Math.max(0, Math.min(12, Math.round(prev + deltaIn)));
+            if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
+            const mode = s.rcCorners[key]?.mode || 'radius';
+            s.rcCorners[key] = { mode, value: vNew };
           }
           draw(); updateOversize(); updateSummary(); return;
         }
@@ -1899,7 +2193,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T16';
+  window.KC_CT.version = '2025-09-21T18';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
