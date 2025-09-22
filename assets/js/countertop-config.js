@@ -105,9 +105,11 @@
         handles.push({ idx, cx, cy, rot, key, r:8 });
   // Only render visible handles when Resize mode is active on the selected shape
   if (!(idx===active && toolMode==='resize')) return;
-        const c=document.createElementNS(ns,'circle');
-        c.setAttribute('cx', String(cx)); c.setAttribute('cy', String(cy)); c.setAttribute('r','6');
-        c.setAttribute('fill','#fff'); c.setAttribute('stroke','#4f6bd8'); c.setAttribute('stroke-width','2');
+  const c=document.createElementNS(ns,'circle');
+  c.setAttribute('cx', String(cx)); c.setAttribute('cy', String(cy)); c.setAttribute('r','6');
+  c.setAttribute('fill','#fff');
+  // Default handle style (outer/side handles)
+  c.setAttribute('stroke','#4f6bd8'); c.setAttribute('stroke-width','2');
         // Add an accessible tooltip describing the handle purpose
         const t=document.createElementNS(ns,'title');
         let tip='Adjust';
@@ -122,7 +124,9 @@
         else if (keyStr==='BR') tip='Drag to adjust Right depth (BR)';
         else if (keyStr==='E') tip='Drag to adjust Left return (E)';
         else if (keyStr==='H') tip='Drag to adjust Right return (H)';
-        else if (keyStr.startsWith('P-')) tip='Drag to scale this side length';
+  else if (keyStr.startsWith('P-')) tip='Drag to scale this side length';
+  else if (keyStr.startsWith('RC-')) tip='Drag to adjust outer corner size';
+  else if (keyStr.startsWith('IC-')) tip='Drag to adjust inner corner size';
         else if (keyStr.startsWith('V-')) tip='Drag to move this vertex';
         t.textContent=tip; c.appendChild(t);
         if (idx===active) gRoot.appendChild(c);
@@ -134,7 +138,7 @@
         label.setAttribute('font-weight','700');
         label.setAttribute('fill','#1f2b56');
         label.setAttribute('class','kc-hlabel');
-        let ltxt='';
+  let ltxt='';
         if (keyStr==='A-right' || keyStr==='A-left') ltxt='A';
         else if (keyStr==='B-top' || keyStr==='B-bottom') ltxt='B';
         else if (keyStr==='BL') ltxt='BL';
@@ -145,6 +149,16 @@
         else if (keyStr==='H') ltxt='H';
         else if (keyStr.startsWith('P-')) ltxt='Side';
         else if (keyStr.startsWith('V-')) ltxt='Pt';
+        else if (keyStr.startsWith('RC-')){
+          const map={ 'RC-TL':'TL','RC-TR':'TR','RC-BR':'BR','RC-BL':'BL'}; ltxt = map[keyStr]||'RC';
+        } else if (keyStr.startsWith('IC-')){
+          const map={ 'IC-TL':'iTL','IC-TR':'iTR','IC-BR':'iBR','IC-BL':'iBL','IC-L':'iC'}; ltxt = map[keyStr]||'IC';
+        }
+        // Color IC handles distinctly for quick recognition
+        if (keyStr.startsWith('IC-')){
+          c.setAttribute('stroke', '#7db320');
+          label.setAttribute('fill', '#1a3f14');
+        }
         label.textContent = ltxt;
         if (idx===active) gRoot.appendChild(label);
       };
@@ -413,7 +427,34 @@
             dSeg.push('Z');
             outerD = dSeg.join(' ');
           }
-          const innerD = `M ${xi} ${yi} h ${wi} v ${hi} h ${-wi} Z`;
+          // Build inner notch rectangle with optional inside-corner ops
+          let innerD = '';
+          const ic = cur.icCorners || { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+          // For classic L-notch, only iTL and iBR are visible; others default to square
+          const it = (k)=> Math.max(0, Number(ic[k]?.value||0)) * 2;
+          const I_TL = { mode:(ic.iTL?.mode)||'square', t:it('iTL') };
+          const I_TR = { mode:(ic.iTR?.mode)||'square', t:it('iTR') };
+          const I_BR = { mode:(ic.iBR?.mode)||'square', t:it('iBR') };
+          const I_BL = { mode:(ic.iBL?.mode)||'square', t:it('iBL') };
+          const ipTL={x:xi,y:yi}, ipTR={x:xi+wi,y:yi}, ipBR={x:xi+wi,y:yi+hi}, ipBL={x:xi,y:yi+hi};
+          const offI=(pA,pB,dist)=>{ const L=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/L, uy=(pB.y-pA.y)/L; return { x:pA.x+ux*dist, y:pA.y+uy*dist }; };
+          const iaTL=offI(ipTL,ipTR,I_TL.t), ibTL=offI(ipTL,ipBL,I_TL.t);
+          const iaTR=offI(ipTR,ipBR,I_TR.t), ibTR=offI(ipTR,ipTL,I_TR.t);
+          const iaBR=offI(ipBR,ipBL,I_BR.t), ibBR=offI(ipBR,ipTR,I_BR.t);
+          const iaBL=offI(ipBL,ipTL,I_BL.t), ibBL=offI(ipBL,ipBR,I_BL.t);
+          const arcI=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`; // sweep outward relative to hole
+          const dI=[];
+          dI.push(`M ${iaTL.x} ${iaTL.y}`);
+          dI.push(`L ${ibTR.x} ${ibTR.y}`);
+          if (I_TR.mode==='radius'){ const r=I_TR.t/Math.tan(Math.PI/4)||0; dI.push(arcI(r, iaTR)); } else if (I_TR.mode==='clip'){ dI.push(`L ${iaTR.x} ${iaTR.y}`); }
+          dI.push(`L ${ibBR.x} ${ibBR.y}`);
+          if (I_BR.mode==='radius'){ const r=I_BR.t/Math.tan(Math.PI/4)||0; dI.push(arcI(r, iaBR)); } else if (I_BR.mode==='clip'){ dI.push(`L ${iaBR.x} ${iaBR.y}`); }
+          dI.push(`L ${ibBL.x} ${ibBL.y}`);
+          if (I_BL.mode==='radius'){ const r=I_BL.t/Math.tan(Math.PI/4)||0; dI.push(arcI(r, iaBL)); } else if (I_BL.mode==='clip'){ dI.push(`L ${iaBL.x} ${iaBL.y}`); }
+          dI.push(`L ${ibTL.x} ${ibTL.y}`);
+          if (I_TL.mode==='radius'){ const r=I_TL.t/Math.tan(Math.PI/4)||0; dI.push(arcI(r, iaTL)); } else if (I_TL.mode==='clip'){ dI.push(`L ${iaTL.x} ${iaTL.y}`); }
+          dI.push('Z');
+          innerD = dI.join(' ');
           const dPath = `${outerD} ${innerD}`;
           path.setAttribute('d', dPath);
           path.setAttribute('fill', '#f8c4a0');
@@ -537,6 +578,13 @@
             addHandle(idx, TRm.x, TRm.y, 0, 'RC-TR');
             addHandle(idx, BRm.x, BRm.y, 0, 'RC-BR');
             addHandle(idx, BLm.x, BLm.y, 0, 'RC-BL');
+            // Inside-corner handles for L (iTL and iBR)
+            const icC = cur.icCorners || { iTL:{value:0}, iBR:{value:0} };
+            const itpx=(k)=> Math.max(0, Number(icC[k]?.value||0)) * 2;
+            const iTLm = toWorld(-a/2 + c/2 + itpx('iTL')/2, -b/2 + d/2 + itpx('iTL')/2);
+            const iBRm = toWorld( a/2 - itpx('iBR')/2,  b/2 - itpx('iBR')/2);
+            addHandle(idx, iTLm.x, iTLm.y, 0, 'IC-TL');
+            addHandle(idx, iBRm.x, iBRm.y, 0, 'IC-BR');
           }
 
   } else if (shape==='u'){
@@ -673,12 +721,33 @@
   // TL corner back to start
   if (C_TL.mode==='radius'){ const r=C_TL.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aTL)); } else if (C_TL.mode==='clip'){ outer.push(`L ${aTL.x} ${aTL.y}`); }
   outer.push('Z');
-    // Inner opening rectangle (sharp corners; keep notch straight)
-    const inner = `M ${xiL} ${yInnerTop} L ${xiR} ${yInnerTop} L ${xiR} ${yTop} L ${x} ${yTop} L ${x} ${yTop+blPx} L ${xiL} ${yTop+blPx} Z`;
-    // Note: above path reconstructs the inner opening polygon top edge and side bottoms; but simpler is a rect spanning xiL..xiR at yInnerTop..yMax.
-    // Since we want the classic inner rectangle only (top bar width = dIn), we can subtract just the central opening rectangle:
-    const innerRect = `M ${xiL} ${yInnerTop} h ${xiR - xiL} v ${hMax - (yInnerTop - yTop)} h ${-(xiR - xiL)} Z`;
-    uPath.setAttribute('d', `${outer.join(' ')} ${innerRect}`);
+    // Build inner opening with inside-corner ops
+  // Build inner opening with inside-corner ops
+  const ic = cur.icCorners || { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+  const it=(k)=> Math.max(0, Number(ic[k]?.value||0))*2;
+  const I_TL={mode:(ic.iTL?.mode)||'square', t:it('iTL')};
+  const I_TR={mode:(ic.iTR?.mode)||'square', t:it('iTR')};
+  const I_BR={mode:(ic.iBR?.mode)||'square', t:it('iBR')};
+  const I_BL={mode:(ic.iBL?.mode)||'square', t:it('iBL')};
+  const ipTL={x:xiL,y:yInnerTop}, ipTR={x:xiR,y:yInnerTop}, ipBR={x:xiR,y:yTop+hMax}, ipBL={x:xiL,y:yTop+hMax};
+  const offI=(pA,pB,dist)=>{ const L=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/L, uy=(pB.y-pA.y)/L; return { x:pA.x+ux*dist, y:pA.y+uy*dist }; };
+  const iaTL=offI(ipTL,ipTR,I_TL.t), ibTL=offI(ipTL,ipBL,I_TL.t);
+  const iaTR=offI(ipTR,ipBR,I_TR.t), ibTR=offI(ipTR,ipTL,I_TR.t);
+  const iaBR=offI(ipBR,ipBL,I_BR.t), ibBR=offI(ipBR,ipTR,I_BR.t);
+  const iaBL=offI(ipBL,ipTL,I_BL.t), ibBL=offI(ipBL,ipBR,I_BL.t);
+  const arcI=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
+  const inner=[];
+  inner.push(`M ${iaTL.x} ${iaTL.y}`);
+  inner.push(`L ${ibTR.x} ${ibTR.y}`);
+  if (I_TR.mode==='radius'){ const r=I_TR.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaTR)); } else if (I_TR.mode==='clip'){ inner.push(`L ${iaTR.x} ${iaTR.y}`); }
+  inner.push(`L ${ibBR.x} ${ibBR.y}`);
+  if (I_BR.mode==='radius'){ const r=I_BR.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaBR)); } else if (I_BR.mode==='clip'){ inner.push(`L ${iaBR.x} ${iaBR.y}`); }
+  inner.push(`L ${ibBL.x} ${ibBL.y}`);
+  if (I_BL.mode==='radius'){ const r=I_BL.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaBL)); } else if (I_BL.mode==='clip'){ inner.push(`L ${iaBL.x} ${iaBL.y}`); }
+  inner.push(`L ${ibTL.x} ${ibTL.y}`);
+  if (I_TL.mode==='radius'){ const r=I_TL.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaTL)); } else if (I_TL.mode==='clip'){ inner.push(`L ${iaTL.x} ${iaTL.y}`); }
+  inner.push('Z');
+  uPath.setAttribute('d', `${outer.join(' ')} ${inner.join(' ')}`);
     uPath.setAttribute('fill', '#f8c4a0');
     uPath.setAttribute('fill-rule', 'evenodd');
     uPath.setAttribute('stroke', '#ccc');
@@ -777,6 +846,17 @@
             addHandle(idx, TRm.x, TRm.y, 0, 'RC-TR');
             addHandle(idx, BRm.x, BRm.y, 0, 'RC-BR');
             addHandle(idx, BLm.x, BLm.y, 0, 'RC-BL');
+            // Inside-corner handles for U
+            const icC = cur.icCorners || { iTL:{value:0}, iTR:{value:0}, iBR:{value:0}, iBL:{value:0} };
+            const itpx=(k)=> Math.max(0, Number(icC[k]?.value||0))*2;
+            const iTLm = toWorld(-a/2 + px(eIn) + itpx('iTL')/2, -hMax/2 + px(dIn) + itpx('iTL')/2);
+            const iTRm = toWorld( a/2 - px(hIn) - itpx('iTR')/2, -hMax/2 + px(dIn) + itpx('iTR')/2);
+            const iBRm = toWorld( a/2 - px(hIn) - itpx('iBR')/2,  hMax/2 - itpx('iBR')/2);
+            const iBLm = toWorld(-a/2 + px(eIn) + itpx('iBL')/2,  hMax/2 - itpx('iBL')/2);
+            addHandle(idx, iTLm.x, iTLm.y, 0, 'IC-TL');
+            addHandle(idx, iTRm.x, iTRm.y, 0, 'IC-TR');
+            addHandle(idx, iBRm.x, iBRm.y, 0, 'IC-BR');
+            addHandle(idx, iBLm.x, iBLm.y, 0, 'IC-BL');
           }
         } else if (shape==='poly'){
           // Custom polygon defined by local-inch points: [{x,y}, ...] in inches
@@ -980,6 +1060,9 @@
               const map = { 'RC-TL':'TL','RC-TR':'TR','RC-BR':'BR','RC-BL':'BL' };
               const k = map[keyStr]||'TL'; const v = s.rcCorners?.[k]?.value || 0; txt = fmt(v);
             }
+          } else if (keyStr.startsWith('IC-')){
+            const map = { 'IC-TL':'iTL','IC-TR':'iTR','IC-BR':'iBR','IC-BL':'iBL' };
+            const k = map[keyStr]||'iTL'; const v = s.icCorners?.[k]?.value || 0; txt = fmt(v);
           }
           if (txt){
             const padX=12, padY=14;
@@ -1289,7 +1372,7 @@
               </span>
             </label>`; list.appendChild(row); };
             mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
-      } else if (cur.type==='l'){
+  } else if (cur.type==='l'){
             addRow('Top (A)','A'); addRow('Left (B)','B'); addRow('Inner bottom run (C)','C'); addRow('Inner vertical (D)','D');
             const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners (outside)'; list.appendChild(cornersHdr);
             const allRowL=document.createElement('div'); allRowL.className='row';
@@ -1310,6 +1393,26 @@
               </span>
             </label>`; list.appendChild(row); };
             mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
+            // Inside corners for L (iTL, iBR)
+            const iHdr=document.createElement('div'); iHdr.className='kc-subtle'; iHdr.textContent='Inside Corners'; list.appendChild(iHdr);
+            const allRowLI=document.createElement('div'); allRowLI.className='row';
+            allRowLI.innerHTML = `<label><span>Apply to both</span>
+              <select data-ct-ic-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-all-val placeholder="size (in)" />
+              <button type="button" class="kc-mini" data-ct-ic-corner-apply-all>Apply</button>
+            </label>`;
+            list.appendChild(allRowLI);
+            const mkIC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+              <select data-ct-ic-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-val="${key}" placeholder="size (in)" />
+              <span class="kc-mini-btns">
+                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="0.25">1/4"</button>
+                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="0.5">1/2"</button>
+                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="1">1"</button>
+                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="2">2"</button>
+              </span>
+            </label>`; list.appendChild(row); };
+            mkIC('iTL','Inside TL'); mkIC('iBR','Inside BR');
           } else if (cur.type==='u'){
             addRow('Top (A)','A');
             addRow('Left depth (BL)','BL');
@@ -1338,6 +1441,26 @@
               </span>
             </label>`; list.appendChild(row); };
             mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
+            // Inside corners for U (iTL, iTR, iBR, iBL)
+            const iHdr=document.createElement('div'); iHdr.className='kc-subtle'; iHdr.textContent='Inside Corners'; list.appendChild(iHdr);
+            const allRowUI=document.createElement('div'); allRowUI.className='row';
+            allRowUI.innerHTML = `<label><span>Apply to all</span>
+              <select data-ct-ic-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-all-val placeholder="size (in)" />
+              <button type="button" class="kc-mini" data-ct-ic-corner-apply-all>Apply</button>
+            </label>`;
+            list.appendChild(allRowUI);
+            const mkIC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+              <select data-ct-ic-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-val="${key}" placeholder="size (in)" />
+              <span class="kc-mini-btns">
+                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="0.25">1/4"</button>
+                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="0.5">1/2"</button>
+                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="1">1"</button>
+                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="2">2"</button>
+              </span>
+            </label>`; list.appendChild(row); };
+            mkIC('iTL','Inside TL'); mkIC('iTR','Inside TR'); mkIC('iBR','Inside BR'); mkIC('iBL','Inside BL');
           } else if (cur.type==='poly'){
             const n = (Array.isArray(cur.points)?cur.points.length:0); for(let i=0;i<n;i++){ const letter=String.fromCharCode(65+i); addRow(`Side ${letter}`, `P${i}`); }
             // Corner controls for polygon
@@ -1450,6 +1573,16 @@
           if (selEl) selEl.value = c.mode||'square';
           if (valEl) valEl.value = String(c.value||0);
         });
+        if (cur.type==='l' || cur.type==='u'){
+          if (!cur.icCorners) cur.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+          ['iTL','iTR','iBR','iBL'].forEach(k=>{
+            const selEl = sel(`[data-ct-ic-corner-mode="${k}"]`, root);
+            const valEl = sel(`[data-ct-ic-corner-val="${k}"]`, root);
+            const c = cur.icCorners[k]||{mode:'square',value:0};
+            if (selEl) selEl.value = c.mode||'square';
+            if (valEl) valEl.value = String(c.value||0);
+          });
+        }
       }
       // Sync polygon corner controls
       if (cur && cur.type==='poly'){
@@ -1620,6 +1753,48 @@
       const mode = s.rcCorners[key]?.mode || 'radius'; s.rcCorners[key]={mode, value:v};
       const valEl = sel(`[data-ct-rc-corner-val="${key}"]`, root); if (valEl) valEl.value=String(v);
       const selEl = sel(`[data-ct-rc-corner-mode="${key}"]`, root); if (selEl && selEl.value==='square') selEl.value='radius';
+      updateSummary(); save(); draw();
+    });
+
+    // Inside-corner mode change (L/U)
+    root.addEventListener('change', (ev)=>{
+      const el = ev.target; if (!(el instanceof HTMLElement)) return;
+      if (!el.matches('[data-ct-ic-corner-mode]')) return; if (active<0) return;
+      const s=shapes[active]; if (!(s.type==='l' || s.type==='u')) return; pushHistory();
+      if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+      const key = el.getAttribute('data-ct-ic-corner-mode'); const mode=(el).value||'square';
+      const prev = s.icCorners[key]||{mode:'square',value:0}; s.icCorners[key]={mode, value:Number(prev.value||0)}; updateSummary(); save(); draw();
+    });
+    // Inside-corner value edit (L/U)
+    root.addEventListener('input', (ev)=>{
+      const el = ev.target; if (!(el instanceof HTMLElement)) return;
+      if (!el.matches('[data-ct-ic-corner-val]')) return; if (active<0) return;
+      const s=shapes[active]; if (!(s.type==='l' || s.type==='u')) return;
+      if ((el).value==='') return; if (!lenEditTimer){ pushHistory(); } if (lenEditTimer) clearTimeout(lenEditTimer); lenEditTimer=setTimeout(()=>{ lenEditTimer=null; }, 500);
+      if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+      const key = el.getAttribute('data-ct-ic-corner-val'); let v=parseFloat((el).value||'0'); if(!isFinite(v)||v<0)v=0; if(v>12)v=12;
+      const mode = s.icCorners[key]?.mode || 'square'; s.icCorners[key]={mode, value:v}; updateSummary(); save(); draw();
+    });
+    // Inside-corner presets (L/U)
+    root.addEventListener('click', (ev)=>{
+      const btn = ev.target; if (!(btn instanceof HTMLElement)) return;
+      if (!btn.matches('[data-ct-ic-corner-preset]')) return; if (active<0) return;
+      const s=shapes[active]; if (!(s.type==='l' || s.type==='u')) return; ev.preventDefault(); pushHistory();
+      if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+      const key=btn.getAttribute('data-key'); const v=Math.max(0, Math.min(12, parseFloat(btn.getAttribute('data-value')||'0')));
+      const mode = s.icCorners[key]?.mode || 'radius'; s.icCorners[key]={mode, value:v};
+      const valEl = sel(`[data-ct-ic-corner-val="${key}"]`, root); if (valEl) valEl.value=String(v);
+      const selEl = sel(`[data-ct-ic-corner-mode="${key}"]`, root); if (selEl && selEl.value==='square') selEl.value='radius';
+      updateSummary(); save(); draw();
+    });
+    // Inside-corner apply-to-all (L/U)
+    root.addEventListener('click', (ev)=>{
+      const btn = ev.target; if (!(btn instanceof HTMLElement)) return;
+      if (!btn.matches('[data-ct-ic-corner-apply-all]')) return; if (active<0) return;
+      const s=shapes[active]; if (!(s.type==='l' || s.type==='u')) return; const modeSel=sel('[data-ct-ic-corner-all-mode]', root); const valInp=sel('[data-ct-ic-corner-all-val]', root);
+      const mode = modeSel ? modeSel.value : 'square'; const val = valInp ? Math.max(0, Math.min(12, parseFloat(valInp.value||'0'))) : 0; pushHistory();
+      if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+      ['iTL','iTR','iBR','iBL'].forEach(k=>{ if (s.type==='l' && (k==='iTR' || k==='iBL')) return; s.icCorners[k] = { mode, value: val }; });
       updateSummary(); save(); draw();
     });
     // Corner presets handler
@@ -1962,6 +2137,15 @@
             if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
             const mode = s.rcCorners[key]?.mode || 'radius';
             s.rcCorners[key] = { mode, value: vNew };
+          } else if (resizeKey && String(resizeKey).startsWith('IC-') && (s.type==='l' || s.type==='u')){
+            const map = { 'IC-TL':'iTL','IC-TR':'iTR','IC-BR':'iBR','IC-BL':'iBL' };
+            const key = map[String(resizeKey)]||'iTL';
+            const prev = (s.icCorners && s.icCorners[key]) ? Number(s.icCorners[key].value||0) : 0;
+            const deltaIn = (Math.abs(dxIn) + Math.abs(dyIn)) / 2;
+            const vNew = Math.max(0, Math.min(12, Math.round(prev + deltaIn)));
+            if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+            const mode = s.icCorners[key]?.mode || 'radius';
+            s.icCorners[key] = { mode, value: vNew };
           }
           draw(); updateOversize(); updateSummary(); return;
         }
@@ -2225,7 +2409,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-21T20';
+  window.KC_CT.version = '2025-09-21T22';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}

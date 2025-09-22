@@ -36,9 +36,19 @@
 .kc-meas .row:first-child{border-top:none}
 .kc-meas label>span{display:block;font-size:13px;color:#21306a;margin-bottom:4px}
 .kc-meas input[type=number]{width:110px;padding:6px 8px;border:1px solid #c7d3e8;border-radius:6px;background:#fbfdff}
+.kc-meas select{min-width:130px;padding:6px 8px;border:1px solid #c7d3e8;border-radius:6px;background:#fbfdff;font:600 13px/1.2 system-ui;color:#21306a}
 .kc-meas .opt{font-size:13px;color:#2c3a6b;display:flex;align-items:center;gap:6px}
 .kc-meas .row.disabled{opacity:.6}
 .kc-meas .row .note{font-weight:700}
+
+/* Mini controls used for corner presets and apply-all */
+.kc-input-small{width:90px!important;padding:6px 8px;border:1px solid #c7d3e8;border-radius:6px;background:#fbfdff;font:700 12px system-ui;color:#21306a}
+.kc-mini{appearance:none;border:1px solid #c7d3e8;background:#eef2ff;color:#21306a;border-radius:6px;padding:6px 8px;font:700 12px/1 system-ui;cursor:pointer}
+.kc-mini:hover{background:#e6ecff}
+.kc-mini:active{transform:translateY(0.5px)}
+.kc-mini[disabled]{opacity:.5;cursor:not-allowed}
+.kc-mini-btns{display:inline-flex;gap:6px;flex-wrap:wrap}
+.kc-subtle{font:800 12px/1.2 system-ui;color:#4f6bd8;margin:6px 0}
 
 .kc-ct-right{border-left:0}
 .kc-ct-preview{position:relative;padding:16px;background:#fff;border-radius:10px;box-shadow:inset 0 0 0 1px #e7ecf7}
