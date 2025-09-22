@@ -711,7 +711,7 @@
   // Right edge to before BR
   outer.push(`L ${bBR.x} ${bBR.y}`);
   // BR corner
-  if (C_BR.mode==='radius'){ const r=C_BR.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,bBR)); } else if (C_BR.mode==='clip'){ outer.push(`L ${bBR.x} ${bBR.y}`); }
+  if (C_BR.mode==='radius'){ const r=C_BR.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aBR)); } else if (C_BR.mode==='clip'){ outer.push(`L ${aBR.x} ${aBR.y}`); }
   // Bottom edge to before BL
   outer.push(`L ${bBL.x} ${bBL.y}`);
   // BL corner
