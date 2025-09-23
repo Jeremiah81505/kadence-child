@@ -319,6 +319,29 @@
             const rect = document.createElementNS(ns, 'rect');
             rect.setAttribute('x', String(centerX - w/2)); rect.setAttribute('y', String(centerY - h/2)); rect.setAttribute('width', String(w)); rect.setAttribute('height', String(h)); rect.setAttribute('fill', '#f8c4a0'); rect.setAttribute('stroke', '#ccc'); rect.setAttribute('stroke-width', '2'); rotG.appendChild(rect);
           } else {
+            // Render-time geometric clamp for rcCorners (Rect): ensure sums fit width/height
+            try {
+              const widthIn = Number(len.A||0);
+              const heightIn = Number(len.B||0);
+              if (!cur.rcCorners) cur.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
+              let TLv = Math.max(0, Number(cur.rcCorners.TL?.value||0));
+              let TRv = Math.max(0, Number(cur.rcCorners.TR?.value||0));
+              let BRv = Math.max(0, Number(cur.rcCorners.BR?.value||0));
+              let BLv = Math.max(0, Number(cur.rcCorners.BL?.value||0));
+              for (let i=0;i<2;i++){
+                TLv = Math.min(TLv, Math.max(0, widthIn - TRv), Math.max(0, heightIn - BLv));
+                TRv = Math.min(TRv, Math.max(0, widthIn - TLv), Math.max(0, heightIn - BRv));
+                BRv = Math.min(BRv, Math.max(0, widthIn - BLv), Math.max(0, heightIn - TRv));
+                BLv = Math.min(BLv, Math.max(0, widthIn - BRv), Math.max(0, heightIn - TLv));
+              }
+              cur.rcCorners = {
+                TL: { mode: cur.rcCorners.TL?.mode||'square', value: TLv },
+                TR: { mode: cur.rcCorners.TR?.mode||'square', value: TRv },
+                BR: { mode: cur.rcCorners.BR?.mode||'square', value: BRv },
+                BL: { mode: cur.rcCorners.BL?.mode||'square', value: BLv },
+              };
+              useCorners = cur.rcCorners;
+            } catch(e){}
             const t = (k)=> Math.max(0, Number(useCorners[k]?.value||0))*2; // inches->px along edges
             const mTL = useCorners.TL?.mode||'square', mTR=useCorners.TR?.mode||'square', mBR=useCorners.BR?.mode||'square', mBL=useCorners.BL?.mode||'square';
             const TL = {mode:mTL, t:t('TL')}, TR={mode:mTR, t:t('TR')}, BR={mode:mBR, t:t('BR')}, BL={mode:mBL, t:t('BL')};
@@ -441,6 +464,28 @@
           if (!cur.rcCorners){
             outerD = `M ${x} ${y} h ${a} v ${b} h ${-a} Z`;
           } else {
+            // Render-time geometric clamp for rcCorners (L): ensure sums fit width/height
+            try {
+              const widthIn = Number(aIn||0);
+              const heightIn = Number(bIn||0);
+              if (!cur.rcCorners) cur.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
+              let TLv = Math.max(0, Number(cur.rcCorners.TL?.value||0));
+              let TRv = Math.max(0, Number(cur.rcCorners.TR?.value||0));
+              let BRv = Math.max(0, Number(cur.rcCorners.BR?.value||0));
+              let BLv = Math.max(0, Number(cur.rcCorners.BL?.value||0));
+              for (let i=0;i<2;i++){
+                TLv = Math.min(TLv, Math.max(0, widthIn - TRv), Math.max(0, heightIn - BLv));
+                TRv = Math.min(TRv, Math.max(0, widthIn - TLv), Math.max(0, heightIn - BRv));
+                BRv = Math.min(BRv, Math.max(0, widthIn - BLv), Math.max(0, heightIn - TRv));
+                BLv = Math.min(BLv, Math.max(0, widthIn - BRv), Math.max(0, heightIn - TLv));
+              }
+              cur.rcCorners = {
+                TL: { mode: cur.rcCorners.TL?.mode||'square', value: TLv },
+                TR: { mode: cur.rcCorners.TR?.mode||'square', value: TRv },
+                BR: { mode: cur.rcCorners.BR?.mode||'square', value: BRv },
+                BL: { mode: cur.rcCorners.BL?.mode||'square', value: BLv },
+              };
+            } catch(e){}
             const rc = cur.rcCorners || {};
             const t = (k)=> Math.max(0, Number(rc[k]?.value||0)) * 2; // inches->px along edges
             const TL = { mode: (rc.TL?.mode)||'square', t: t('TL') };
@@ -478,6 +523,19 @@
             if (TL.mode==='radius'){ const r=TL.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, aTL)); } else if (TL.mode==='clip'){ dSeg.push(`L ${aTL.x} ${aTL.y}`); }
             dSeg.push('Z');
             outerD = dSeg.join(' ');
+          }
+          // Draw-time clamp for L inside corners vs current inner notch opening
+          {
+            const innerWpx = wi; // width of inner notch in px
+            const innerHpx = hi; // height of inner notch in px
+            const icMaxPx = Math.max(0, Math.min(innerWpx/2, innerHpx/2));
+            const icMaxIn = icMaxPx / 2; // px to inches (2px per inch)
+            if (!cur.icCorners) cur.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+            ['iTL','iTR','iBR','iBL'].forEach(k=>{
+              const c = cur.icCorners[k]||{mode:'square',value:0};
+              const v = Math.max(0, Math.min(Number(c.value||0), icMaxIn));
+              cur.icCorners[k] = { mode:(c.mode||'square'), value:v };
+            });
           }
           // Build inner notch rectangle with optional inside-corner ops
           let innerD = '';
@@ -678,6 +736,19 @@
           // Inner bottom aligns to the shallower leg so each side ends at its own depth
           const yInnerBottom = yTop + Math.min(blPx, brPx);
 
+          // Geometric clamp for inside corners: cannot exceed half of inner width/height
+          // Compute in pixels, convert to inches for value storage
+          {
+            const icMaxPx = Math.max(0, Math.min((xiR - xiL)/2, (yInnerBottom - yInnerTop)/2));
+            const icMaxIn = icMaxPx / 2; // since px=2*in
+            if (!cur.icCorners) cur.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+            ['iTL','iTR','iBR','iBL'].forEach(k=>{
+              const c = cur.icCorners[k]||{mode:'square',value:0};
+              const v = Math.max(0, Math.min(Number(c.value||0), icMaxIn));
+              cur.icCorners[k] = { mode: (c.mode||'square'), value: v };
+            });
+          }
+
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
 
@@ -742,6 +813,28 @@
     const uPath = document.createElementNS(ns,'path');
     const x0 = x, y0 = yTop, x1 = x + a, y1 = yTop + hMax; // outer box
     // Build rounded outer rectangle path using rcCorners (similar to Rect/L)
+    // Render-time geometric clamp for rcCorners (U): overall height is the taller leg
+    try {
+      const widthIn = Number(aIn||0);
+      const heightIn = Math.max(Number(blIn||0), Number(brIn||0));
+      if (!cur.rcCorners) cur.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
+      let TLv = Math.max(0, Number(cur.rcCorners.TL?.value||0));
+      let TRv = Math.max(0, Number(cur.rcCorners.TR?.value||0));
+      let BRv = Math.max(0, Number(cur.rcCorners.BR?.value||0));
+      let BLv = Math.max(0, Number(cur.rcCorners.BL?.value||0));
+      for (let i=0;i<2;i++){
+        TLv = Math.min(TLv, Math.max(0, widthIn - TRv), Math.max(0, heightIn - BLv));
+        TRv = Math.min(TRv, Math.max(0, widthIn - TLv), Math.max(0, heightIn - BRv));
+        BRv = Math.min(BRv, Math.max(0, widthIn - BLv), Math.max(0, heightIn - TRv));
+        BLv = Math.min(BLv, Math.max(0, widthIn - BRv), Math.max(0, heightIn - TLv));
+      }
+      cur.rcCorners = {
+        TL: { mode: cur.rcCorners.TL?.mode||'square', value: TLv },
+        TR: { mode: cur.rcCorners.TR?.mode||'square', value: TRv },
+        BR: { mode: cur.rcCorners.BR?.mode||'square', value: BRv },
+        BL: { mode: cur.rcCorners.BL?.mode||'square', value: BLv },
+      };
+    } catch(e){}
     const rc = cur.rcCorners || {};
     const t = (k)=> Math.max(0, Number(rc[k]?.value||0)) * 2; // inches->px
     const C_TL = { mode:(rc.TL?.mode)||'square', t:t('TL') };
@@ -931,11 +1024,15 @@
             addHandle(idx, BLm.x, BLm.y, 0, 'RC-BL');
             // Inside-corner handles for U
             const icC = cur.icCorners || { iTL:{value:0}, iTR:{value:0}, iBR:{value:0}, iBL:{value:0} };
-            const itpx=(k)=> Math.max(0, Number(icC[k]?.value||0))*2;
-            const iTLm = toWorld(-a/2 + px(eIn) + itpx('iTL')/2, -hMax/2 + px(dIn) + itpx('iTL')/2);
-            const iTRm = toWorld( a/2 - px(hIn) - itpx('iTR')/2, -hMax/2 + px(dIn) + itpx('iTR')/2);
-            const iBRm = toWorld( a/2 - px(hIn) - itpx('iBR')/2,  hMax/2 - itpx('iBR')/2);
-            const iBLm = toWorld(-a/2 + px(eIn) + itpx('iBL')/2,  hMax/2 - itpx('iBL')/2);
+            const innerWpx = Math.max(0, (x + a) - x); // a is already px width
+            const tMaxPx = Math.max(0, Math.min((xiR - xiL)/2, (yInnerBottom - yInnerTop)/2));
+            const itpx=(k)=> Math.min(Math.max(0, Number(icC[k]?.value||0))*2, tMaxPx);
+            const yInnerTopLocal = (-hMax/2) + px(dIn);
+            const yInnerBottomLocal = (-hMax/2) + Math.min(blPx, brPx);
+            const iTLm = toWorld(-a/2 + px(eIn) + itpx('iTL')/2, yInnerTopLocal + itpx('iTL')/2);
+            const iTRm = toWorld( a/2 - px(hIn) - itpx('iTR')/2, yInnerTopLocal + itpx('iTR')/2);
+            const iBRm = toWorld( a/2 - px(hIn) - itpx('iBR')/2, yInnerBottomLocal - itpx('iBR')/2);
+            const iBLm = toWorld(-a/2 + px(eIn) + itpx('iBL')/2, yInnerBottomLocal - itpx('iBL')/2);
             addHandle(idx, iTLm.x, iTLm.y, 0, 'IC-TL');
             addHandle(idx, iTRm.x, iTRm.y, 0, 'IC-TR');
             // Show all inside-corner handles (supported by single inner-contour)
@@ -1831,6 +1928,24 @@
       if ((el).value==='') return; if (!lenEditTimer){ pushHistory(); } if (lenEditTimer) clearTimeout(lenEditTimer); lenEditTimer=setTimeout(()=>{ lenEditTimer=null; }, 500);
       if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
       const key = el.getAttribute('data-ct-rc-corner-val'); let v=parseFloat((el).value||'0'); if(!isFinite(v)||v<0)v=0; if(v>12)v=12;
+      // Geometric clamp vs current neighbors on same edges
+      const widthIn = Number(s.len?.A||0);
+      const heightIn = (s.type==='u') ? Math.max(Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25)), Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25))) : Number(s.len?.B||0);
+      const rc = s.rcCorners || {};
+      const valOf = (k)=> Math.max(0, Number(rc[k]?.value||0));
+      if (key==='TL'){
+        v = Math.min(v, Math.max(0, widthIn - valOf('TR')));
+        v = Math.min(v, Math.max(0, heightIn - valOf('BL')));
+      } else if (key==='TR'){
+        v = Math.min(v, Math.max(0, widthIn - valOf('TL')));
+        v = Math.min(v, Math.max(0, heightIn - valOf('BR')));
+      } else if (key==='BR'){
+        v = Math.min(v, Math.max(0, widthIn - valOf('BL')));
+        v = Math.min(v, Math.max(0, heightIn - valOf('TR')));
+      } else if (key==='BL'){
+        v = Math.min(v, Math.max(0, widthIn - valOf('BR')));
+        v = Math.min(v, Math.max(0, heightIn - valOf('TL')));
+      }
       const mode = s.rcCorners[key]?.mode || 'square'; s.rcCorners[key]={mode, value:v}; updateSummary(); save(); draw();
     });
     // Rect/L/U corner presets
@@ -1839,7 +1954,25 @@
       if (!btn.matches('[data-ct-rc-corner-preset]')) return; if (active<0) return;
       const s=shapes[active]; if (!(s.type==='rect' || s.type==='l' || s.type==='u')) return; ev.preventDefault(); pushHistory();
       if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
-      const key=btn.getAttribute('data-key'); const v=Math.max(0, Math.min(12, parseFloat(btn.getAttribute('data-value')||'0')));
+      const key=btn.getAttribute('data-key'); let v=Math.max(0, Math.min(12, parseFloat(btn.getAttribute('data-value')||'0')));
+      // Geometric clamp vs current neighbors
+      const widthIn = Number(s.len?.A||0);
+      const heightIn = (s.type==='u') ? Math.max(Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25)), Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25))) : Number(s.len?.B||0);
+      const rc = s.rcCorners || {};
+      const valOf = (k)=> Math.max(0, Number(rc[k]?.value||0));
+      if (key==='TL'){
+        v = Math.min(v, Math.max(0, widthIn - valOf('TR')));
+        v = Math.min(v, Math.max(0, heightIn - valOf('BL')));
+      } else if (key==='TR'){
+        v = Math.min(v, Math.max(0, widthIn - valOf('TL')));
+        v = Math.min(v, Math.max(0, heightIn - valOf('BR')));
+      } else if (key==='BR'){
+        v = Math.min(v, Math.max(0, widthIn - valOf('BL')));
+        v = Math.min(v, Math.max(0, heightIn - valOf('TR')));
+      } else if (key==='BL'){
+        v = Math.min(v, Math.max(0, widthIn - valOf('BR')));
+        v = Math.min(v, Math.max(0, heightIn - valOf('TL')));
+      }
       const mode = s.rcCorners[key]?.mode || 'radius'; s.rcCorners[key]={mode, value:v};
       const valEl = sel(`[data-ct-rc-corner-val="${key}"]`, root); if (valEl) valEl.value=String(v);
       const selEl = sel(`[data-ct-rc-corner-mode="${key}"]`, root); if (selEl && selEl.value==='square') selEl.value='radius';
@@ -1863,6 +1996,25 @@
       if ((el).value==='') return; if (!lenEditTimer){ pushHistory(); } if (lenEditTimer) clearTimeout(lenEditTimer); lenEditTimer=setTimeout(()=>{ lenEditTimer=null; }, 500);
       if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
       const key = el.getAttribute('data-ct-ic-corner-val'); let v=parseFloat((el).value||'0'); if(!isFinite(v)||v<0)v=0; if(v>12)v=12;
+      // Geometric clamp based on current inner opening
+      if (s.type==='u'){
+        const A = Number(s.len?.A||0);
+        const eIn = Number(s.len?.E||0), hIn = Number(s.len?.H||0);
+        const dIn = Number(s.len?.D||0);
+        const BL = Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25));
+        const BR = Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25));
+        const innerW = Math.max(1, A - (eIn + hIn));
+        const innerH = Math.max(0, Math.min(BL,BR) - dIn);
+        const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
+        v = Math.min(v, tMaxIn);
+      } else if (s.type==='l'){
+        const aIn = Number(s.len?.A||0), bIn = Number(s.len?.B||0);
+        const cIn = Number(s.len?.C||0), dIn = Number(s.len?.D||0);
+        const innerW = Math.max(0, aIn - cIn);
+        const innerH = Math.max(0, bIn - dIn);
+        const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
+        v = Math.min(v, tMaxIn);
+      }
       const mode = s.icCorners[key]?.mode || 'square'; s.icCorners[key]={mode, value:v}; updateSummary(); save(); draw();
     });
     // Inside-corner presets (L/U)
@@ -1871,7 +2023,26 @@
       if (!btn.matches('[data-ct-ic-corner-preset]')) return; if (active<0) return;
       const s=shapes[active]; if (!(s.type==='l' || s.type==='u')) return; ev.preventDefault(); pushHistory();
       if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-      const key=btn.getAttribute('data-key'); const v=Math.max(0, Math.min(12, parseFloat(btn.getAttribute('data-value')||'0')));
+      const key=btn.getAttribute('data-key'); let v=Math.max(0, Math.min(12, parseFloat(btn.getAttribute('data-value')||'0')));
+      // Geometric clamp
+      if (s.type==='u'){
+        const A = Number(s.len?.A||0);
+        const eIn = Number(s.len?.E||0), hIn = Number(s.len?.H||0);
+        const dIn = Number(s.len?.D||0);
+        const BL = Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25));
+        const BR = Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25));
+        const innerW = Math.max(1, A - (eIn + hIn));
+        const innerH = Math.max(0, Math.min(BL,BR) - dIn);
+        const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
+        v = Math.min(v, tMaxIn);
+      } else if (s.type==='l'){
+        const aIn = Number(s.len?.A||0), bIn = Number(s.len?.B||0);
+        const cIn = Number(s.len?.C||0), dIn = Number(s.len?.D||0);
+        const innerW = Math.max(0, aIn - cIn);
+        const innerH = Math.max(0, bIn - dIn);
+        const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
+        v = Math.min(v, tMaxIn);
+      }
       const mode = s.icCorners[key]?.mode || 'radius'; s.icCorners[key]={mode, value:v};
       const valEl = sel(`[data-ct-ic-corner-val="${key}"]`, root); if (valEl) valEl.value=String(v);
       const selEl = sel(`[data-ct-ic-corner-mode="${key}"]`, root); if (selEl && selEl.value==='square') selEl.value='radius';
@@ -1882,7 +2053,26 @@
       const btn = ev.target; if (!(btn instanceof HTMLElement)) return;
       if (!btn.matches('[data-ct-ic-corner-apply-all]')) return; if (active<0) return;
       const s=shapes[active]; if (!(s.type==='l' || s.type==='u')) return; const modeSel=sel('[data-ct-ic-corner-all-mode]', root); const valInp=sel('[data-ct-ic-corner-all-val]', root);
-      const mode = modeSel ? modeSel.value : 'square'; const val = valInp ? Math.max(0, Math.min(12, parseFloat(valInp.value||'0'))) : 0; pushHistory();
+      const mode = modeSel ? modeSel.value : 'square'; let val = valInp ? Math.max(0, Math.min(12, parseFloat(valInp.value||'0'))) : 0; pushHistory();
+      // Geometric clamp
+      if (s.type==='u'){
+        const A = Number(s.len?.A||0);
+        const eIn = Number(s.len?.E||0), hIn = Number(s.len?.H||0);
+        const dIn = Number(s.len?.D||0);
+        const BL = Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25));
+        const BR = Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25));
+        const innerW = Math.max(1, A - (eIn + hIn));
+        const innerH = Math.max(0, Math.min(BL,BR) - dIn);
+        const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
+        val = Math.min(val, tMaxIn);
+      } else if (s.type==='l'){
+        const aIn = Number(s.len?.A||0), bIn = Number(s.len?.B||0);
+        const cIn = Number(s.len?.C||0), dIn = Number(s.len?.D||0);
+        const innerW = Math.max(0, aIn - cIn);
+        const innerH = Math.max(0, bIn - dIn);
+        const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
+        val = Math.min(val, tMaxIn);
+      }
       if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
       ['iTL','iTR','iBR','iBL'].forEach(k=>{ if (s.type==='l' && (k==='iTR' || k==='iBL')) return; s.icCorners[k] = { mode, value: val }; });
       updateSummary(); save(); draw();
@@ -1914,7 +2104,11 @@
       const modeSel = sel('[data-ct-rc-corner-all-mode]', root);
       const valInp = sel('[data-ct-rc-corner-all-val]', root);
       const mode = modeSel ? modeSel.value : 'square';
-      const val = valInp ? Math.max(0, Math.min(12, parseFloat(valInp.value||'0'))) : 0;
+      let val = valInp ? Math.max(0, Math.min(12, parseFloat(valInp.value||'0'))) : 0;
+      // Geometric clamp for uniform apply-all: each must fit both top/bottom and left/right
+      const widthIn = Number(s.len?.A||0);
+      const heightIn = (s.type==='u') ? Math.max(Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25)), Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25))) : Number(s.len?.B||0);
+      val = Math.min(val, widthIn/2, heightIn/2);
       pushHistory();
       if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
       ['TL','TR','BR','BL'].forEach(k=>{ s.rcCorners[k] = { mode, value: val }; });
@@ -2223,7 +2417,25 @@
             const key = map[String(resizeKey)]||'TL';
             const prev = (s.rcCorners && s.rcCorners[key]) ? Number(s.rcCorners[key].value||0) : 0;
             const deltaIn = (Math.abs(dxIn) + Math.abs(dyIn)) / 2;
-            const vNew = Math.max(0, Math.min(12, Math.round(prev + deltaIn)));
+            let vNew = Math.max(0, Math.min(12, Math.round(prev + deltaIn)));
+            // Geometric clamp
+            const widthIn = Number(s.len?.A||0);
+            const heightIn = (s.type==='u') ? Math.max(Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25)), Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25))) : Number(s.len?.B||0);
+            const rc = s.rcCorners || {};
+            const valOf = (k)=> Math.max(0, Number(rc[k]?.value||0));
+            if (key==='TL'){
+              vNew = Math.min(vNew, Math.max(0, widthIn - valOf('TR')));
+              vNew = Math.min(vNew, Math.max(0, heightIn - valOf('BL')));
+            } else if (key==='TR'){
+              vNew = Math.min(vNew, Math.max(0, widthIn - valOf('TL')));
+              vNew = Math.min(vNew, Math.max(0, heightIn - valOf('BR')));
+            } else if (key==='BR'){
+              vNew = Math.min(vNew, Math.max(0, widthIn - valOf('BL')));
+              vNew = Math.min(vNew, Math.max(0, heightIn - valOf('TR')));
+            } else if (key==='BL'){
+              vNew = Math.min(vNew, Math.max(0, widthIn - valOf('BR')));
+              vNew = Math.min(vNew, Math.max(0, heightIn - valOf('TL')));
+            }
             if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
             const mode = s.rcCorners[key]?.mode || 'radius';
             s.rcCorners[key] = { mode, value: vNew };
@@ -2232,7 +2444,26 @@
             const key = map[String(resizeKey)]||'iTL';
             const prev = (s.icCorners && s.icCorners[key]) ? Number(s.icCorners[key].value||0) : 0;
             const deltaIn = (Math.abs(dxIn) + Math.abs(dyIn)) / 2;
-            const vNew = Math.max(0, Math.min(12, Math.round(prev + deltaIn)));
+            let vNew = Math.max(0, Math.min(12, Math.round(prev + deltaIn)));
+            // Geometric clamp
+            if (s.type==='u'){
+              const A = Number(s.len?.A||0);
+              const eIn = Number(s.len?.E||0), hIn = Number(s.len?.H||0);
+              const dIn = Number(s.len?.D||0);
+              const BL = Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25));
+              const BR = Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25));
+              const innerW = Math.max(1, A - (eIn + hIn));
+              const innerH = Math.max(0, Math.min(BL,BR) - dIn);
+              const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
+              vNew = Math.min(vNew, tMaxIn);
+            } else if (s.type==='l'){
+              const aIn = Number(s.len?.A||0), bIn = Number(s.len?.B||0);
+              const cIn = Number(s.len?.C||0), dIn2 = Number(s.len?.D||0);
+              const innerW = Math.max(0, aIn - cIn);
+              const innerH = Math.max(0, bIn - dIn2);
+              const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
+              vNew = Math.min(vNew, tMaxIn);
+            }
             if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
             const mode = s.icCorners[key]?.mode || 'radius';
             s.icCorners[key] = { mode, value: vNew };
@@ -2499,7 +2730,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-22T30';
+  window.KC_CT.version = '2025-09-23T33';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
