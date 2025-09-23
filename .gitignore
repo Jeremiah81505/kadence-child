@@ -19,3 +19,6 @@ wp-content/languages/
 # IDE
 .vscode/
 .idea/
+
+# Local assets not part of the theme
+video-tools/

@@ -102,12 +102,8 @@
           if (s.bs.H==null) s.bs.H = false;
           if (s.bs.A==null) s.bs.A = !!s.bs.A;
           if (s.bs.C==null) s.bs.C = !!s.bs.C;
-          // Inside-corner defaults and auto-zero bottom when legs differ
+          // Inside-corner defaults
           if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-          if (BL !== BR){
-            s.icCorners.iBL = { mode:'square', value:0 };
-            s.icCorners.iBR = { mode:'square', value:0 };
-          }
         }
       }catch(e){}
       return s;
@@ -670,12 +666,6 @@
           const cIn = Math.max(1, aIn - (eLocal + hLocal));
           const a = px(aIn);
           const blPx = px(blIn), brPx = px(brIn);
-          // If legs differ, auto-zero bottom inside corners to avoid stale values
-          if (blIn !== brIn){
-            cur.icCorners = cur.icCorners || { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-            cur.icCorners.iBL = { mode:'square', value:0 };
-            cur.icCorners.iBR = { mode:'square', value:0 };
-          }
           const hMax = Math.max(blPx, brPx);
           const x = centerX - a/2;
           const yTop = centerY - hMax/2;
@@ -785,64 +775,61 @@
   // TL corner back to start
   if (C_TL.mode==='radius'){ const r=C_TL.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aTL)); } else if (C_TL.mode==='clip'){ outer.push(`L ${aTL.x} ${aTL.y}`); }
   outer.push('Z');
-    // Build inner opening with inside-corner ops
-  // Build inner opening with inside-corner ops
-  const ic = cur.icCorners || { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-  const innerW = Math.max(0, xiR - xiL);
-  const innerH = Math.max(0, yInnerBottom - yInnerTop);
-  const tMaxPx = Math.max(0, Math.min(innerW/2, innerH/2));
-  const it=(k)=> Math.min(Math.max(0, Number(ic[k]?.value||0))*2, tMaxPx);
-  const I_TL={mode:(ic.iTL?.mode)||'square', t:it('iTL')};
-  const I_TR={mode:(ic.iTR?.mode)||'square', t:it('iTR')};
-  let I_BR={mode:(ic.iBR?.mode)||'square', t:it('iBR')};
-  let I_BL={mode:(ic.iBL?.mode)||'square', t:it('iBL')};
-  // If the inner bottom is truncated (true U), suppress bottom inner radiuses
-  if (yInnerBottom < (yTop + hMax - 0.001)){
-    I_BR = { mode:'square', t:0 };
-    I_BL = { mode:'square', t:0 };
-  }
-  const ipTL={x:xiL,y:yInnerTop}, ipTR={x:xiR,y:yInnerTop}, ipBR={x:xiR,y:yInnerBottom}, ipBL={x:xiL,y:yInnerBottom};
-  const offI=(pA,pB,dist)=>{ const L=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/L, uy=(pB.y-pA.y)/L; return { x:pA.x+ux*dist, y:pA.y+uy*dist }; };
-  const iaTL=offI(ipTL,ipTR,I_TL.t), ibTL=offI(ipTL,ipBL,I_TL.t);
-  const iaTR=offI(ipTR,ipBR,I_TR.t), ibTR=offI(ipTR,ipTL,I_TR.t);
-  const iaBR=offI(ipBR,ipBL,I_BR.t), ibBR=offI(ipBR,ipTR,I_BR.t);
-  const iaBL=offI(ipBL,ipTL,I_BL.t), ibBL=offI(ipBL,ipBR,I_BL.t);
-  const arcI=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
-  const inner=[];
-  inner.push(`M ${iaTL.x} ${iaTL.y}`);
-  inner.push(`L ${ibTR.x} ${ibTR.y}`);
-  if (I_TR.mode==='radius'){ const r=I_TR.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaTR)); } else if (I_TR.mode==='clip'){ inner.push(`L ${iaTR.x} ${iaTR.y}`); }
-  inner.push(`L ${ibBR.x} ${ibBR.y}`);
-  if (I_BR.mode==='radius'){ const r=I_BR.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaBR)); } else if (I_BR.mode==='clip'){ inner.push(`L ${iaBR.x} ${iaBR.y}`); }
-  inner.push(`L ${ibBL.x} ${ibBL.y}`);
-  if (I_BL.mode==='radius'){ const r=I_BL.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaBL)); } else if (I_BL.mode==='clip'){ inner.push(`L ${iaBL.x} ${iaBL.y}`); }
-  inner.push(`L ${ibTL.x} ${ibTL.y}`);
-  if (I_TL.mode==='radius'){ const r=I_TL.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaTL)); } else if (I_TL.mode==='clip'){ inner.push(`L ${iaTL.x} ${iaTL.y}`); }
-  inner.push('Z');
-  // Subtract the extra bottom overhang below each leg so the outer fill
-  // does not extend to the deeper side's depth.
-  if (blPx < hMax){
-    inner.push(`M ${x} ${yTop + blPx}`);           // left outer bottom start
-    inner.push(`L ${xiL} ${yTop + blPx}`);         // to notch start
-    inner.push(`L ${xiL} ${yTop + hMax}`);         // down to outer bbox bottom
-    inner.push(`L ${x} ${yTop + hMax}`);           // back to left outer bbox bottom
+    // Build inner opening as a single contour (handles equal and unequal legs)
+    const ic = cur.icCorners || { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+    const innerW = Math.max(0, xiR - xiL);
+    const innerH = Math.max(0, yInnerBottom - yInnerTop);
+    const tMaxPx = Math.max(0, Math.min(innerW/2, innerH/2));
+    const it=(k)=> Math.min(Math.max(0, Number(ic[k]?.value||0))*2, tMaxPx);
+    const I_TL={mode:(ic.iTL?.mode)||'square', t:it('iTL')};
+    const I_TR={mode:(ic.iTR?.mode)||'square', t:it('iTR')};
+    const I_BR={mode:(ic.iBR?.mode)||'square', t:it('iBR')};
+    const I_BL={mode:(ic.iBL?.mode)||'square', t:it('iBL')};
+    const ipTL={x:xiL,y:yInnerTop}, ipTR={x:xiR,y:yInnerTop}, ipBR={x:xiR,y:yInnerBottom}, ipBL={x:xiL,y:yInnerBottom};
+    const offI=(pA,pB,dist)=>{ const L=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/L, uy=(pB.y-pA.y)/L; return { x:pA.x+ux*dist, y:pA.y+uy*dist }; };
+    const iaTL=offI(ipTL,ipTR,I_TL.t), ibTL=offI(ipTL,ipBL,I_TL.t);
+    const iaTR=offI(ipTR,ipBR,I_TR.t), ibTR=offI(ipTR,ipTL,I_TR.t);
+    const iaBR=offI(ipBR,ipBL,I_BR.t), ibBR=offI(ipBR,ipTR,I_BR.t);
+    const iaBL=offI(ipBL,ipTL,I_BL.t), ibBL=offI(ipBL,ipBR,I_BL.t);
+    const arcI=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
+    const inner=[];
+    const leftShallow = blPx < brPx;
+    const rightShallow = brPx < blPx;
+    const yBotMax = yTop + Math.max(blPx, brPx);
+    // Common top and right vertical with arcs
+    inner.push(`M ${iaTL.x} ${iaTL.y}`);
+    inner.push(`L ${ibTR.x} ${ibTR.y}`);
+    if (I_TR.mode==='radius'){ const r=I_TR.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaTR)); } else if (I_TR.mode==='clip'){ inner.push(`L ${iaTR.x} ${iaTR.y}`); }
+    inner.push(`L ${ibBR.x} ${ibBR.y}`);
+    if (I_BR.mode==='radius'){ const r=I_BR.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaBR)); } else if (I_BR.mode==='clip'){ inner.push(`L ${iaBR.x} ${iaBR.y}`); }
+    // Bottom inner run toward left
+    inner.push(`L ${iaBL.x} ${iaBL.y}`);
+    if (leftShallow || rightShallow){
+      // Detour to include central strip and overhang under the shallower leg
+      if (leftShallow){
+        // From left inner bottom point, go to outer left, down to bottom, across to right inner bottom x, up, and back
+        inner.push(`L ${x} ${yInnerBottom}`);
+        inner.push(`L ${x} ${yBotMax}`);
+        inner.push(`L ${iaBR.x} ${yBotMax}`);
+        inner.push(`L ${iaBR.x} ${yInnerBottom}`);
+        inner.push(`L ${iaBL.x} ${yInnerBottom}`);
+      } else if (rightShallow){
+        // From right inner bottom point (iaBR), detour on the right side; so we must first step back to iaBR
+        // We are currently at iaBL (left end); return to iaBR, then detour, then back to iaBL
+        inner.pop(); // remove last L to iaBL to avoid duplicating
+        inner.push(`L ${iaBR.x} ${iaBR.y}`);
+        inner.push(`L ${x + a} ${yInnerBottom}`);
+        inner.push(`L ${x + a} ${yBotMax}`);
+        inner.push(`L ${iaBL.x} ${yBotMax}`);
+        inner.push(`L ${iaBL.x} ${yInnerBottom}`);
+      }
+    }
+    // Finish left side up with BL/TL corners
+    inner.push(`L ${ibBL.x} ${ibBL.y}`);
+    if (I_BL.mode==='radius'){ const r=I_BL.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaBL)); } else if (I_BL.mode==='clip'){ inner.push(`L ${iaBL.x} ${iaBL.y}`); }
+    inner.push(`L ${ibTL.x} ${ibTL.y}`);
+    if (I_TL.mode==='radius'){ const r=I_TL.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaTL)); } else if (I_TL.mode==='clip'){ inner.push(`L ${iaTL.x} ${iaTL.y}`); }
     inner.push('Z');
-  }
-  if (brPx < hMax){
-    inner.push(`M ${xiR} ${yTop + brPx}`);         // notch end on right
-    inner.push(`L ${x + a} ${yTop + brPx}`);       // to right outer bottom
-    inner.push(`L ${x + a} ${yTop + hMax}`);       // down to outer bbox bottom
-    inner.push(`L ${xiR} ${yTop + hMax}`);         // back to notch x
-    inner.push('Z');
-  }
-  // Central strip under the inner bottom (between legs) — remove it
-  if (yInnerBottom < yTop + hMax){
-    inner.push(`M ${xiL} ${yInnerBottom}`);
-    inner.push(`L ${xiR} ${yInnerBottom}`);
-    inner.push(`L ${xiR} ${yTop + hMax}`);
-    inner.push(`L ${xiL} ${yTop + hMax}`);
-    inner.push('Z');
-  }
   uPath.setAttribute('d', `${outer.join(' ')} ${inner.join(' ')}`);
     uPath.setAttribute('fill', '#f8c4a0');
     uPath.setAttribute('fill-rule', 'evenodd');
@@ -951,11 +938,9 @@
             const iBLm = toWorld(-a/2 + px(eIn) + itpx('iBL')/2,  hMax/2 - itpx('iBL')/2);
             addHandle(idx, iTLm.x, iTLm.y, 0, 'IC-TL');
             addHandle(idx, iTRm.x, iTRm.y, 0, 'IC-TR');
-            // Only show bottom inside-corner handles if there is a true inner bottom
-            if (blPx === brPx){
-              addHandle(idx, iBRm.x, iBRm.y, 0, 'IC-BR');
-              addHandle(idx, iBLm.x, iBLm.y, 0, 'IC-BL');
-            }
+            // Show all inside-corner handles (supported by single inner-contour)
+            addHandle(idx, iBRm.x, iBRm.y, 0, 'IC-BR');
+            addHandle(idx, iBLm.x, iBLm.y, 0, 'IC-BL');
           }
         } else if (shape==='poly'){
           // Custom polygon defined by local-inch points: [{x,y}, ...] in inches
@@ -1686,14 +1671,6 @@
             const c = cur.icCorners[k]||{mode:'square',value:0};
             if (selEl) selEl.value = c.mode||'square';
             if (valEl) valEl.value = String(c.value||0);
-              // For U with no true inner bottom, disable iBL/iBR controls
-              if (cur.type==='u' && (k==='iBL' || k==='iBR')){
-                const BL = Number((cur.len?.BL!=null)?cur.len.BL:((cur.len?.B!=null)?cur.len.B:25));
-                const BR = Number((cur.len?.BR!=null)?cur.len.BR:((cur.len?.B!=null)?cur.len.B:25));
-                const hasBottom = (BL === BR);
-                if (selEl) selEl.disabled = !hasBottom;
-                if (valEl) valEl.disabled = !hasBottom;
-              }
           });
         }
       }
@@ -2522,7 +2499,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-22T29';
+  window.KC_CT.version = '2025-09-22T30';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
