@@ -895,30 +895,9 @@
     if (I_TR.mode==='radius'){ const r=I_TR.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaTR)); } else if (I_TR.mode==='clip'){ inner.push(`L ${iaTR.x} ${iaTR.y}`); }
     inner.push(`L ${ibBR.x} ${ibBR.y}`);
     if (I_BR.mode==='radius'){ const r=I_BR.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaBR)); } else if (I_BR.mode==='clip'){ inner.push(`L ${iaBR.x} ${iaBR.y}`); }
-    // Bottom inner run toward left
-    inner.push(`L ${iaBL.x} ${iaBL.y}`);
-    if (leftShallow || rightShallow){
-      // Detour to include central strip and overhang under the shallower leg
-      if (leftShallow){
-        // From left inner bottom point, go to outer left, down to bottom, across to right inner bottom x, up, and back
-        inner.push(`L ${x} ${yInnerBottom}`);
-        inner.push(`L ${x} ${yBotMax}`);
-        inner.push(`L ${iaBR.x} ${yBotMax}`);
-        inner.push(`L ${iaBR.x} ${yInnerBottom}`);
-        inner.push(`L ${iaBL.x} ${yInnerBottom}`);
-      } else if (rightShallow){
-        // From right inner bottom point (iaBR), detour on the right side; so we must first step back to iaBR
-        // We are currently at iaBL (left end); return to iaBR, then detour, then back to iaBL
-        inner.pop(); // remove last L to iaBL to avoid duplicating
-        inner.push(`L ${iaBR.x} ${iaBR.y}`);
-        inner.push(`L ${x + a} ${yInnerBottom}`);
-        inner.push(`L ${x + a} ${yBotMax}`);
-        inner.push(`L ${iaBL.x} ${yBotMax}`);
-        inner.push(`L ${iaBL.x} ${yInnerBottom}`);
-      }
-    }
-    // Finish left side up with BL/TL corners
+    // Bottom inner run toward left along the inner-bottom edge
     inner.push(`L ${ibBL.x} ${ibBL.y}`);
+    // Finish left side up with BL/TL corners
     if (I_BL.mode==='radius'){ const r=I_BL.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaBL)); } else if (I_BL.mode==='clip'){ inner.push(`L ${iaBL.x} ${iaBL.y}`); }
     inner.push(`L ${ibTL.x} ${ibTL.y}`);
     if (I_TL.mode==='radius'){ const r=I_TL.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaTL)); } else if (I_TL.mode==='clip'){ inner.push(`L ${iaTL.x} ${iaTL.y}`); }
@@ -2730,7 +2709,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-23T33';
+  window.KC_CT.version = '2025-09-23T34';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
