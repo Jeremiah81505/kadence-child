@@ -212,7 +212,26 @@
           c.setAttribute('stroke', '#7db320');
           label.setAttribute('fill', '#1a3f14');
         }
-        label.textContent = ltxt;
+        // Build label text with live values for clarity
+        const sForLbl = shapes[idx];
+        const fmtVal = (v)=>{ if (v==null) return ''; const n=Number(v)||0; return (Math.round(n*100)%100===0)? `${Math.round(n)}"` : `${(Math.round(n*4)/4).toFixed(2).replace(/\.00$/,'')}"`; };
+        let vtxt = '';
+        if (sForLbl){
+          if (['A-right','A-left'].includes(keyStr)) vtxt = fmtVal(sForLbl.len?.A);
+          else if (['B-top','B-bottom'].includes(keyStr)) vtxt = fmtVal(sForLbl.len?.B);
+          else if (keyStr==='BL') vtxt = fmtVal((sForLbl.len?.BL!=null)?sForLbl.len.BL:((sForLbl.len?.B!=null)?sForLbl.len.B:25));
+          else if (keyStr==='BR') vtxt = fmtVal((sForLbl.len?.BR!=null)?sForLbl.len.BR:((sForLbl.len?.B!=null)?sForLbl.len.B:25));
+          else if (keyStr==='C') vtxt = fmtVal(sForLbl.len?.C);
+          else if (keyStr==='D') vtxt = fmtVal(sForLbl.len?.D);
+          else if (keyStr==='E') vtxt = fmtVal(sForLbl.len?.E);
+          else if (keyStr==='H') vtxt = fmtVal(sForLbl.len?.H);
+          else if (keyStr.startsWith('RC-')){
+            const mapK={ 'RC-TL':'TL','RC-TR':'TR','RC-BR':'BR','RC-BL':'BL'}; const rk=mapK[keyStr]; const v=(sForLbl.rcCorners?.[rk]?.value)||0; vtxt = fmtVal(v);
+          } else if (keyStr.startsWith('IC-')){
+            const mapK={ 'IC-TL':'iTL','IC-TR':'iTR','IC-BR':'iBR','IC-BL':'iBL'}; const rk=mapK[keyStr]; const v=(sForLbl.icCorners?.[rk]?.value)||0; vtxt = fmtVal(v);
+          }
+        }
+        label.textContent = vtxt ? `${ltxt}: ${vtxt}` : ltxt;
         const primaryKeys = new Set(['A-right','A-left','B-top','B-bottom','BL','BR','C','D','E','H']);
         const showLabel = (idx===active && (primaryKeys.has(String(key)) || (toolMode==='resize' && hoverHandle && hoverHandle.h && hoverHandle.h.key===key)));
         if (showLabel) gRoot.appendChild(label);
