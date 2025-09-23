@@ -141,6 +141,19 @@
       const px = (v)=> v * 2; // 2px per inch roughly
       hitAreas = [];
       handles = [];
+      // Helper to draw a shape label in world (unrotated) space
+      const drawShapeName = (x, y, text)=>{
+        if (!text) return;
+        const t = document.createElementNS(ns, 'text');
+        t.setAttribute('x', String(x));
+        t.setAttribute('y', String(y));
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('font-size', '12');
+        t.setAttribute('font-weight', '700');
+        t.setAttribute('fill', '#333');
+        t.textContent = String(text);
+        gRoot.appendChild(t);
+      };
       const drawGuideLine=(parent,x1,y1,x2,y2,txt)=>{
         const l=document.createElementNS(ns,'line');
         l.setAttribute('x1',String(x1)); l.setAttribute('y1',String(y1));
@@ -416,8 +429,8 @@
             const p=document.createElementNS(ns,'path'); p.setAttribute('d', d.join(' ')); p.setAttribute('fill','#f8c4a0'); p.setAttribute('stroke','#ccc'); p.setAttribute('stroke-width','2'); rotG.appendChild(p);
           }
 
-          // wall side overlays (red if against wall)
-          const sideColor = '#d32f2f';
+          // wall side overlays (black if against wall)
+          const sideColor = '#000';
           const mkLine = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke', sideColor); l.setAttribute('stroke-width','3'); return l; };
           if (cur.wall.A) rotG.appendChild(mkLine(centerX - w/2, centerY - h/2, centerX + w/2, centerY - h/2));
           if (cur.wall.B) rotG.appendChild(mkLine(centerX - w/2, centerY - h/2, centerX - w/2, centerY + h/2));
@@ -462,6 +475,8 @@
             drawGuideLine(rotG, centerX - w/2 + m, centerY - h/2 + m, centerX - w/2 + m, centerY + h/2 - m, 'B');
           }
           gRoot.appendChild(rotG);
+          // Label: center of rectangle
+          drawShapeName(centerX, centerY, cur.name || `Shape ${idx+1}`);
           if (opts.showGuides){ labelNumbers(rotG, centerX, centerY, cur, {A:len.A,B:len.B}); }
           hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation });
           if (idx===active){
@@ -698,7 +713,7 @@
 
           rotG.appendChild(path);
           // wall sides (approx bounding box)
-          const sideColor = '#d32f2f';
+          const sideColor = '#000';
           const mkLine = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke', sideColor); l.setAttribute('stroke-width','3'); return l; };
           if (cur.wall.A) rotG.appendChild(mkLine(centerX - a/2, centerY - b/2, centerX + a/2, centerY - b/2));
           if (cur.wall.B) rotG.appendChild(mkLine(centerX - a/2, centerY - b/2, centerX - a/2, centerY + b/2));
@@ -742,6 +757,9 @@
             }
           }
           gRoot.appendChild(rotG);
+          // Label: place within the solid leg (shift from center based on flip)
+          const lLabelX = !flipX ? (centerX - a/4) : (centerX + a/4);
+          drawShapeName(lLabelX, centerY, cur.name || `Shape ${idx+1}`);
           if (opts.showGuides){ labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn}); }
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
           if (idx===active){
@@ -1021,8 +1039,8 @@
             }
           } }
 
-          // wall sides as red lines along outer perimeter; split bottom into left/right, not across opening
-          const sideColor = '#d32f2f';
+          // wall sides as black lines along outer perimeter; split bottom into left/right, not across opening
+          const sideColor = '#000';
           const mkLine = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke', sideColor); l.setAttribute('stroke-width','3'); return l; };
       if (cur.wall.A) rotG.appendChild(mkLine(centerX - a/2, yTop, centerX + a/2, yTop));
       if (cur.wall.B) rotG.appendChild(mkLine(centerX - a/2, yTop, centerX - a/2, yTop + blPx));
@@ -1064,6 +1082,9 @@
             drawGuideLine(rotG, xiR + m, yTop + brPx - m, centerX + a/2 - m, yTop + brPx - m, 'H');
           }
           gRoot.appendChild(rotG);
+          // Label: set within the top rail (between top and inner-top)
+          const uLabelY = yTop + Math.max(12, px(dIn)/2);
+          drawShapeName(centerX, uLabelY, cur.name || `Shape ${idx+1}`);
           if (opts.showGuides){ labelNumbers(rotG, centerX, centerY, cur, {A:aIn,BL:blIn,BR:brIn,C:cIn,D:dIn}); }
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:Math.max(blPx, brPx), rot:rotation });
           if (idx===active){
@@ -1271,6 +1292,8 @@
           let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity; ptsIn.forEach(p=>{ if(p.x<minX) minX=p.x; if(p.y<minY) minY=p.y; if(p.x>maxX) maxX=p.x; if(p.y>maxY) maxY=p.y; });
           const w = (maxX - minX) * 2, h = (maxY - minY) * 2; // px
           hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation||0 });
+          // Label: at polygon center
+          drawShapeName(centerX, centerY, cur.name || `Shape ${idx+1}`);
         }
 
         // end forEach
