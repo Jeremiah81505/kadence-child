@@ -213,7 +213,8 @@
           label.setAttribute('fill', '#1a3f14');
         }
         label.textContent = ltxt;
-        const showLabel = (idx===active && toolMode==='resize' && hoverHandle && hoverHandle.h && hoverHandle.h.key===key);
+        const primaryKeys = new Set(['A-right','A-left','B-top','B-bottom','BL','BR','C','D','E','H']);
+        const showLabel = (idx===active && (primaryKeys.has(String(key)) || (toolMode==='resize' && hoverHandle && hoverHandle.h && hoverHandle.h.key===key)));
         if (showLabel) gRoot.appendChild(label);
       };
 
@@ -558,6 +559,33 @@
               const v = Math.max(0, Math.min(Number(c.value||0), icMaxIn));
               cur.icCorners[k] = { mode:(c.mode||'square'), value:v };
             });
+            // Anti-self-intersection guard for U inner rectangle
+            try{
+              const adj = (k1,k2,limitIn)=>{
+                const a = cur.icCorners[k1]; const b = cur.icCorners[k2];
+                const sum = (Number(a?.value||0) + Number(b?.value||0));
+                if (sum > limitIn){ const scale = limitIn / (sum||1); a.value = Math.floor(a.value*scale*4)/4; b.value = Math.floor(b.value*scale*4)/4; }
+              };
+              const wIn = (xiR - xiL)/2; const hIn = (yInnerBottom - yInnerTop)/2;
+              adj('iTL','iTR', wIn/2);
+              adj('iBL','iBR', wIn/2);
+              adj('iTL','iBL', hIn/2);
+              adj('iTR','iBR', hIn/2);
+            }catch(e){}
+            // Anti-self-intersection guard: ensure adjacent corners don't exceed inner side length
+            try{
+              const mW = Math.max(0, innerWpx/2)/2; const mH = Math.max(0, innerHpx/2)/2; // conservative
+              const adj = (k1,k2,limitIn)=>{
+                const a = cur.icCorners[k1]; const b = cur.icCorners[k2];
+                const sum = (Number(a?.value||0) + Number(b?.value||0));
+                if (sum > limitIn){ const scale = limitIn / (sum||1); a.value = Math.floor(a.value*scale*4)/4; b.value = Math.floor(b.value*scale*4)/4; }
+              };
+              // top: iTL + iTR; bottom: iBL + iBR; left: iTL + iBL; right: iTR + iBR
+              adj('iTL','iTR', (innerWpx/2)/2 );
+              adj('iBL','iBR', (innerWpx/2)/2 );
+              adj('iTL','iBL', (innerHpx/2)/2 );
+              adj('iTR','iBR', (innerHpx/2)/2 );
+            }catch(e){}
             // Immediate input sync for L inside corners
             try{
               ['iTL','iTR','iBR','iBL'].forEach(k=>{
