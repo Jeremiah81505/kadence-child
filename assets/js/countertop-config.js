@@ -183,7 +183,7 @@
         else if (keyStr.startsWith('V-')) tip='Drag to move this vertex';
         t.textContent=tip; c.appendChild(t);
         if (idx===active) gRoot.appendChild(c);
-        // Draw a small label near the handle for clarity
+        // Draw a small label near the handle for clarity (only on hover to declutter)
         const label=document.createElementNS(ns,'text');
         label.setAttribute('x', String(cx + 10));
         label.setAttribute('y', String(cy - 10));
@@ -213,7 +213,8 @@
           label.setAttribute('fill', '#1a3f14');
         }
         label.textContent = ltxt;
-        if (idx===active) gRoot.appendChild(label);
+        const showLabel = (idx===active && toolMode==='resize' && hoverHandle && hoverHandle.h && hoverHandle.h.key===key);
+        if (showLabel) gRoot.appendChild(label);
       };
 
       const labelNumbers=(parent, cx, cy, cur, dims)=>{
@@ -341,6 +342,24 @@
                 BR: { mode: cur.rcCorners.BR?.mode||'square', value: BRv },
                 BL: { mode: cur.rcCorners.BL?.mode||'square', value: BLv },
               };
+              // Immediate input sync for rcCorners (L)
+              try{
+                ['TL','TR','BR','BL'].forEach(k=>{
+                  const vEl = sel(`[data-ct-rc-corner-val="${k}"]`, root);
+                  if (vEl) vEl.value = String(cur.rcCorners[k]?.value||0);
+                  const mEl = sel(`[data-ct-rc-corner-mode="${k}"]`, root);
+                  if (mEl) mEl.value = cur.rcCorners[k]?.mode || 'square';
+                });
+              }catch(e){}
+              // Immediate input sync for rcCorners (Rect)
+              try{
+                ['TL','TR','BR','BL'].forEach(k=>{
+                  const vEl = sel(`[data-ct-rc-corner-val="${k}"]`, root);
+                  if (vEl) vEl.value = String(cur.rcCorners[k]?.value||0);
+                  const mEl = sel(`[data-ct-rc-corner-mode="${k}"]`, root);
+                  if (mEl) mEl.value = cur.rcCorners[k]?.mode || 'square';
+                });
+              }catch(e){}
               useCorners = cur.rcCorners;
             } catch(e){}
             const t = (k)=> Math.max(0, Number(useCorners[k]?.value||0))*2; // inches->px along edges
@@ -539,6 +558,15 @@
               const v = Math.max(0, Math.min(Number(c.value||0), icMaxIn));
               cur.icCorners[k] = { mode:(c.mode||'square'), value:v };
             });
+            // Immediate input sync for L inside corners
+            try{
+              ['iTL','iTR','iBR','iBL'].forEach(k=>{
+                const vEl = sel(`[data-ct-ic-corner-val="${k}"]`, root);
+                if (vEl) vEl.value = String(cur.icCorners[k]?.value||0);
+                const mEl = sel(`[data-ct-ic-corner-mode="${k}"]`, root);
+                if (mEl) mEl.value = cur.icCorners[k]?.mode || 'square';
+              });
+            }catch(e){}
           }
           // Build inner notch rectangle with optional inside-corner ops
           let innerD = '';
@@ -752,6 +780,15 @@
               const v = Math.max(0, Math.min(Number(c.value||0), icMaxIn));
               cur.icCorners[k] = { mode: (c.mode||'square'), value: v };
             });
+            // Immediate input sync for icCorners (U)
+            try{
+              ['iTL','iTR','iBR','iBL'].forEach(k=>{
+                const vEl = sel(`[data-ct-ic-corner-val="${k}"]`, root);
+                if (vEl) vEl.value = String(cur.icCorners[k]?.value||0);
+                const mEl = sel(`[data-ct-ic-corner-mode="${k}"]`, root);
+                if (mEl) mEl.value = cur.icCorners[k]?.mode || 'square';
+              });
+            }catch(e){}
           }
 
           const rotG = document.createElementNS(ns, 'g');
@@ -839,6 +876,15 @@
         BR: { mode: cur.rcCorners.BR?.mode||'square', value: BRv },
         BL: { mode: cur.rcCorners.BL?.mode||'square', value: BLv },
       };
+      // Immediate input sync for rcCorners (U)
+      try{
+        ['TL','TR','BR','BL'].forEach(k=>{
+          const vEl = sel(`[data-ct-rc-corner-val="${k}"]`, root);
+          if (vEl) vEl.value = String(cur.rcCorners[k]?.value||0);
+          const mEl = sel(`[data-ct-rc-corner-mode="${k}"]`, root);
+          if (mEl) mEl.value = cur.rcCorners[k]?.mode || 'square';
+        });
+      }catch(e){}
     } catch(e){}
     const rc = cur.rcCorners || {};
     const t = (k)=> Math.max(0, Number(rc[k]?.value||0)) * 2; // inches->px
@@ -2718,7 +2764,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-23T35';
+  window.KC_CT.version = '2025-09-23T36';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
