@@ -344,6 +344,9 @@
         };
 
         if (shape==='rect'){
+          const fillActive = '#f8c4a0';
+          const fillInactive = '#cfd8dc';
+          const fillColor = (idx===active) ? fillActive : fillInactive;
           const w = px(len.A || 60);
           const h = px(len.B || 25);
           const rotG = document.createElementNS(ns, 'g');
@@ -375,7 +378,7 @@
           let useCorners = cur.rcCorners;
           if (!useCorners){
             const rect = document.createElementNS(ns, 'rect');
-            rect.setAttribute('x', String(centerX - w/2)); rect.setAttribute('y', String(centerY - h/2)); rect.setAttribute('width', String(w)); rect.setAttribute('height', String(h)); rect.setAttribute('fill', '#f8c4a0'); rect.setAttribute('stroke', '#ccc'); rect.setAttribute('stroke-width', '2'); rotG.appendChild(rect);
+            rect.setAttribute('x', String(centerX - w/2)); rect.setAttribute('y', String(centerY - h/2)); rect.setAttribute('width', String(w)); rect.setAttribute('height', String(h)); rect.setAttribute('fill', fillColor); rect.setAttribute('stroke', 'none'); rotG.appendChild(rect);
           } else {
             // Render-time geometric clamp for rcCorners (Rect): ensure sums fit width/height
             try {
@@ -449,7 +452,7 @@
             // TL corner closing back to start
             if (TL.mode==='radius'){ const r=TL.t/Math.tan(Math.PI/4)||0; d.push(arcTo(r, aTL)); } else if (TL.mode==='clip'){ d.push(`L ${aTL.x} ${aTL.y}`); }
             d.push('Z');
-            const p=document.createElementNS(ns,'path'); p.setAttribute('d', d.join(' ')); p.setAttribute('fill','#f8c4a0'); p.setAttribute('stroke','#ccc'); p.setAttribute('stroke-width','2'); rotG.appendChild(p);
+            const p=document.createElementNS(ns,'path'); p.setAttribute('d', d.join(' ')); p.setAttribute('fill', fillColor); p.setAttribute('stroke','none'); rotG.appendChild(p);
           }
 
           // wall side overlays (black if against wall)
@@ -526,6 +529,9 @@
           }
 
   } else if (shape==='l'){
+    const fillActive = '#f8c4a0';
+    const fillInactive = '#cfd8dc';
+    const fillColor = (idx===active) ? fillActive : fillInactive;
           // L as outer A x B minus inner notch sized by C (width) and D (height)
           let aIn = Number(len.A||60), bIn = Number(len.B||25), cIn = Number(len.C||20), dIn = Number(len.D||10);
           if (cIn >= aIn) cIn = Math.max(0, aIn - 1);
@@ -683,10 +689,9 @@
           innerD = dI.join(' ');
           const dPath = `${outerD} ${innerD}`;
           path.setAttribute('d', dPath);
-          path.setAttribute('fill', '#f8c4a0');
+          path.setAttribute('fill', fillColor);
           path.setAttribute('fill-rule', 'evenodd');
-          path.setAttribute('stroke', '#ccc');
-          path.setAttribute('stroke-width', '2');
+          path.setAttribute('stroke', 'none');
           const rotG = document.createElementNS(ns, 'g');
           rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
 
@@ -819,6 +824,9 @@
           }
 
   } else if (shape==='u'){
+    const fillActive = '#f8c4a0';
+    const fillInactive = '#cfd8dc';
+    const fillColor = (idx===active) ? fillActive : fillInactive;
           // U with independent side depths: BL (left), BR (right)
           let aIn = Number(len.A||60);
           let blIn = Number((len.BL!=null ? len.BL : (len.B!=null ? len.B : 25)));
@@ -1005,10 +1013,9 @@
     if (I_TL.mode==='radius'){ const r=I_TL.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaTL)); } else if (I_TL.mode==='clip'){ inner.push(`L ${iaTL.x} ${iaTL.y}`); }
     inner.push('Z');
   uPath.setAttribute('d', `${outer.join(' ')} ${inner.join(' ')}`);
-    uPath.setAttribute('fill', '#f8c4a0');
+  uPath.setAttribute('fill', fillColor);
     uPath.setAttribute('fill-rule', 'evenodd');
-    uPath.setAttribute('stroke', '#ccc');
-    uPath.setAttribute('stroke-width', '2');
+  uPath.setAttribute('stroke', 'none');
     rotG.appendChild(uPath);
 
           // backsplash along U edges (render above countertop)
@@ -1127,6 +1134,9 @@
             addHandle(idx, iBLm.x, iBLm.y, 0, 'IC-BL');
           }
         } else if (shape==='poly'){
+          const fillActive = '#f8c4a0';
+          const fillInactive = '#cfd8dc';
+          const fillColor = (idx===active) ? fillActive : fillInactive;
           // Custom polygon defined by local-inch points: [{x,y}, ...] in inches
           const ptsIn = Array.isArray(cur.points) && cur.points.length>=3 ? cur.points : [
             {x:-40,y:-30},{x:40,y:-30},{x:60,y:0},{x:10,y:40},{x:-30,y:20}
@@ -1198,9 +1208,8 @@
           }
           dStr += ' Z';
           polyPath.setAttribute('d', dStr);
-          polyPath.setAttribute('fill', '#f8c4a0');
-          polyPath.setAttribute('stroke', '#aab3c5');
-          polyPath.setAttribute('stroke-width', '1.5');
+          polyPath.setAttribute('fill', fillColor);
+          polyPath.setAttribute('stroke', 'none');
           gRoot.appendChild(polyPath);
 
           // backsplash along selected polygon edges (render above countertop)
