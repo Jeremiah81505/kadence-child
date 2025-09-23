@@ -176,6 +176,11 @@
       </section>
 
       <section class="kc-section">
+        <h3>Display</h3>
+        <label class="kc-toggle"><input type="checkbox" data-ct-show-guides /> <span>Show Guides & Labels</span></label>
+      </section>
+
+      <section class="kc-section">
         <h3>Edges & Corners <span class="sub">Edge Style</span></h3>
         <div class="kc-option-grid kc-edge-grid" role="group" aria-label="Edge Style">
           <button class="kc-opt is-active" type="button" data-ct-opt="edge" data-value="Bevel">Bevel</button>

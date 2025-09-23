@@ -34,7 +34,8 @@
   bsOn: true,
   bsHeight: 4,
   snap: true,
-  showSeams: false
+  showSeams: false,
+  showGuides: false
   };
   const STATE_KEY = 'kcCountertopConfig:v1';
   let toolMode = 'move';
@@ -414,13 +415,15 @@
           }
 
           // side guides sized to A (top) and B (left)
-          const m=18;
-          // top (A)
-          drawGuideLine(rotG, centerX - w/2 + m, centerY - h/2 + m, centerX + w/2 - m, centerY - h/2 + m, 'A');
-          // left (B)
-          drawGuideLine(rotG, centerX - w/2 + m, centerY - h/2 + m, centerX - w/2 + m, centerY + h/2 - m, 'B');
+          if (opts.showGuides){
+            const m=18;
+            // top (A)
+            drawGuideLine(rotG, centerX - w/2 + m, centerY - h/2 + m, centerX + w/2 - m, centerY - h/2 + m, 'A');
+            // left (B)
+            drawGuideLine(rotG, centerX - w/2 + m, centerY - h/2 + m, centerX - w/2 + m, centerY + h/2 - m, 'B');
+          }
           gRoot.appendChild(rotG);
-          labelNumbers(rotG, centerX, centerY, cur, {A:len.A,B:len.B});
+          if (opts.showGuides){ labelNumbers(rotG, centerX, centerY, cur, {A:len.A,B:len.B}); }
           hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation });
           if (idx===active){
             // local anchors relative to center, then convert
@@ -638,31 +641,33 @@
           }
 
           // L-guides for A(top), B(side mirror-aware), C(bottom inner run), D(right/left outer segment)
-          const m=18;
-          // A top full width
-          drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + m, 'A');
-          // B full height: left by default, right when flipped
-          if (!flipX){
-            drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY + b/2 - m, 'B');
-          } else {
-            drawGuideLine(rotG, centerX + a/2 - m, centerY - b/2 + m, centerX + a/2 - m, centerY + b/2 - m, 'B');
-          }
-          // C bottom inner run to notch start (mirrors when flipped)
-          if (!flipX){
-            drawGuideLine(rotG, centerX - a/2 + m, centerY + b/2 - m, centerX - a/2 + c - m, centerY + b/2 - m, 'C');
-          } else {
-            drawGuideLine(rotG, centerX + a/2 - c + m, centerY + b/2 - m, centerX + a/2 - m, centerY + b/2 - m, 'C');
-          }
-          // D inner vertical length shown on the adjacent outer edge segment only
-          if (!flipX){
-            // Notch on right: D is top segment on right outer edge, length = d
-            drawGuideLine(rotG, centerX + a/2 - m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + d - m, 'D');
-          } else {
-            // Notch on left: D is top segment on left outer edge, length = d
-            drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY - b/2 + d - m, 'D');
+          if (opts.showGuides){
+            const m=18;
+            // A top full width
+            drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + m, 'A');
+            // B full height: left by default, right when flipped
+            if (!flipX){
+              drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY + b/2 - m, 'B');
+            } else {
+              drawGuideLine(rotG, centerX + a/2 - m, centerY - b/2 + m, centerX + a/2 - m, centerY + b/2 - m, 'B');
+            }
+            // C bottom inner run to notch start (mirrors when flipped)
+            if (!flipX){
+              drawGuideLine(rotG, centerX - a/2 + m, centerY + b/2 - m, centerX - a/2 + c - m, centerY + b/2 - m, 'C');
+            } else {
+              drawGuideLine(rotG, centerX + a/2 - c + m, centerY + b/2 - m, centerX + a/2 - m, centerY + b/2 - m, 'C');
+            }
+            // D inner vertical length shown on the adjacent outer edge segment only
+            if (!flipX){
+              // Notch on right: D is top segment on right outer edge, length = d
+              drawGuideLine(rotG, centerX + a/2 - m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + d - m, 'D');
+            } else {
+              // Notch on left: D is top segment on left outer edge, length = d
+              drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY - b/2 + d - m, 'D');
+            }
           }
           gRoot.appendChild(rotG);
-          labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn});
+          if (opts.showGuides){ labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn}); }
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
           if (idx===active){
             // Outer handles via local anchors
@@ -947,24 +952,26 @@
           }
 
           // U-guides for A–H (with BL/BR)
-          const m=18;
-          // A top outer
-          drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX + a/2 - m, yTop + m, 'A');
-          // B-L left outer
-          drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX - a/2 + m, yTop + blPx - m, 'B-L');
-          // B-R right outer
-          drawGuideLine(rotG, centerX + a/2 - m, yTop + m, centerX + a/2 - m, yTop + brPx - m, 'B-R');
-          // Use existing xiL/xiR/yTop to draw C/D/E/H guides (F/G removed)
-          // C inner top opening
-          drawGuideLine(rotG, xiL + m, yInnerTop + m, xiR - m, yInnerTop + m, 'C');
-          // D inner depth (using center of opening)
-          drawGuideLine(rotG, (xiL+xiR)/2, yTop + m, (xiL+xiR)/2, yInnerTop - m, 'D');
-          // E bottom left return
-          drawGuideLine(rotG, centerX - a/2 + m, yTop + blPx - m, xiL - m, yTop + blPx - m, 'E');
-          // H bottom right return
-          drawGuideLine(rotG, xiR + m, yTop + brPx - m, centerX + a/2 - m, yTop + brPx - m, 'H');
+          if (opts.showGuides){
+            const m=18;
+            // A top outer
+            drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX + a/2 - m, yTop + m, 'A');
+            // B-L left outer
+            drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX - a/2 + m, yTop + blPx - m, 'B-L');
+            // B-R right outer
+            drawGuideLine(rotG, centerX + a/2 - m, yTop + m, centerX + a/2 - m, yTop + brPx - m, 'B-R');
+            // Use existing xiL/xiR/yTop to draw C/D/E/H guides (F/G removed)
+            // C inner top opening
+            drawGuideLine(rotG, xiL + m, yInnerTop + m, xiR - m, yInnerTop + m, 'C');
+            // D inner depth (using center of opening)
+            drawGuideLine(rotG, (xiL+xiR)/2, yTop + m, (xiL+xiR)/2, yInnerTop - m, 'D');
+            // E bottom left return
+            drawGuideLine(rotG, centerX - a/2 + m, yTop + blPx - m, xiL - m, yTop + blPx - m, 'E');
+            // H bottom right return
+            drawGuideLine(rotG, xiR + m, yTop + brPx - m, centerX + a/2 - m, yTop + brPx - m, 'H');
+          }
           gRoot.appendChild(rotG);
-          labelNumbers(rotG, centerX, centerY, cur, {A:aIn,BL:blIn,BR:brIn,C:cIn,D:dIn});
+          if (opts.showGuides){ labelNumbers(rotG, centerX, centerY, cur, {A:aIn,BL:blIn,BR:brIn,C:cIn,D:dIn}); }
           hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:Math.max(blPx, brPx), rot:rotation });
           if (idx===active){
             // outer A/B like rect using local anchors
@@ -1124,19 +1131,19 @@
             }
           }
 
-          // labels: edge lengths (inches) at midpoints
-          const labelEdge=(x1,y1,x2,y2,txt)=>{ const mx=(x1+x2)/2, my=(y1+y2)/2 - 6; const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI; const t=document.createElementNS(ns,'text'); t.setAttribute('x', String(mx)); t.setAttribute('y', String(my)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`); gRoot.appendChild(t); };
-          // draw dynamic side guides and letters A.. as needed
-          const m=10; let letterCode=65; // 'A'
-          const drawGuide=(x1,y1,x2,y2,letTxt)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',String(x1)); l.setAttribute('y1',String(y1)); l.setAttribute('x2',String(x2)); l.setAttribute('y2',String(y2)); l.setAttribute('stroke','#bdc6da'); l.setAttribute('stroke-width','2'); gRoot.appendChild(l); const mx=(x1+x2)/2, my=(y1+y2)/2 - 6; const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI; const t=document.createElementNS(ns,'text'); t.setAttribute('x', String(mx)); t.setAttribute('y', String(my)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=letTxt; t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`); gRoot.appendChild(t); };
-          for (let i=0;i<ptsIn.length;i++){
-            const aP = ptsIn[i]; const bP = ptsIn[(i+1)%ptsIn.length];
-            const lenIn = Math.round(Math.hypot(bP.x - aP.x, bP.y - aP.y));
-            const w1 = toWorld(aP.x, aP.y); const w2 = toWorld(bP.x, bP.y);
-            labelEdge(w1.x,w1.y,w2.x,w2.y, `${lenIn}\"`);
-            // guide/letter sized exactly to this side
-            drawGuide(w1.x, w1.y, w2.x, w2.y, String.fromCharCode(letterCode));
-            letterCode++;
+          // labels and guides for polygon edges (toggleable)
+          if (opts.showGuides){
+            const labelEdge=(x1,y1,x2,y2,txt)=>{ const mx=(x1+x2)/2, my=(y1+y2)/2 - 6; const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI; const t=document.createElementNS(ns,'text'); t.setAttribute('x', String(mx)); t.setAttribute('y', String(my)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`); gRoot.appendChild(t); };
+            const m=10; let letterCode=65; // 'A'
+            const drawGuide=(x1,y1,x2,y2,letTxt)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',String(x1)); l.setAttribute('y1',String(y1)); l.setAttribute('x2',String(x2)); l.setAttribute('y2',String(y2)); l.setAttribute('stroke','#bdc6da'); l.setAttribute('stroke-width','2'); gRoot.appendChild(l); const mx=(x1+x2)/2, my=(y1+y2)/2 - 6; const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI; const t=document.createElementNS(ns,'text'); t.setAttribute('x', String(mx)); t.setAttribute('y', String(my)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=letTxt; t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`); gRoot.appendChild(t); };
+            for (let i=0;i<ptsIn.length;i++){
+              const aP = ptsIn[i]; const bP = ptsIn[(i+1)%ptsIn.length];
+              const lenIn = Math.round(Math.hypot(bP.x - aP.x, bP.y - aP.y));
+              const w1 = toWorld(aP.x, aP.y); const w2 = toWorld(bP.x, bP.y);
+              labelEdge(w1.x,w1.y,w2.x,w2.y, `${lenIn}\\"`);
+              drawGuide(w1.x, w1.y, w2.x, w2.y, String.fromCharCode(letterCode));
+              letterCode++;
+            }
           }
 
           // active highlight: draw small handles at vertices
@@ -2602,6 +2609,7 @@
   // Overhang/Seams UI state
   // Overhang removed
   const seamShow = sel('[data-ct-seam-show]', root); if (seamShow){ seamShow.checked = !!opts.showSeams; }
+  const guidesEl = sel('[data-ct-show-guides]', root); if (guidesEl){ guidesEl.checked = !!opts.showGuides; }
     }
 
     function updateSummary(){
@@ -2678,6 +2686,7 @@
 
     // Snap toggle
   const snapEl = sel('[data-ct-snap]', root); if (snapEl){ snapEl.checked = !!opts.snap; snapEl.addEventListener('change', ()=>{ pushHistory(); opts.snap = !!snapEl.checked; save(); }); }
+  const guidesEl2 = sel('[data-ct-show-guides]', root); if (guidesEl2){ guidesEl2.checked = !!opts.showGuides; guidesEl2.addEventListener('change', ()=>{ pushHistory(); opts.showGuides = !!guidesEl2.checked; draw(); save(); }); }
 
     // Export current config
     sel('[data-ct-export]', root)?.addEventListener('click', ()=>{
@@ -2709,7 +2718,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-23T34';
+  window.KC_CT.version = '2025-09-23T35';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
