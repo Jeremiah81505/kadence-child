@@ -57,6 +57,62 @@
     }catch(e){}
   };
 
+    // Normalize/migrate a shape object to current schema and constraints
+    function normalizeShape(s){
+      try{
+        if (!s || typeof s !== 'object') return s;
+        if (!s.len) s.len = {};
+        if (s.type === 'u'){
+          const clamp=(v,min,max)=> Math.min(Math.max(Number(v||0),min),max);
+          const A = Number(s.len.A||0);
+          const hasB = (s.len.B!=null);
+          let BL = (s.len.BL!=null) ? Number(s.len.BL) : (hasB ? Number(s.len.B) : 25);
+          let BR = (s.len.BR!=null) ? Number(s.len.BR) : (hasB ? Number(s.len.B) : 25);
+          if (s.len.BL==null) s.len.BL = BL;
+          if (s.len.BR==null) s.len.BR = BR;
+          // E/H/C interplay with 1" minimum inner span
+          const minSpan = 1;
+          let E = Math.max(0, Number(s.len.E||0));
+          let H = Math.max(0, Number(s.len.H||0));
+          E = Math.min(E, Math.max(0, A - minSpan - H));
+          H = Math.min(H, Math.max(0, A - minSpan - E));
+          let C = Number(s.len.C|| (A ? Math.max(1, A - (E + H)) : 0));
+          C = Math.max(1, Math.min(C, Math.max(1, A - minSpan)));
+          if (E + H > Math.max(0, A - 1)){
+            const spare = Math.max(0, A - C);
+            const e = Math.floor(spare/2); const h = spare - e;
+            E = e; H = h;
+          }
+          s.len.E = Math.round(E);
+          s.len.H = Math.round(H);
+          s.len.C = Math.round(Math.max(1, A - Math.max(0, s.len.E||0) - Math.max(0, s.len.H||0)));
+          // D clamp to shallower leg - 1
+          const minSide = Math.max(0, Math.min(BL, BR));
+          const dMax = Math.max(0, minSide - 1);
+          s.len.D = clamp(s.len.D||0, 0, dMax);
+          // Backsplash keys migration (B -> BL/BR)
+          s.bs = s.bs || {};
+          if (s.bs.B!=null){
+            if (s.bs.BL==null) s.bs.BL = !!s.bs.B;
+            if (s.bs.BR==null) s.bs.BR = !!s.bs.B;
+          }
+          if (s.bs.BL==null) s.bs.BL = false;
+          if (s.bs.BR==null) s.bs.BR = false;
+          if (s.bs.E==null) s.bs.E = false;
+          if (s.bs.H==null) s.bs.H = false;
+          if (s.bs.A==null) s.bs.A = !!s.bs.A;
+          if (s.bs.C==null) s.bs.C = !!s.bs.C;
+          // Inside-corner defaults and auto-zero bottom when legs differ
+          if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+          if (BL !== BR){
+            s.icCorners.iBL = { mode:'square', value:0 };
+            s.icCorners.iBR = { mode:'square', value:0 };
+          }
+        }
+      }catch(e){}
+      return s;
+    }
+
     // Simple undo/redo history
     const HISTORY_LIMIT = 50;
     let _past = [];
@@ -1167,8 +1223,13 @@
           shapes.push({ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:pts, bsPoly, len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
         } else {
   const baseLen = {A:a,B:b,C:c,D:d};
-  if (type==='u'){ baseLen.E = Math.round((a - c)/2); baseLen.H = Math.round((a - c)/2); }
-      shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len:baseLen, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
+  if (type==='u'){
+    baseLen.E = Math.round((a - c)/2); baseLen.H = Math.round((a - c)/2);
+    baseLen.BL = (baseLen.B!=null) ? baseLen.B : 25;
+    baseLen.BR = (baseLen.B!=null) ? baseLen.B : 25;
+  }
+      const newShape = { id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len:baseLen, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] };
+      shapes.push(normalizeShape(newShape));
         }
         active = shapes.length-1; shapeLabel.textContent = shapes[active].name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
       });
@@ -1201,7 +1262,7 @@
           add('l', {A:144,B:96,C:48,D:26}, {x:280,y:280});
           add('rect', {A:60,B:36,C:0,D:0}, {x:420,y:360});
         } else if (layout==='u-standard'){
-          add('u', {A:180,B:100,C:84,D:26}, {x:300,y:300});
+          add('u', {A:180,BL:100,BR:100,C:84,D:26,E:48,H:48}, {x:300,y:300});
         } else if (layout==='peninsula'){
           add('rect', {A:96,B:25,C:0,D:0}, {x:280,y:260});
           add('rect', {A:60,B:25,C:0,D:0}, {x:360,y:340});
@@ -2406,7 +2467,7 @@
       const raw = localStorage.getItem(STATE_KEY);
       if (raw){
         const parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.shapes) && parsed.opts){ shapes = parsed.shapes; active = Math.max(0, Math.min(parsed.active||0, shapes.length-1)); }
+  if (parsed && Array.isArray(parsed.shapes) && parsed.opts){ shapes = parsed.shapes.map(normalizeShape); active = Math.max(0, Math.min(parsed.active||0, shapes.length-1)); }
         if (parsed && parsed.opts) Object.assign(opts, parsed.opts);
         // migrate material to array if stored as string
         if (typeof opts.material === 'string') opts.material = opts.material ? [opts.material] : [];
@@ -2444,7 +2505,7 @@
         try{
           const data=JSON.parse(String(reader.result||'{}'));
           if (data && Array.isArray(data.shapes) && data.opts){
-            shapes=data.shapes; active=Math.max(-1, Math.min(data.active??-1, shapes.length-1)); Object.assign(opts, data.opts);
+            shapes=data.shapes.map(normalizeShape); active=Math.max(-1, Math.min(data.active??-1, shapes.length-1)); Object.assign(opts, data.opts);
             renderTabs(); syncInputs(); syncOptionsUI(); draw(); updateOversize(); updateActionStates(); updateSummary(); save();
           }
         }catch(err){}
@@ -2461,7 +2522,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-22T28';
+  window.KC_CT.version = '2025-09-22T29';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
