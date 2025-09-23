@@ -142,6 +142,23 @@
       const px = (v)=> v * 2; // 2px per inch roughly
       hitAreas = [];
       handles = [];
+      // Helper to draw a small rotated label along an edge
+      const drawBsLabel=(parent,x1,y1,x2,y2,txt='Backsplash')=>{
+        try{
+          const mx=(x1+x2)/2, my=(y1+y2)/2;
+          const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI;
+          const t=document.createElementNS(ns,'text');
+          t.setAttribute('x', String(mx));
+          t.setAttribute('y', String(my - 4));
+          t.setAttribute('text-anchor','middle');
+          t.setAttribute('font-size','11');
+          t.setAttribute('font-weight','600');
+          t.setAttribute('fill','#333');
+          t.textContent = txt;
+          t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`);
+          parent.appendChild(t);
+        }catch(e){}
+      };
       // Helper to draw a shape label in world (unrotated) space
       const drawShapeName = (x, y, text)=>{
         if (!text) return;
@@ -345,6 +362,11 @@
                 if (side==='C'){ r.setAttribute('x', String(centerX - w/2)); r.setAttribute('y', String(centerY + h/2)); r.setAttribute('width', String(w)); r.setAttribute('height', String(bh)); }
                 if (side==='D'){ r.setAttribute('x', String(centerX + w/2)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(h)); }
         r.setAttribute('fill', '#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r);
+                // Label the backsplash strip like in the screenshot
+                if (side==='A') drawBsLabel(rotG, centerX - w/2, centerY - h/2 - bh, centerX + w/2, centerY - h/2 - bh, 'Backsplash');
+                if (side==='B') drawBsLabel(rotG, centerX - w/2 - bh, centerY - h/2, centerX - w/2 - bh, centerY + h/2, 'Backsplash');
+                if (side==='C') drawBsLabel(rotG, centerX - w/2, centerY + h/2 + bh, centerX + w/2, centerY + h/2 + bh, 'Backsplash');
+                if (side==='D') drawBsLabel(rotG, centerX + w/2 + bh, centerY - h/2, centerX + w/2 + bh, centerY + h/2, 'Backsplash');
               }
             });
           }
@@ -672,25 +694,25 @@
 
           // backsplash precise for L: A full top, B full left, C bottom segment length=c, D right-top segment length=d (mirrors with flipX)
           { const bh = px(Number(opts.bsHeight||0)); if (opts.bsOn && bh>0){
-              const addRect=(x,y,w,h)=>{ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(x)); r.setAttribute('y', String(y)); r.setAttribute('width', String(w)); r.setAttribute('height', String(h)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); };
-              if (cur.bs.A){ addRect(centerX - a/2, centerY - b/2 - bh, a, bh); }
-              if (cur.bs.B){ addRect(centerX - a/2 - bh, centerY - b/2, bh, b); }
+              const addRect=(x,y,w,h,labX1,labY1,labX2,labY2)=>{ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(x)); r.setAttribute('y', String(y)); r.setAttribute('width', String(w)); r.setAttribute('height', String(h)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); if (labX1!=null) drawBsLabel(rotG, labX1, labY1, labX2, labY2, 'Backsplash'); };
+              if (cur.bs.A){ addRect(centerX - a/2, centerY - b/2 - bh, a, bh, centerX - a/2, centerY - b/2 - bh, centerX + a/2, centerY - b/2 - bh); }
+              if (cur.bs.B){ addRect(centerX - a/2 - bh, centerY - b/2, bh, b, centerX - a/2 - bh, centerY - b/2, centerX - a/2 - bh, centerY + b/2); }
               if (cur.bs.C){
                 if (!flipX){
                   // left bottom segment from left outer to notch start (length=c)
-                  addRect(centerX - a/2, centerY + b/2, c, bh);
+                  addRect(centerX - a/2, centerY + b/2, c, bh, centerX - a/2, centerY + b/2 + bh, centerX - a/2 + c, centerY + b/2 + bh);
                 } else {
                   // right bottom segment from notch start to right outer (length=c)
-                  addRect(centerX + a/2 - c, centerY + b/2, c, bh);
+                  addRect(centerX + a/2 - c, centerY + b/2, c, bh, centerX + a/2 - c, centerY + b/2 + bh, centerX + a/2, centerY + b/2 + bh);
                 }
               }
               if (cur.bs.D){
                 if (!flipX){
                   // top segment on right edge, height=d
-                  addRect(centerX + a/2, centerY - b/2, bh, d);
+                  addRect(centerX + a/2, centerY - b/2, bh, d, centerX + a/2 + bh, centerY - b/2, centerX + a/2 + bh, centerY - b/2 + d);
                 } else {
                   // top segment on left edge, height=d
-                  addRect(centerX - a/2 - bh, centerY - b/2, bh, d);
+                  addRect(centerX - a/2 - bh, centerY - b/2, bh, d, centerX - a/2 - bh, centerY - b/2, centerX - a/2 - bh, centerY - b/2 + d);
                 }
               }
           } }
@@ -862,44 +884,7 @@
 
           // overhang removed
 
-  // backsplash along U edges with precise segments: A top full; BL/BR sides to each depth; C inner top; E/H returns (no D on U)
-  { const aBox=a; const bh = px(Number(opts.bsHeight||0)); if (opts.bsOn && bh>0){
-        // A top
-        if (cur.bs.A){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(yTop - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
-        // BL/BR sides toggles independently
-        if (cur.bs.BL){
-          const rL=document.createElementNS(ns,'rect'); rL.setAttribute('x', String(centerX - aBox/2 - bh)); rL.setAttribute('y', String(yTop)); rL.setAttribute('width', String(bh)); rL.setAttribute('height', String(blPx)); rL.setAttribute('fill','#e6f2ff'); rL.setAttribute('stroke','#7fb3ff'); rL.setAttribute('stroke-width','1'); rotG.appendChild(rL);
-        }
-        if (cur.bs.BR){
-          const rR=document.createElementNS(ns,'rect'); rR.setAttribute('x', String(centerX + aBox/2)); rR.setAttribute('y', String(yTop)); rR.setAttribute('width', String(bh)); rR.setAttribute('height', String(brPx)); rR.setAttribute('fill','#e6f2ff'); rR.setAttribute('stroke','#7fb3ff'); rR.setAttribute('stroke-width','1'); rotG.appendChild(rR);
-        }
-        // C inner top opening (xiL..xiR)
-        if (cur.bs.C){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(xiL)); r.setAttribute('y', String(yInnerTop)); r.setAttribute('width', String(xiR - xiL)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
-    // E (bottom left return) and H (bottom right return) precise lengths
-              if (cur.bs && (cur.bs.E || cur.bs.H)){
-                const eLen = px(Math.max(0, Number(len.E||0)));
-                const hLen = px(Math.max(0, Number(len.H||0)));
-                // world coords for returns along bottom outer edge
-                if (cur.bs.E && eLen>0){
-                  const rE = document.createElementNS(ns,'rect');
-      rE.setAttribute('x', String(centerX - a/2));
-      rE.setAttribute('y', String(yTop + blPx));
-                  rE.setAttribute('width', String(eLen));
-                  rE.setAttribute('height', String(bh));
-                  rE.setAttribute('fill','#e6f2ff'); rE.setAttribute('stroke','#7fb3ff'); rE.setAttribute('stroke-width','1');
-                  rotG.appendChild(rE);
-                }
-                if (cur.bs.H && hLen>0){
-                  const rH = document.createElementNS(ns,'rect');
-      rH.setAttribute('x', String(centerX + a/2 - hLen));
-      rH.setAttribute('y', String(yTop + brPx));
-                  rH.setAttribute('width', String(hLen));
-                  rH.setAttribute('height', String(bh));
-                  rH.setAttribute('fill','#e6f2ff'); rH.setAttribute('stroke','#7fb3ff'); rH.setAttribute('stroke-width','1');
-                  rotG.appendChild(rH);
-                }
-              }
-          } }
+  // (removed early U backsplash block to avoid duplicates; rendered below instead)
       // seams for U (bounding-box approximation)
           if (opts.showSeams && Array.isArray(cur.seams)){
             cur.seams.forEach(seam=>{
@@ -1028,15 +1013,16 @@
 
           // backsplash along U edges (render above countertop)
           { const aBox=a; const bh = px(Number(opts.bsHeight||0)); if (opts.bsOn && bh>0){
-            if (cur.bs.A){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(centerX - aBox/2)); r.setAttribute('y', String(yTop - bh)); r.setAttribute('width', String(aBox)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
-            if (cur.bs.BL){ const rL=document.createElementNS(ns,'rect'); rL.setAttribute('x', String(centerX - aBox/2 - bh)); rL.setAttribute('y', String(yTop)); rL.setAttribute('width', String(bh)); rL.setAttribute('height', String(blPx)); rL.setAttribute('fill','#e6f2ff'); rL.setAttribute('stroke','#7fb3ff'); rL.setAttribute('stroke-width','1'); rotG.appendChild(rL); }
-            if (cur.bs.BR){ const rR=document.createElementNS(ns,'rect'); rR.setAttribute('x', String(centerX + aBox/2)); rR.setAttribute('y', String(yTop)); rR.setAttribute('width', String(bh)); rR.setAttribute('height', String(brPx)); rR.setAttribute('fill','#e6f2ff'); rR.setAttribute('stroke','#7fb3ff'); rR.setAttribute('stroke-width','1'); rotG.appendChild(rR); }
-            if (cur.bs.C){ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(xiL)); r.setAttribute('y', String(yInnerTop)); r.setAttribute('width', String(xiR - xiL)); r.setAttribute('height', String(bh)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); }
+            const addRect=(x,y,w,h,labX1,labY1,labX2,labY2)=>{ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(x)); r.setAttribute('y', String(y)); r.setAttribute('width', String(w)); r.setAttribute('height', String(h)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); if (labX1!=null) drawBsLabel(rotG, labX1, labY1, labX2, labY2, 'Backsplash'); };
+            if (cur.bs.A){ addRect(centerX - aBox/2, yTop - bh, aBox, bh, centerX - aBox/2, yTop - bh, centerX + aBox/2, yTop - bh); }
+            if (cur.bs.BL){ addRect(centerX - aBox/2 - bh, yTop, bh, blPx, centerX - aBox/2 - bh, yTop, centerX - aBox/2 - bh, yTop + blPx); }
+            if (cur.bs.BR){ addRect(centerX + aBox/2, yTop, bh, brPx, centerX + aBox/2 + bh, yTop, centerX + aBox/2 + bh, yTop + brPx); }
+            if (cur.bs.C){ addRect(xiL, yInnerTop, (xiR - xiL), bh, xiL, yInnerTop + bh, xiR, yInnerTop + bh); }
             if (cur.bs && (cur.bs.E || cur.bs.H)){
               const eLen = px(Math.max(0, Number(len.E||0)));
               const hLen = px(Math.max(0, Number(len.H||0)));
-              if (cur.bs.E && eLen>0){ const rE = document.createElementNS(ns,'rect'); rE.setAttribute('x', String(centerX - a/2)); rE.setAttribute('y', String(yTop + blPx)); rE.setAttribute('width', String(eLen)); rE.setAttribute('height', String(bh)); rE.setAttribute('fill','#e6f2ff'); rE.setAttribute('stroke','#7fb3ff'); rE.setAttribute('stroke-width','1'); rotG.appendChild(rE); }
-              if (cur.bs.H && hLen>0){ const rH = document.createElementNS(ns,'rect'); rH.setAttribute('x', String(centerX + a/2 - hLen)); rH.setAttribute('y', String(yTop + brPx)); rH.setAttribute('width', String(hLen)); rH.setAttribute('height', String(bh)); rH.setAttribute('fill','#e6f2ff'); rH.setAttribute('stroke','#7fb3ff'); rH.setAttribute('stroke-width','1'); rotG.appendChild(rH); }
+              if (cur.bs.E && eLen>0){ addRect(centerX - a/2, yTop + blPx, eLen, bh, centerX - a/2, yTop + blPx + bh, centerX - a/2 + eLen, yTop + blPx + bh); }
+              if (cur.bs.H && hLen>0){ addRect(centerX + a/2 - hLen, yTop + brPx, hLen, bh, centerX + a/2 - hLen, yTop + brPx + bh, centerX + a/2, yTop + brPx + bh); }
             }
           } }
 
@@ -1242,6 +1228,8 @@
                 bp.setAttribute('stroke', '#4d8fe8');
                 bp.setAttribute('stroke-width', '1.25');
                 gRoot.appendChild(bp);
+                // Label along the original edge
+                drawBsLabel(gRoot, p0x, p0y, p1x, p1y, 'Backsplash');
               }
             }
           }
