@@ -614,6 +614,12 @@
           const cIn = Math.max(1, aIn - (eLocal + hLocal));
           const a = px(aIn);
           const blPx = px(blIn), brPx = px(brIn);
+          // If legs differ, auto-zero bottom inside corners to avoid stale values
+          if (blIn !== brIn){
+            cur.icCorners = cur.icCorners || { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+            cur.icCorners.iBL = { mode:'square', value:0 };
+            cur.icCorners.iBR = { mode:'square', value:0 };
+          }
           const hMax = Math.max(blPx, brPx);
           const x = centerX - a/2;
           const yTop = centerY - hMax/2;
@@ -2455,7 +2461,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-22T27';
+  window.KC_CT.version = '2025-09-22T28';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
