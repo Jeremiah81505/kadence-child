@@ -2874,7 +2874,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-23T36';
+  window.KC_CT.version = '2025-09-23T37';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
