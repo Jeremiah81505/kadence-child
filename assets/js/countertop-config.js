@@ -35,7 +35,8 @@
   bsHeight: 4,
   snap: true,
   showSeams: false,
-  showGuides: false
+  showGuides: false,
+  simpleUI: true
   };
   const STATE_KEY = 'kcCountertopConfig:v1';
   let toolMode = 'move';
@@ -1632,10 +1633,26 @@
         const list = sel('[data-ct-meas-list]', root);
         if (list){
           list.innerHTML = '';
-          const addRow=(label,key)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="${key}" /></label>`; list.appendChild(row); };
+          const addRow=(label,key)=>{
+            const row=document.createElement('div'); row.className='row';
+            if (opts.simpleUI){
+              // Determine if this key supports wall or backsplash
+              const hasWall = !!(shapes[active] && shapes[active].wall && (key in shapes[active].wall));
+              const hasBS = !!(shapes[active] && shapes[active].bs && (key in shapes[active].bs));
+              const wallChecked = hasWall ? !!shapes[active].wall[key] : false;
+              const bsChecked = hasBS ? !!shapes[active].bs[key] : false;
+              const wallCtl = hasWall ? `<label class="opt"><input type="checkbox" data-ct-wall-inline="${key}" ${wallChecked? 'checked':''}/> Side against wall</label>` : '';
+              const bsCtl = hasBS ? `<label class="opt"><input type="checkbox" data-ct-backsplash-inline="${key}" ${bsChecked? 'checked':''}/> Add same-material backsplash</label>` : '';
+              row.innerHTML = `<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="${key}" /></label><div class="opts">${wallCtl} ${bsCtl}</div>`;
+            } else {
+              row.innerHTML=`<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="${key}" /></label>`;
+            }
+            list.appendChild(row);
+          };
           if (cur.type==='rect'){
             addRow('Top (A)','A'); addRow('Left (B)','B'); addRow('Bottom (C)','C'); addRow('Right (D)','D');
             // Corner controls (outside corners)
+            if (!opts.simpleUI){
             const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners'; list.appendChild(cornersHdr);
             // Apply to all (Rect)
             const allRowR=document.createElement('div'); allRowR.className='row';
@@ -1660,47 +1677,50 @@
               </span>
             </label>`; list.appendChild(row); };
             mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
+            }
   } else if (cur.type==='l'){
             addRow('Top (A)','A'); addRow('Left (B)','B'); addRow('Inner bottom run (C)','C'); addRow('Inner vertical (D)','D');
-            const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners (outside)'; list.appendChild(cornersHdr);
-            const allRowL=document.createElement('div'); allRowL.className='row';
-            allRowL.innerHTML = `<label><span>Apply to all</span>
-              <select data-ct-rc-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
-              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-all-val placeholder="size (in)" />
-              <button type="button" class="kc-mini" data-ct-rc-corner-apply-all>Apply</button>
-            </label>`;
-            list.appendChild(allRowL);
-            const mkC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
-              <select data-ct-rc-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
-              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-val="${key}" placeholder="size (in)" />
-              <span class="kc-mini-btns">
-                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.25">1/4"</button>
-                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.5">1/2"</button>
-                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="1">1"</button>
-                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="2">2"</button>
-              </span>
-            </label>`; list.appendChild(row); };
-            mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
-            // Inside corners for L (iTL, iBR)
-            const iHdr=document.createElement('div'); iHdr.className='kc-subtle'; iHdr.textContent='Inside Corners'; list.appendChild(iHdr);
-            const allRowLI=document.createElement('div'); allRowLI.className='row';
-            allRowLI.innerHTML = `<label><span>Apply to both</span>
-              <select data-ct-ic-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
-              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-all-val placeholder="size (in)" />
-              <button type="button" class="kc-mini" data-ct-ic-corner-apply-all>Apply</button>
-            </label>`;
-            list.appendChild(allRowLI);
-            const mkIC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
-              <select data-ct-ic-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
-              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-val="${key}" placeholder="size (in)" />
-              <span class="kc-mini-btns">
-                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="0.25">1/4"</button>
-                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="0.5">1/2"</button>
-                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="1">1"</button>
-                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="2">2"</button>
-              </span>
-            </label>`; list.appendChild(row); };
-            mkIC('iTL','Inside TL'); mkIC('iBR','Inside BR');
+            if (!opts.simpleUI){
+              const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners (outside)'; list.appendChild(cornersHdr);
+              const allRowL=document.createElement('div'); allRowL.className='row';
+              allRowL.innerHTML = `<label><span>Apply to all</span>
+                <select data-ct-rc-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+                <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-all-val placeholder="size (in)" />
+                <button type="button" class="kc-mini" data-ct-rc-corner-apply-all>Apply</button>
+              </label>`;
+              list.appendChild(allRowL);
+              const mkC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+                <select data-ct-rc-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+                <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-val="${key}" placeholder="size (in)" />
+                <span class="kc-mini-btns">
+                  <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.25">1/4"</button>
+                  <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.5">1/2"</button>
+                  <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="1">1"</button>
+                  <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="2">2"</button>
+                </span>
+              </label>`; list.appendChild(row); };
+              mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
+              // Inside corners for L (iTL, iBR)
+              const iHdr=document.createElement('div'); iHdr.className='kc-subtle'; iHdr.textContent='Inside Corners'; list.appendChild(iHdr);
+              const allRowLI=document.createElement('div'); allRowLI.className='row';
+              allRowLI.innerHTML = `<label><span>Apply to both</span>
+                <select data-ct-ic-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+                <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-all-val placeholder="size (in)" />
+                <button type="button" class="kc-mini" data-ct-ic-corner-apply-all>Apply</button>
+              </label>`;
+              list.appendChild(allRowLI);
+              const mkIC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+                <select data-ct-ic-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+                <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-val="${key}" placeholder="size (in)" />
+                <span class="kc-mini-btns">
+                  <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="0.25">1/4"</button>
+                  <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="0.5">1/2"</button>
+                  <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="1">1"</button>
+                  <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="2">2"</button>
+                </span>
+              </label>`; list.appendChild(row); };
+              mkIC('iTL','Inside TL'); mkIC('iBR','Inside BR');
+            }
           } else if (cur.type==='u'){
             addRow('Top (A)','A');
             addRow('Left depth (BL)','BL');
@@ -1710,49 +1730,52 @@
             // Center is always open on U; no base thickness control
             addRow('Left return (E)','E');
             addRow('Right return (H)','H');
-            // Outside corner controls for U
-            const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners (outside)'; list.appendChild(cornersHdr);
-            const allRowU=document.createElement('div'); allRowU.className='row';
-            allRowU.innerHTML = `<label><span>Apply to all</span>
-              <select data-ct-rc-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
-              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-all-val placeholder="size (in)" />
-              <button type="button" class="kc-mini" data-ct-rc-corner-apply-all>Apply</button>
-            </label>`;
-            list.appendChild(allRowU);
-            const mkC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
-              <select data-ct-rc-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
-              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-val="${key}" placeholder="size (in)" />
-              <span class="kc-mini-btns">
-                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.25">1/4"</button>
-                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.5">1/2"</button>
-                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="1">1"</button>
-                <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="2">2"</button>
-              </span>
-            </label>`; list.appendChild(row); };
-            mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
-            // Inside corners for U (iTL, iTR, iBR, iBL)
-            const iHdr=document.createElement('div'); iHdr.className='kc-subtle'; iHdr.textContent='Inside Corners'; list.appendChild(iHdr);
-            const allRowUI=document.createElement('div'); allRowUI.className='row';
-            allRowUI.innerHTML = `<label><span>Apply to all</span>
-              <select data-ct-ic-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
-              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-all-val placeholder="size (in)" />
-              <button type="button" class="kc-mini" data-ct-ic-corner-apply-all>Apply</button>
-            </label>`;
-            list.appendChild(allRowUI);
-            const mkIC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
-              <select data-ct-ic-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
-              <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-val="${key}" placeholder="size (in)" />
-              <span class="kc-mini-btns">
-                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="0.25">1/4"</button>
-                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="0.5">1/2"</button>
-                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="1">1"</button>
-                <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="2">2"</button>
-              </span>
-            </label>`; list.appendChild(row); };
-            mkIC('iTL','Inside TL'); mkIC('iTR','Inside TR'); mkIC('iBR','Inside BR'); mkIC('iBL','Inside BL');
+            if (!opts.simpleUI){
+              // Outside corner controls for U
+              const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners (outside)'; list.appendChild(cornersHdr);
+              const allRowU=document.createElement('div'); allRowU.className='row';
+              allRowU.innerHTML = `<label><span>Apply to all</span>
+                <select data-ct-rc-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+                <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-all-val placeholder="size (in)" />
+                <button type="button" class="kc-mini" data-ct-rc-corner-apply-all>Apply</button>
+              </label>`;
+              list.appendChild(allRowU);
+              const mkC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+                <select data-ct-rc-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+                <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-val="${key}" placeholder="size (in)" />
+                <span class="kc-mini-btns">
+                  <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.25">1/4"</button>
+                  <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="0.5">1/2"</button>
+                  <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="1">1"</button>
+                  <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="2">2"</button>
+                </span>
+              </label>`; list.appendChild(row); };
+              mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
+              // Inside corners for U (iTL, iTR, iBR, iBL)
+              const iHdr=document.createElement('div'); iHdr.className='kc-subtle'; iHdr.textContent='Inside Corners'; list.appendChild(iHdr);
+              const allRowUI=document.createElement('div'); allRowUI.className='row';
+              allRowUI.innerHTML = `<label><span>Apply to all</span>
+                <select data-ct-ic-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+                <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-all-val placeholder="size (in)" />
+                <button type="button" class="kc-mini" data-ct-ic-corner-apply-all>Apply</button>
+              </label>`;
+              list.appendChild(allRowUI);
+              const mkIC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+                <select data-ct-ic-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
+                <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-val="${key}" placeholder="size (in)" />
+                <span class="kc-mini-btns">
+                  <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="0.25">1/4"</button>
+                  <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="0.5">1/2"</button>
+                  <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="1">1"</button>
+                  <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="2">2"</button>
+                </span>
+              </label>`; list.appendChild(row); };
+              mkIC('iTL','Inside TL'); mkIC('iTR','Inside TR'); mkIC('iBR','Inside BR'); mkIC('iBL','Inside BL');
+            }
           } else if (cur.type==='poly'){
             const n = (Array.isArray(cur.points)?cur.points.length:0); for(let i=0;i<n;i++){ const letter=String.fromCharCode(65+i); addRow(`Side ${letter}`, `P${i}`); }
             // Corner controls for polygon
+            if (!opts.simpleUI){
             const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners'; list.appendChild(cornersHdr);
             // Apply to all (Poly)
             const allRowP=document.createElement('div'); allRowP.className='row';
@@ -1782,11 +1805,14 @@
               list.appendChild(row);
             };
             for (let i=0;i<n;i++){ mkCorner(i); }
+            }
           }
         }
-        // Build dynamic backsplash options per shape
+        // Build dynamic backsplash options per shape (hidden in simple UI; handled inline per row)
         const bsList = sel('[data-ct-bs-list]', root);
         if (bsList){
+          if (opts.simpleUI){ bsList.innerHTML = ''; }
+          else {
           bsList.innerHTML = '';
           const mk = (key, label)=>{
             const lab = document.createElement('label'); lab.className='kc-meas opt';
@@ -1838,13 +1864,14 @@
             // default to A-D if unknown
             ['A','B','C','D'].forEach(s=> mk(s, sideLabel(s)));
           }
+          }
         }
     // Show L flip control for L shapes
     const flipWrap = sel('[data-ct-l-flip-wrap]', root);
     const flipInp = sel('[data-ct-l-flip]', root);
     if (flipWrap && flipInp){ flipWrap.hidden = cur.type!=='l'; flipInp.checked = !!cur.flipX; }
   all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); let v=0; if (cur.type==='poly' && k && k.startsWith('P')){ const idx=parseInt(k.slice(1)||'0',10); const pts=cur.points||[]; if (pts.length>=2){ const a=pts[idx], b=pts[(idx+1)%pts.length]; v=Math.round(Math.hypot((b.x-a.x),(b.y-a.y))); } } else { if (cur.type==='u' && (k==='BL' || k==='BR')){ if (k==='BL'){ v = (cur.len && cur.len.BL!=null) ? cur.len.BL : (cur.len && cur.len.B!=null ? cur.len.B : 25); } else { v = (cur.len && cur.len.BR!=null) ? cur.len.BR : (cur.len && cur.len.B!=null ? cur.len.B : 25); } } else { v = (cur.len && k in cur.len) ? cur.len[k] : 0; } } const activeEl=document.activeElement; inp.value = String(v||0); if (activeEl===inp) inp.focus(); });
-        all('[data-ct-wall]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-wall'); inp.checked = !!cur.wall[k]; });
+  all('[data-ct-wall]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-wall'); inp.checked = !!cur.wall[k]; });
         all('[data-ct-shape]', root).forEach(btn=> btn.classList.toggle('is-active', btn.getAttribute('data-ct-shape')===cur.type));
     const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
   if (rowC) rowC.style.display='none'; if (rowD) rowD.style.display='none';
@@ -1952,6 +1979,22 @@
         shapes[active].wall[k] = !!inp.checked;
         updateSummary(); save(); draw();
       });
+    });
+    // Delegated inline wall/backsplash toggles for simple UI
+    root.addEventListener('change', (ev)=>{
+      const el = ev.target; if (!(el instanceof HTMLElement)) return;
+      if (active<0) return;
+      if (el.matches('[data-ct-wall-inline]')){
+        pushHistory();
+        const key = el.getAttribute('data-ct-wall-inline');
+        const s = shapes[active]; if (s && s.wall && (key in s.wall)) s.wall[key] = (el).checked;
+        updateSummary(); save(); draw();
+      } else if (el.matches('[data-ct-backsplash-inline]')){
+        pushHistory();
+        const key = el.getAttribute('data-ct-backsplash-inline');
+        const s = shapes[active]; if (s){ if (!s.bs) s.bs = {}; s.bs[key] = (el).checked; }
+        updateSummary(); save(); draw();
+      }
     });
     // Per-side backsplash controls (delegated for dynamic checkboxes)
     root.addEventListener('change', (ev)=>{
