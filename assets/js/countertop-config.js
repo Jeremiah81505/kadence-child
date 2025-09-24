@@ -101,6 +101,7 @@
           if (s.bs.BL==null) s.bs.BL = false;
           if (s.bs.BR==null) s.bs.BR = false;
           if (s.bs.E==null) s.bs.E = false;
+          if (s.bs.D==null) s.bs.D = false; // inner verticals backsplash
           if (s.bs.H==null) s.bs.H = false;
           if (s.bs.A==null) s.bs.A = !!s.bs.A;
           if (s.bs.C==null) s.bs.C = !!s.bs.C;
@@ -1078,20 +1079,19 @@
           if (opts.showGuides){
             const m=18;
             // A top outer
-            drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX + a/2 - m, yTop + m, 'A');
-            // B-L left outer
-            drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX - a/2 + m, yTop + blPx - m, 'B-L');
-            // B-R right outer
-            drawGuideLine(rotG, centerX + a/2 - m, yTop + m, centerX + a/2 - m, yTop + brPx - m, 'B-R');
-            // Use existing xiL/xiR/yTop to draw C/D/E/H guides (F/G removed)
-            // C inner top opening
-            drawGuideLine(rotG, xiL + m, yInnerTop + m, xiR - m, yInnerTop + m, 'C');
-            // D inner depth (using center of opening)
-            drawGuideLine(rotG, (xiL+xiR)/2, yTop + m, (xiL+xiR)/2, yInnerTop - m, 'D');
-            // E bottom left return
+            drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX + a/2 - m, yTop + m, 'C');
+            // Right depth (B)
+            drawGuideLine(rotG, centerX + a/2 - m, yTop + m, centerX + a/2 - m, yTop + brPx - m, 'B');
+            // Left depth (D)
+            drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX - a/2 + m, yTop + blPx - m, 'D');
+            // Inner top (F)
+            drawGuideLine(rotG, xiL + m, yInnerTop + m, xiR - m, yInnerTop + m, 'F');
+            // Inner setback vertical
+            drawGuideLine(rotG, (xiL+xiR)/2, yTop + m, (xiL+xiR)/2, yInnerTop - m, 'F');
+            // Bottom left return (E)
             drawGuideLine(rotG, centerX - a/2 + m, yTop + blPx - m, xiL - m, yTop + blPx - m, 'E');
-            // H bottom right return
-            drawGuideLine(rotG, xiR + m, yTop + brPx - m, centerX + a/2 - m, yTop + brPx - m, 'H');
+            // Bottom right return (A)
+            drawGuideLine(rotG, xiR + m, yTop + brPx - m, centerX + a/2 - m, yTop + brPx - m, 'A');
           }
           gRoot.appendChild(rotG);
           // Label: set within the top rail (between top and inner-top)
@@ -1521,7 +1521,7 @@
   }));
 
     // Delegated input handling for dynamic measurement fields
-    root.addEventListener('input', (ev)=>{
+  root.addEventListener('input', (ev)=>{
       const inp = ev.target;
       if (!(inp instanceof HTMLElement)) return;
       if (!inp.matches('[data-ct-len]')) return;
@@ -1533,7 +1533,7 @@
   if (lenEditTimer) clearTimeout(lenEditTimer);
   lenEditTimer = setTimeout(()=>{ lenEditTimer = null; }, 500);
       const s = shapes[active];
-      const k = inp.getAttribute('data-ct-len');
+  const k = inp.getAttribute('data-ct-len');
       let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0;
       if (s.type==='rect' && (k==='C' || k==='D')){
         // mirror to A/B
@@ -1549,7 +1549,50 @@
         }
       } else {
         // Default assignment, then shape-specific clamps
-        s.len[k] = v;
+        const applyUVirtual=(virt, val)=>{
+          if (virt==='UA'){ // A -> right bottom return (H)
+            s.len.H = Math.max(0, Math.min(val, Math.max(0, (s.len.A||0) - 1 - (s.len.E||0))));
+            s.len.C = Math.max(1, (s.len.A||0) - Math.max(0,s.len.E||0) - Math.max(0,s.len.H||0));
+            return true;
+          }
+          if (virt==='UB'){ // B -> BR
+            s.len.BR = Math.max(1, val);
+            const m = Math.max(0, Math.min(Number(s.len.BL|| (s.len.B||25)), Number(s.len.BR)));
+            s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, m-1)));
+            return true;
+          }
+          if (virt==='UC'){ // C -> outer top width (A)
+            s.len.A = Math.max(1, val);
+            // Recompute C keeping E/H as-is, enforce >=1
+            const A = s.len.A||0; const spare = Math.max(0, A - Math.max(0,s.len.E||0) - Math.max(0,s.len.H||0));
+            s.len.C = Math.max(1, spare);
+            return true;
+          }
+          if (virt==='UD'){ // D -> BL
+            s.len.BL = Math.max(1, val);
+            const m = Math.max(0, Math.min(Number(s.len.BL), Number(s.len.BR|| (s.len.B||25))));
+            s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, m-1)));
+            return true;
+          }
+          if (virt==='UE'){ // E -> E (bottom left return)
+            s.len.E = Math.max(0, Math.min(val, Math.max(0, (s.len.A||0) - 1 - (s.len.H||0))));
+            s.len.C = Math.max(1, (s.len.A||0) - Math.max(0,s.len.E||0) - Math.max(0,s.len.H||0));
+            return true;
+          }
+          if (virt==='UF'){ // F -> inner setback (D)
+            const BL = Number((s.len.BL!=null)?s.len.BL:((s.len.B!=null)?s.len.B:25));
+            const BR = Number((s.len.BR!=null)?s.len.BR:((s.len.B!=null)?s.len.B:25));
+            const minSide = Math.max(0, Math.min(BL, BR));
+            s.len.D = Math.max(0, Math.min(val, Math.max(0, minSide-1)));
+            return true;
+          }
+          return false;
+        };
+        if (s.type==='u' && k && k.startsWith('U')){
+          applyUVirtual(k, v);
+        } else {
+          s.len[k] = v;
+        }
         if (s.type==='u'){
           const A = Number(s.len.A||0);
           const BL = Number((s.len.BL!=null)?s.len.BL:(s.len.B!=null?s.len.B:25));
@@ -1729,14 +1772,24 @@
               mkIC('iTL','Inside TL'); mkIC('iBR','Inside BR');
             }
           } else if (cur.type==='u'){
-            addRow('Top (A)','A');
-            addRow('Left depth (BL)','BL');
-            addRow('Right depth (BR)','BR');
-            addRow('Inner opening width (C)','C');
-            addRow('Inner setback (D)','D');
-            // Center is always open on U; no base thickness control
-            addRow('Left return (E)','E');
-            addRow('Right return (H)','H');
+            // Present U as A–F like the legacy screenshot
+            const addURow=(label, virt)=>{
+              const row=document.createElement('div'); row.className='row';
+              if (opts.simpleUI){
+                const wallCtl = `<label class="opt"><input type="checkbox" data-ct-wall-inline="U-${virt}"/> Side against wall</label>`;
+                const bsCtl = `<label class="opt"><input type="checkbox" data-ct-backsplash-inline="U-${virt}"/> Add same-material backsplash</label>`;
+                row.innerHTML = `<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="U${virt}" /></label><div class="opts">${wallCtl} ${bsCtl}</div>`;
+              } else {
+                row.innerHTML = `<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="U${virt}" /></label>`;
+              }
+              list.appendChild(row);
+            };
+            addURow('A','A'); // bottom right return (maps to H)
+            addURow('B','B'); // right depth (BR)
+            addURow('C','C'); // outer top width (A)
+            addURow('D','D'); // left depth (BL)
+            addURow('E','E'); // bottom left return (E)
+            addURow('F','F'); // inner setback (D)
             if (!opts.simpleUI){
               // Outside corner controls for U
               const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners (outside)'; list.appendChild(cornersHdr);
@@ -1877,7 +1930,7 @@
     const flipWrap = sel('[data-ct-l-flip-wrap]', root);
     const flipInp = sel('[data-ct-l-flip]', root);
     if (flipWrap && flipInp){ flipWrap.hidden = cur.type!=='l'; flipInp.checked = !!cur.flipX; }
-  all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); let v=0; if (cur.type==='poly' && k && k.startsWith('P')){ const idx=parseInt(k.slice(1)||'0',10); const pts=cur.points||[]; if (pts.length>=2){ const a=pts[idx], b=pts[(idx+1)%pts.length]; v=Math.round(Math.hypot((b.x-a.x),(b.y-a.y))); } } else { if (cur.type==='u' && (k==='BL' || k==='BR')){ if (k==='BL'){ v = (cur.len && cur.len.BL!=null) ? cur.len.BL : (cur.len && cur.len.B!=null ? cur.len.B : 25); } else { v = (cur.len && cur.len.BR!=null) ? cur.len.BR : (cur.len && cur.len.B!=null ? cur.len.B : 25); } } else { v = (cur.len && k in cur.len) ? cur.len[k] : 0; } } const activeEl=document.activeElement; inp.value = String(v||0); if (activeEl===inp) inp.focus(); });
+  all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); let v=0; if (cur.type==='poly' && k && k.startsWith('P')){ const idx=parseInt(k.slice(1)||'0',10); const pts=cur.points||[]; if (pts.length>=2){ const a=pts[idx], b=pts[(idx+1)%pts.length]; v=Math.round(Math.hypot((b.x-a.x),(b.y-a.y))); } } else if (cur.type==='u' && k && k.startsWith('U')){ const mapVal=(virt)=>{ if (virt==='UA') return Number(cur.len?.H||0); if (virt==='UB') return Number((cur.len?.BR!=null)?cur.len.BR:((cur.len?.B!=null)?cur.len.B:25)); if (virt==='UC') return Number(cur.len?.A||0); if (virt==='UD') return Number((cur.len?.BL!=null)?cur.len.BL:((cur.len?.B!=null)?cur.len.B:25)); if (virt==='UE') return Number(cur.len?.E||0); if (virt==='UF') return Number(cur.len?.D||0); return 0; }; v = mapVal(k); } else { if (cur.type==='u' && (k==='BL' || k==='BR')){ if (k==='BL'){ v = (cur.len && cur.len.BL!=null) ? cur.len.BL : (cur.len && cur.len.B!=null ? cur.len.B : 25); } else { v = (cur.len && cur.len.BR!=null) ? cur.len.BR : (cur.len && cur.len.B!=null ? cur.len.B : 25); } } else { v = (cur.len && k in cur.len) ? cur.len[k] : 0; } } const activeEl=document.activeElement; inp.value = String(v||0); if (activeEl===inp) inp.focus(); });
   all('[data-ct-wall]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-wall'); inp.checked = !!cur.wall[k]; });
         all('[data-ct-shape]', root).forEach(btn=> btn.classList.toggle('is-active', btn.getAttribute('data-ct-shape')===cur.type));
     const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
@@ -1994,13 +2047,26 @@
       if (active<0) return;
       if (el.matches('[data-ct-wall-inline]')){
         pushHistory();
-        const key = el.getAttribute('data-ct-wall-inline');
-        const s = shapes[active]; if (s && s.wall && (key in s.wall)) s.wall[key] = (el).checked;
+        let key = el.getAttribute('data-ct-wall-inline');
+        const s = shapes[active];
+        if (s && s.type==='u' && key && key.startsWith('U-')){
+          const letter = key.slice(2);
+          // Map UI letters to internal boolean flags
+          const set = (k)=>{ if (s.wall) s.wall[k] = (el).checked; };
+          if (letter==='A') set('H');
+          else if (letter==='B') set('BR');
+          else if (letter==='C') set('A');
+          else if (letter==='D') set('BL');
+          else if (letter==='E') set('E');
+          else if (letter==='F') set('D');
+        } else if (s && s.wall && (key in s.wall)) {
+          s.wall[key] = (el).checked;
+        }
         updateSummary(); save(); draw();
       } else if (el.matches('[data-ct-backsplash-inline]')){
         pushHistory();
-        const key = el.getAttribute('data-ct-backsplash-inline');
-        const s = shapes[active]; if (s){ if (!s.bs) s.bs = {}; s.bs[key] = (el).checked; }
+        let key = el.getAttribute('data-ct-backsplash-inline');
+        const s = shapes[active]; if (s){ if (!s.bs) s.bs = {}; if (s.type==='u' && key && key.startsWith('U-')){ const letter = key.slice(2); const set=(k)=>{ s.bs[k] = (el).checked; }; if (letter==='A') set('H'); else if (letter==='B') set('BR'); else if (letter==='C') set('A'); else if (letter==='D') set('BL'); else if (letter==='E') set('E'); else if (letter==='F') set('D'); } else { s.bs[key] = (el).checked; } }
         updateSummary(); save(); draw();
       }
     });
@@ -2889,7 +2955,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-23T39';
+  window.KC_CT.version = '2025-09-23T40';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
