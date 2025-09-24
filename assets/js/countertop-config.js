@@ -106,6 +106,18 @@
           if (s.bs.C==null) s.bs.C = !!s.bs.C;
           // Inside-corner defaults
           if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+          // Wall flags: make U sides independent (A, BL, BR, C, D, E, H)
+          s.wall = s.wall || {};
+          // Legacy migration: B -> BL/BR, C(bottom outer) -> E/H
+          if (s.wall.B!=null){ if (s.wall.BL==null) s.wall.BL = !!s.wall.B; if (s.wall.BR==null) s.wall.BR = !!s.wall.B; }
+          if (s.wall.C!=null){ if (s.wall.E==null) s.wall.E = !!s.wall.C; if (s.wall.H==null) s.wall.H = !!s.wall.C; }
+          if (s.wall.A==null) s.wall.A = !!s.wall.A;
+          if (s.wall.BL==null) s.wall.BL = false;
+          if (s.wall.BR==null) s.wall.BR = false;
+          if (s.wall.C==null) s.wall.C = false; // For U: reinterpret C as inner top wall
+          if (s.wall.D==null) s.wall.D = false; // For U: inner vertical wall (two short segments)
+          if (s.wall.E==null) s.wall.E = false;
+          if (s.wall.H==null) s.wall.H = false;
         }
       }catch(e){}
       return s;
@@ -1016,6 +1028,13 @@
             if (cur.bs.BL){ addRect(centerX - aBox/2 - bh, yTop, bh, blPx, centerX - aBox/2 - bh, yTop, centerX - aBox/2 - bh, yTop + blPx); }
             if (cur.bs.BR){ addRect(centerX + aBox/2, yTop, bh, brPx, centerX + aBox/2 + bh, yTop, centerX + aBox/2 + bh, yTop + brPx); }
             if (cur.bs.C){ addRect(xiL, yInnerTop, (xiR - xiL), bh, xiL, yInnerTop + bh, xiR, yInnerTop + bh); }
+            // Inner vertical backsplash for D (two strips into opening)
+            if (cur.bs.D && yInnerTop > yTop){
+              // left inner
+              addRect(xiL - bh, yTop, bh, (yInnerTop - yTop), xiL - bh, yTop, xiL - bh, yInnerTop);
+              // right inner
+              addRect(xiR, yTop, bh, (yInnerTop - yTop), xiR + bh, yTop, xiR + bh, yInnerTop);
+            }
             if (cur.bs && (cur.bs.E || cur.bs.H)){
               const eLen = px(Math.max(0, Number(len.E||0)));
               const hLen = px(Math.max(0, Number(len.H||0)));
@@ -1024,18 +1043,26 @@
             }
           } }
 
-          // wall sides as black lines along outer perimeter; split bottom into left/right, not across opening
+          // wall sides as black lines — independent toggles (A, BL, BR, C, D, E, H)
           const sideColor = '#000';
           const mkLine = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke', sideColor); l.setAttribute('stroke-width','3'); return l; };
-      if (cur.wall.A) rotG.appendChild(mkLine(centerX - a/2, yTop, centerX + a/2, yTop));
-      if (cur.wall.B) rotG.appendChild(mkLine(centerX - a/2, yTop, centerX - a/2, yTop + blPx));
-      if (cur.wall.C){
-        // left bottom to xiL
-        rotG.appendChild(mkLine(centerX - a/2, yTop + blPx, xiL, yTop + blPx));
-        // right bottom from xiR
-        rotG.appendChild(mkLine(xiR, yTop + brPx, centerX + a/2, yTop + brPx));
-      }
-      if (cur.wall.D) rotG.appendChild(mkLine(centerX + a/2, yTop, centerX + a/2, yTop + brPx));
+          // A: outer top
+          if (cur.wall.A) rotG.appendChild(mkLine(centerX - a/2, yTop, centerX + a/2, yTop));
+          // BL: outer left vertical
+          if (cur.wall.BL) rotG.appendChild(mkLine(centerX - a/2, yTop, centerX - a/2, yTop + blPx));
+          // BR: outer right vertical
+          if (cur.wall.BR) rotG.appendChild(mkLine(centerX + a/2, yTop, centerX + a/2, yTop + brPx));
+          // C: inner top
+          if (cur.wall.C && xiR > xiL) rotG.appendChild(mkLine(xiL, yInnerTop, xiR, yInnerTop));
+          // D: inner verticals (two)
+          if (cur.wall.D && yInnerTop > yTop){
+            rotG.appendChild(mkLine(xiL, yTop, xiL, yInnerTop));
+            rotG.appendChild(mkLine(xiR, yTop, xiR, yInnerTop));
+          }
+          // E: bottom left return along outer bottom up to inner left
+          if (cur.wall.E) rotG.appendChild(mkLine(centerX - a/2, yTop + blPx, xiL, yTop + blPx));
+          // H: bottom right return along outer bottom from inner right to outer right
+          if (cur.wall.H) rotG.appendChild(mkLine(xiR, yTop + brPx, centerX + a/2, yTop + brPx));
 
           if (idx===active){
             const hi = document.createElementNS(ns,'rect');
@@ -1813,7 +1840,7 @@
             }
             if (cur.bs.BL==null) cur.bs.BL=false; if (cur.bs.BR==null) cur.bs.BR=false;
             if (cur.bs.E==null) cur.bs.E=false; if (cur.bs.H==null) cur.bs.H=false;
-            ['A','BL','BR','C','E','H'].forEach(s=> mk(s, sideLabel(s)));
+            ['A','BL','BR','C','D','E','H'].forEach(s=> mk(s, sideLabel(s)));
           } else if (cur.type==='poly'){
             const n = Array.isArray(cur.points) ? cur.points.length : 0;
             if (!Array.isArray(cur.bsPoly)) cur.bsPoly = new Array(n).fill(false);
@@ -1924,10 +1951,10 @@
   if (s==='B') return 'Left (B)';
   if (s==='BL') return 'Left (B-L)';
   if (s==='BR') return 'Right (B-R)';
-      if (s==='C') return 'Bottom/Inner (C)';
-      if (s==='D') return 'Right (D)';
-      if (s==='E') return 'Bottom Left (E)';
-      if (s==='H') return 'Bottom Right (H)';
+  if (s==='C') return 'Inner top (C)';
+  if (s==='D') return 'Inner verticals (D)';
+  if (s==='E') return 'Bottom left return (E)';
+  if (s==='H') return 'Bottom right return (H)';
       return s;
     }
 
@@ -2862,7 +2889,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-23T38';
+  window.KC_CT.version = '2025-09-23T39';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
