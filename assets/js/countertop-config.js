@@ -228,7 +228,7 @@
         t.textContent=tip; c.appendChild(t);
         if (idx===active) gRoot.appendChild(c);
         // Draw a small label near the handle for clarity (only on hover to declutter)
-        const label=document.createElementNS(ns,'text');
+    const label=document.createElementNS(ns,'text');
         label.setAttribute('x', String(cx + 10));
         label.setAttribute('y', String(cy - 10));
         label.setAttribute('font-size','11');
@@ -236,7 +236,9 @@
         label.setAttribute('fill','#1f2b56');
         label.setAttribute('class','kc-hlabel');
   let ltxt='';
-        if (keyStr==='A-right' || keyStr==='A-left') ltxt='A';
+    if (keyStr==='A-right') ltxt='A';
+    // suppress duplicate 'A' label on the left side
+    else if (keyStr==='A-left') ltxt='';
         else if (keyStr==='B-top' || keyStr==='B-bottom') ltxt='B';
         else if (keyStr==='BL') ltxt='BL';
         else if (keyStr==='BR') ltxt='BR';
@@ -276,7 +278,8 @@
           }
         }
         label.textContent = vtxt ? `${ltxt}: ${vtxt}` : ltxt;
-        const primaryKeys = new Set(['A-right','A-left','B-top','B-bottom','BL','BR','C','D','E','H']);
+        // Hide the left 'A' label by default to avoid A on both sides
+        const primaryKeys = new Set(['A-right','B-top','B-bottom','BL','BR','C','D','E','H']);
         const showLabel = (idx===active && (primaryKeys.has(String(key)) || (toolMode==='resize' && hoverHandle && hoverHandle.h && hoverHandle.h.key===key)));
         if (showLabel) gRoot.appendChild(label);
       };
@@ -1776,8 +1779,14 @@
             const addURow=(label, virt)=>{
               const row=document.createElement('div'); row.className='row';
               if (opts.simpleUI){
-                const wallCtl = `<label class="opt"><input type="checkbox" data-ct-wall-inline="U-${virt}"/> Side against wall</label>`;
-                const bsCtl = `<label class="opt"><input type="checkbox" data-ct-backsplash-inline="U-${virt}"/> Add same-material backsplash</label>`;
+                // Map legacy letters to internal wall/backsplash keys and initial checked state
+                const mapKey = { A:'H', B:'BR', C:'A', D:'BL', E:'E', F:'D' };
+                const wKey = (virt==='F') ? null : mapKey[virt];
+                const bKey = (virt==='F') ? null : mapKey[virt];
+                const wChecked = wKey ? !!(cur.wall && cur.wall[wKey]) : false;
+                const bChecked = bKey ? !!(cur.bs && cur.bs[bKey]) : false;
+                const wallCtl = wKey ? `<label class="opt"><input type="checkbox" data-ct-wall-inline="U-${virt}" ${wChecked?'checked':''}/> Side against wall</label>` : '';
+                const bsCtl = bKey ? `<label class="opt"><input type="checkbox" data-ct-backsplash-inline="U-${virt}" ${bChecked?'checked':''}/> Add same-material backsplash</label>` : '';
                 row.innerHTML = `<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="U${virt}" /></label><div class="opts">${wallCtl} ${bsCtl}</div>`;
               } else {
                 row.innerHTML = `<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="U${virt}" /></label>`;
@@ -2058,7 +2067,8 @@
           else if (letter==='C') set('A');
           else if (letter==='D') set('BL');
           else if (letter==='E') set('E');
-          else if (letter==='F') set('D');
+          // Ignore F: no wall option for inner setback
+          else if (letter==='F') {/* no-op */}
         } else if (s && s.wall && (key in s.wall)) {
           s.wall[key] = (el).checked;
         }
@@ -2066,7 +2076,23 @@
       } else if (el.matches('[data-ct-backsplash-inline]')){
         pushHistory();
         let key = el.getAttribute('data-ct-backsplash-inline');
-        const s = shapes[active]; if (s){ if (!s.bs) s.bs = {}; if (s.type==='u' && key && key.startsWith('U-')){ const letter = key.slice(2); const set=(k)=>{ s.bs[k] = (el).checked; }; if (letter==='A') set('H'); else if (letter==='B') set('BR'); else if (letter==='C') set('A'); else if (letter==='D') set('BL'); else if (letter==='E') set('E'); else if (letter==='F') set('D'); } else { s.bs[key] = (el).checked; } }
+        const s = shapes[active];
+        if (s){
+          if (!s.bs) s.bs = {};
+          if (s.type==='u' && key && key.startsWith('U-')){
+            const letter = key.slice(2);
+            const set=(k)=>{ s.bs[k] = (el).checked; };
+            if (letter==='A') set('H');
+            else if (letter==='B') set('BR');
+            else if (letter==='C') set('A');
+            else if (letter==='D') set('BL');
+            else if (letter==='E') set('E');
+            // Ignore F: no backsplash option for inner setback
+            else if (letter==='F') { /* no-op */ }
+          } else {
+            s.bs[key] = (el).checked;
+          }
+        }
         updateSummary(); save(); draw();
       }
     });
