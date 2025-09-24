@@ -322,8 +322,8 @@
           const blPx = px(bl), brPx = px(br);
           const hMax = Math.max(blPx, brPx);
           const yTop = cy - hMax/2;
-          // A top
-          mk(cx, yTop - 10, `${a}\"`);
+    // A top outer width
+    mk(cx, yTop - 10, `${a}\"`);
           // B-L and B-R numbers (left and right verticals)
           mkRot(cx - (aPx/2) - 22, yTop + blPx/2, `${bl}\"`, -90);
           mkRot(cx + (aPx/2) + 22, yTop + brPx/2, `${br}\"`, -90);
@@ -333,8 +333,9 @@
           const xiL = cx - aPx/2 + px(e);
           const xiR = cx + aPx/2 - px(h);
           const innerTopY = yTop + dPx;
-          const cX = xiL + (xiR - xiL) * 0.35; mk(cX, innerTopY - 6, `${c}\"`);
-          const dX = xiL + (xiR - xiL) * 0.65; mk(dX, innerTopY - 26, `${d}\"`);
+    const cX = xiL + (xiR - xiL) * 0.5; mk(cX, innerTopY - 6, `${c}\"`);
+    // D label near vertical center
+    const dX = xiL + (xiR - xiL) * 0.5; mk(dX, yTop + dPx/2, `${d}\"`);
           // E/H bottom return labels
           const eMidX = cx - aPx/2 + px(e)/2; mk(eMidX, yTop + blPx + 14, `${e}\"`);
           const hMidX = cx + aPx/2 - px(h)/2; mk(hMidX, yTop + brPx + 14, `${h}\"`);
@@ -1081,20 +1082,20 @@
           // U-guides for A–H (with BL/BR)
           if (opts.showGuides){
             const m=18;
-            // A top outer
-            drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX + a/2 - m, yTop + m, 'C');
-            // Right depth (B)
+            // A: top outer width
+            drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX + a/2 - m, yTop + m, 'A');
+            // B: Right depth (BR)
             drawGuideLine(rotG, centerX + a/2 - m, yTop + m, centerX + a/2 - m, yTop + brPx - m, 'B');
-            // Left depth (D)
+            // D: Left depth (BL)
             drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX - a/2 + m, yTop + blPx - m, 'D');
-            // Inner top (F)
-            drawGuideLine(rotG, xiL + m, yInnerTop + m, xiR - m, yInnerTop + m, 'F');
-            // Inner setback vertical
+            // C: Inner top span
+            drawGuideLine(rotG, xiL + m, yInnerTop + m, xiR - m, yInnerTop + m, 'C');
+            // F: Inner setback vertical
             drawGuideLine(rotG, (xiL+xiR)/2, yTop + m, (xiL+xiR)/2, yInnerTop - m, 'F');
-            // Bottom left return (E)
+            // E: Bottom left return
             drawGuideLine(rotG, centerX - a/2 + m, yTop + blPx - m, xiL - m, yTop + blPx - m, 'E');
-            // Bottom right return (A)
-            drawGuideLine(rotG, xiR + m, yTop + brPx - m, centerX + a/2 - m, yTop + brPx - m, 'A');
+            // H: Bottom right return
+            drawGuideLine(rotG, xiR + m, yTop + brPx - m, centerX + a/2 - m, yTop + brPx - m, 'H');
           }
           gRoot.appendChild(rotG);
           // Label: set within the top rail (between top and inner-top)
@@ -1119,8 +1120,9 @@
             const midXLocal = (xiLhLocal + xiRhLocal)/2;
             const pC = toWorld(midXLocal, yiLocal);
             addHandle(idx, pC.x, pC.y, 0, 'C');
-            // D at the same inner-top midpoint
-            addHandle(idx, pC.x, pC.y, 0, 'D');
+            // D handle: place on left inner vertical midpoint to avoid overlap
+            const pD = toWorld(xiLhLocal, (-hMax/2) + (px(dIn)/2));
+            addHandle(idx, pD.x, pD.y, 0, 'D');
             // E and H: midpoints of bottom returns
             const pE = toWorld(-a/2 + px(eIn)/2, hMax/2);
             const pH = toWorld( a/2 - px(hIn)/2, hMax/2);
@@ -1552,26 +1554,29 @@
         }
       } else {
         // Default assignment, then shape-specific clamps
-        const applyUVirtual=(virt, val)=>{
-          if (virt==='UA'){ // A -> right bottom return (H)
-            s.len.H = Math.max(0, Math.min(val, Math.max(0, (s.len.A||0) - 1 - (s.len.E||0))));
+          const applyUVirtual=(virt, val)=>{
+          if (virt==='UA'){ // A -> outer top width (A)
+            s.len.A = Math.max(1, val);
+            // recompute C from existing E/H
             s.len.C = Math.max(1, (s.len.A||0) - Math.max(0,s.len.E||0) - Math.max(0,s.len.H||0));
             return true;
           }
-          if (virt==='UB'){ // B -> BR
+          if (virt==='UB'){ // B -> BR (right depth)
             s.len.BR = Math.max(1, val);
             const m = Math.max(0, Math.min(Number(s.len.BL|| (s.len.B||25)), Number(s.len.BR)));
             s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, m-1)));
             return true;
           }
-          if (virt==='UC'){ // C -> outer top width (A)
-            s.len.A = Math.max(1, val);
-            // Recompute C keeping E/H as-is, enforce >=1
-            const A = s.len.A||0; const spare = Math.max(0, A - Math.max(0,s.len.E||0) - Math.max(0,s.len.H||0));
-            s.len.C = Math.max(1, spare);
+          if (virt==='UC'){ // C -> inner top span (C)
+            const A = Number(s.len.A||0);
+            // keep E/H proportionally centered when C changes
+            const newC = Math.max(1, Math.min(val, Math.max(1, A-1)));
+            const spare = Math.max(0, A - newC);
+            const e = Math.floor(spare/2), h = spare - e;
+            s.len.C = newC; s.len.E = e; s.len.H = h;
             return true;
           }
-          if (virt==='UD'){ // D -> BL
+          if (virt==='UD'){ // D -> BL (left depth)
             s.len.BL = Math.max(1, val);
             const m = Math.max(0, Math.min(Number(s.len.BL), Number(s.len.BR|| (s.len.B||25))));
             s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, m-1)));
@@ -1939,7 +1944,7 @@
     const flipWrap = sel('[data-ct-l-flip-wrap]', root);
     const flipInp = sel('[data-ct-l-flip]', root);
     if (flipWrap && flipInp){ flipWrap.hidden = cur.type!=='l'; flipInp.checked = !!cur.flipX; }
-  all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); let v=0; if (cur.type==='poly' && k && k.startsWith('P')){ const idx=parseInt(k.slice(1)||'0',10); const pts=cur.points||[]; if (pts.length>=2){ const a=pts[idx], b=pts[(idx+1)%pts.length]; v=Math.round(Math.hypot((b.x-a.x),(b.y-a.y))); } } else if (cur.type==='u' && k && k.startsWith('U')){ const mapVal=(virt)=>{ if (virt==='UA') return Number(cur.len?.H||0); if (virt==='UB') return Number((cur.len?.BR!=null)?cur.len.BR:((cur.len?.B!=null)?cur.len.B:25)); if (virt==='UC') return Number(cur.len?.A||0); if (virt==='UD') return Number((cur.len?.BL!=null)?cur.len.BL:((cur.len?.B!=null)?cur.len.B:25)); if (virt==='UE') return Number(cur.len?.E||0); if (virt==='UF') return Number(cur.len?.D||0); return 0; }; v = mapVal(k); } else { if (cur.type==='u' && (k==='BL' || k==='BR')){ if (k==='BL'){ v = (cur.len && cur.len.BL!=null) ? cur.len.BL : (cur.len && cur.len.B!=null ? cur.len.B : 25); } else { v = (cur.len && cur.len.BR!=null) ? cur.len.BR : (cur.len && cur.len.B!=null ? cur.len.B : 25); } } else { v = (cur.len && k in cur.len) ? cur.len[k] : 0; } } const activeEl=document.activeElement; inp.value = String(v||0); if (activeEl===inp) inp.focus(); });
+  all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); let v=0; if (cur.type==='poly' && k && k.startsWith('P')){ const idx=parseInt(k.slice(1)||'0',10); const pts=cur.points||[]; if (pts.length>=2){ const a=pts[idx], b=pts[(idx+1)%pts.length]; v=Math.round(Math.hypot((b.x-a.x),(b.y-a.y))); } } else if (cur.type==='u' && k && k.startsWith('U')){ const mapVal=(virt)=>{ if (virt==='UA') return Number(cur.len?.A||0); if (virt==='UB') return Number((cur.len?.BR!=null)?cur.len.BR:((cur.len?.B!=null)?cur.len.B:25)); if (virt==='UC') return Number(cur.len?.C||0); if (virt==='UD') return Number((cur.len?.BL!=null)?cur.len.BL:((cur.len?.B!=null)?cur.len.B:25)); if (virt==='UE') return Number(cur.len?.E||0); if (virt==='UF') return Number(cur.len?.D||0); return 0; }; v = mapVal(k); } else { if (cur.type==='u' && (k==='BL' || k==='BR')){ if (k==='BL'){ v = (cur.len && cur.len.BL!=null) ? cur.len.BL : (cur.len && cur.len.B!=null ? cur.len.B : 25); } else { v = (cur.len && cur.len.BR!=null) ? cur.len.BR : (cur.len && cur.len.B!=null ? cur.len.B : 25); } } else { v = (cur.len && k in cur.len) ? cur.len[k] : 0; } } const activeEl=document.activeElement; inp.value = String(v||0); if (activeEl===inp) inp.focus(); });
   all('[data-ct-wall]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-wall'); inp.checked = !!cur.wall[k]; });
         all('[data-ct-shape]', root).forEach(btn=> btn.classList.toggle('is-active', btn.getAttribute('data-ct-shape')===cur.type));
     const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
@@ -2062,9 +2067,9 @@
           const letter = key.slice(2);
           // Map UI letters to internal boolean flags
           const set = (k)=>{ if (s.wall) s.wall[k] = (el).checked; };
-          if (letter==='A') set('H');
+          if (letter==='A') set('A');
           else if (letter==='B') set('BR');
-          else if (letter==='C') set('A');
+          else if (letter==='C') set('C');
           else if (letter==='D') set('BL');
           else if (letter==='E') set('E');
           // Ignore F: no wall option for inner setback
@@ -2082,9 +2087,9 @@
           if (s.type==='u' && key && key.startsWith('U-')){
             const letter = key.slice(2);
             const set=(k)=>{ s.bs[k] = (el).checked; };
-            if (letter==='A') set('H');
+            if (letter==='A') set('A');
             else if (letter==='B') set('BR');
-            else if (letter==='C') set('A');
+            else if (letter==='C') set('C');
             else if (letter==='D') set('BL');
             else if (letter==='E') set('E');
             // Ignore F: no backsplash option for inner setback
