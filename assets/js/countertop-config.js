@@ -298,7 +298,7 @@
           else { mkRot(cx - (aPx/2) - 22, dYmid, `${d}\"`, -90); }
           return;
         }
-        if (cur.type==='u'){
+  if (cur.type==='u'){
           const aPx = px(a);
           const dPx = px(Number(dims.D ?? cur.len?.D ?? 0));
           const bl = Number(dims.BL ?? cur.len?.BL ?? cur.len?.B ?? 25);
@@ -856,33 +856,39 @@
           const hMax = Math.max(blPx, brPx);
           const x = centerX - a/2;
           const yTop = centerY - hMax/2;
-          // inner notch polygon (verticals extend to bottom)
+          // Inner U geometry: verticals extend from inner top down to each leg depth (no inner bottom span)
           const xiL = x + px(eLocal);                // left inner x
           const xiR = x + px(aIn - hLocal);          // right inner x
           const yInnerTop = yTop + px(dIn);          // inner top y
           const yBotL = yTop + blPx;                 // left vertical bottom (outer)
           const yBotR = yTop + brPx;                 // right vertical bottom (outer)
-          // Inner bottom aligns to the shallower leg so each side ends at its own depth
-          const yInnerBottom = yTop + Math.min(blPx, brPx);
 
-          // Geometric clamp for inside corners: cannot exceed half of inner width/height
-          // Compute in pixels, convert to inches for value storage
+          // Clamp inside corners for U: only inner top corners (iTL, iTR). No inner-bottom edge exists.
           {
-            const icMaxPx = Math.max(0, Math.min((xiR - xiL)/2, (yInnerBottom - yInnerTop)/2));
-            const icMaxIn = icMaxPx / 2; // since px=2*in
+            const innerWpx = Math.max(0, xiR - xiL);
+            const leftHeightPx = Math.max(0, yBotL - yInnerTop);
+            const rightHeightPx = Math.max(0, yBotR - yInnerTop);
             if (!cur.icCorners) cur.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-            ['iTL','iTR','iBR','iBL'].forEach(k=>{
-              const c = cur.icCorners[k]||{mode:'square',value:0};
-              const v = Math.max(0, Math.min(Number(c.value||0), icMaxIn));
-              cur.icCorners[k] = { mode: (c.mode||'square'), value: v };
-            });
+            // Limit values in inches based on per-corner available span
+            const limTLin = Math.max(0, Math.min(innerWpx/2, leftHeightPx)/2);
+            const limTRin = Math.max(0, Math.min(innerWpx/2, rightHeightPx)/2);
+            const clampVal=(v,lim)=> Math.max(0, Math.min(Number(v||0), lim));
+            cur.icCorners.iTL = { mode: (cur.icCorners.iTL?.mode||'square'), value: clampVal(cur.icCorners.iTL?.value||0, limTLin) };
+            cur.icCorners.iTR = { mode: (cur.icCorners.iTR?.mode||'square'), value: clampVal(cur.icCorners.iTR?.value||0, limTRin) };
+            // Force bottom inner corners to zero for U
+            cur.icCorners.iBL = { mode: 'square', value: 0 };
+            cur.icCorners.iBR = { mode: 'square', value: 0 };
             // Immediate input sync for icCorners (U)
             try{
-              ['iTL','iTR','iBR','iBL'].forEach(k=>{
+              ['iTL','iTR'].forEach(k=>{
                 const vEl = sel(`[data-ct-ic-corner-val="${k}"]`, root);
                 if (vEl) vEl.value = String(cur.icCorners[k]?.value||0);
                 const mEl = sel(`[data-ct-ic-corner-mode="${k}"]`, root);
                 if (mEl) mEl.value = cur.icCorners[k]?.mode || 'square';
+              });
+              // Hide or zero out bottom inputs if present
+              ['iBL','iBR'].forEach(k=>{
+                const vEl = sel(`[data-ct-ic-corner-val="${k}"]`, root); if (vEl) vEl.value = '0';
               });
             }catch(e){}
           }
@@ -910,25 +916,25 @@
               rotG.appendChild(line);
             });
           }
-    // U shape as a single path: outer rounded rect (rcCorners) minus inner opening (even-odd)
+    // Build U boundary as a single path (no inner rectangle). Outer corners support radius/clip; inner-top corners support iTL/iTR.
     const uPath = document.createElementNS(ns,'path');
-    const x0 = x, y0 = yTop, x1 = x + a, y1 = yTop + hMax; // outer box
-    // Build rounded outer rectangle path using rcCorners (similar to Rect/L)
-    // Render-time geometric clamp for rcCorners (U): overall height is the taller leg
+    const x0 = x, y0 = yTop, x1 = x + a; // outer extents horizontally; verticals per leg
+    // Render-time geometric clamp for rcCorners (U) using per-edge available spans
     try {
       const widthIn = Number(aIn||0);
-      const heightIn = Math.max(Number(blIn||0), Number(brIn||0));
+      // Height available per corner varies; clamp conservatively using leg depths
+      const hTL = Number(blIn||0), hTR = Number(brIn||0);
+      const hBL = Number(blIn||0), hBR = Number(brIn||0);
       if (!cur.rcCorners) cur.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
       let TLv = Math.max(0, Number(cur.rcCorners.TL?.value||0));
       let TRv = Math.max(0, Number(cur.rcCorners.TR?.value||0));
       let BRv = Math.max(0, Number(cur.rcCorners.BR?.value||0));
       let BLv = Math.max(0, Number(cur.rcCorners.BL?.value||0));
-      for (let i=0;i<2;i++){
-        TLv = Math.min(TLv, Math.max(0, widthIn - TRv), Math.max(0, heightIn - BLv));
-        TRv = Math.min(TRv, Math.max(0, widthIn - TLv), Math.max(0, heightIn - BRv));
-        BRv = Math.min(BRv, Math.max(0, widthIn - BLv), Math.max(0, heightIn - TRv));
-        BLv = Math.min(BLv, Math.max(0, widthIn - BRv), Math.max(0, heightIn - TLv));
-      }
+      // Clamp against per-side available runs
+      TLv = Math.min(TLv, Math.max(0, widthIn), Math.max(0, hTL));
+      TRv = Math.min(TRv, Math.max(0, widthIn), Math.max(0, hTR));
+  BRv = Math.min(BRv, Math.max(0, hTR));
+  BLv = Math.min(BLv, Math.max(0, hBL));
       cur.rcCorners = {
         TL: { mode: cur.rcCorners.TL?.mode||'square', value: TLv },
         TR: { mode: cur.rcCorners.TR?.mode||'square', value: TRv },
@@ -946,76 +952,61 @@
       }catch(e){}
     } catch(e){}
     const rc = cur.rcCorners || {};
-    const t = (k)=> Math.max(0, Number(rc[k]?.value||0)) * 2; // inches->px
-    const C_TL = { mode:(rc.TL?.mode)||'square', t:t('TL') };
-    const C_TR = { mode:(rc.TR?.mode)||'square', t:t('TR') };
-    const C_BR = { mode:(rc.BR?.mode)||'square', t:t('BR') };
-    const C_BL = { mode:(rc.BL?.mode)||'square', t:t('BL') };
-    const pTL = {x:x0,y:y0}, pTR={x:x1,y:y0}, pBR={x:x1,y:y1}, pBL={x:x0,y:y1};
-    const off=(pA,pB,dist)=>{ const L=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/L, uy=(pB.y-pA.y)/L; return { x:pA.x+ux*dist, y:pA.y+uy*dist }; };
-    const aTL=off(pTL,pTR,C_TL.t), bTL=off(pTL,pBL,C_TL.t);
-    const aTR=off(pTR,pBR,C_TR.t), bTR=off(pTR,pTL,C_TR.t);
-    const aBR=off(pBR,pBL,C_BR.t), bBR=off(pBR,pTR,C_BR.t);
-    const aBL=off(pBL,pTL,C_BL.t), bBL=off(pBL,pBR,C_BL.t);
-  const arc=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
-  const outer=[];
-  // Start at top edge after TL
-  outer.push(`M ${aTL.x} ${aTL.y}`);
-  // Top edge to before TR
-  outer.push(`L ${bTR.x} ${bTR.y}`);
-  // TR corner
-  if (C_TR.mode==='radius'){ const r=C_TR.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aTR)); } else if (C_TR.mode==='clip'){ outer.push(`L ${aTR.x} ${aTR.y}`); }
-  // Right edge to before BR
-  outer.push(`L ${bBR.x} ${bBR.y}`);
-  // BR corner
-  if (C_BR.mode==='radius'){ const r=C_BR.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aBR)); } else if (C_BR.mode==='clip'){ outer.push(`L ${aBR.x} ${aBR.y}`); }
-  // Bottom edge to before BL
-  outer.push(`L ${bBL.x} ${bBL.y}`);
-  // BL corner
-  if (C_BL.mode==='radius'){ const r=C_BL.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aBL)); } else if (C_BL.mode==='clip'){ outer.push(`L ${aBL.x} ${aBL.y}`); }
-  // Left edge to before TL
-  outer.push(`L ${bTL.x} ${bTL.y}`);
-  // TL corner back to start
-  if (C_TL.mode==='radius'){ const r=C_TL.t/Math.tan(Math.PI/4)||0; outer.push(arc(r,aTL)); } else if (C_TL.mode==='clip'){ outer.push(`L ${aTL.x} ${aTL.y}`); }
-  outer.push('Z');
-    // Build inner opening as a single contour (handles equal and unequal legs)
-    const ic = cur.icCorners || { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-    const innerW = Math.max(0, xiR - xiL);
-    const innerH = Math.max(0, yInnerBottom - yInnerTop);
-    const tMaxPx = Math.max(0, Math.min(innerW/2, innerH/2));
-    const it=(k)=> Math.min(Math.max(0, Number(ic[k]?.value||0))*2, tMaxPx);
-    const I_TL={mode:(ic.iTL?.mode)||'square', t:it('iTL')};
-    const I_TR={mode:(ic.iTR?.mode)||'square', t:it('iTR')};
-    const I_BR={mode:(ic.iBR?.mode)||'square', t:it('iBR')};
-    const I_BL={mode:(ic.iBL?.mode)||'square', t:it('iBL')};
-    const ipTL={x:xiL,y:yInnerTop}, ipTR={x:xiR,y:yInnerTop}, ipBR={x:xiR,y:yInnerBottom}, ipBL={x:xiL,y:yInnerBottom};
-    const offI=(pA,pB,dist)=>{ const L=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/L, uy=(pB.y-pA.y)/L; return { x:pA.x+ux*dist, y:pA.y+uy*dist }; };
-    const iaTL=offI(ipTL,ipTR,I_TL.t), ibTL=offI(ipTL,ipBL,I_TL.t);
-    const iaTR=offI(ipTR,ipBR,I_TR.t), ibTR=offI(ipTR,ipTL,I_TR.t);
-    const iaBR=offI(ipBR,ipBL,I_BR.t), ibBR=offI(ipBR,ipTR,I_BR.t);
-    const iaBL=offI(ipBL,ipTL,I_BL.t), ibBL=offI(ipBL,ipBR,I_BL.t);
+    const valIn = (k)=> Math.max(0, Number(rc[k]?.value||0));
+    const ePx = px(eLocal), hPx = px(hLocal);
+    const tTL = Math.min(valIn('TL')*2, a, blPx);
+    const tTR = Math.min(valIn('TR')*2, a, brPx);
+    const tBR = Math.min(valIn('BR')*2, hPx, brPx);
+    const tBL = Math.min(valIn('BL')*2, ePx, blPx);
+    const arc=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
+    // Outer top corner helper points
+    const aTL = { x: x0 + tTL, y: y0 };
+    const bTR = { x: x1 - tTR, y: y0 };
+    const aTR = { x: x1, y: y0 + tTR };
+    // Right edge down to before BR
+    const bBR = { x: x1, y: yTop + brPx - tBR };
+    const aBR = { x: x1 - tBR, y: yTop + brPx };
+    // Bottom left side before BL
+    const bBL = { x: x0 + tBL, y: yTop + blPx };
+    const aBL = { x: x0, y: yTop + blPx - tBL };
+    const bTL = { x: x0, y: y0 + tTL };
+    // Inner top corner helpers (only TL/TR)
+    const ic = cur.icCorners || {};
+    const itTL = Math.max(0, Math.min((Number(ic.iTL?.value||0))*2, (xiR - xiL), (yBotL - yInnerTop)));
+    const itTR = Math.max(0, Math.min((Number(ic.iTR?.value||0))*2, (xiR - xiL), (yBotR - yInnerTop)));
+    const iaTR = { x: xiR - itTR, y: yInnerTop };
+    const ibTR = { x: xiR, y: yInnerTop + itTR };
+    const iaTL = { x: xiL + itTL, y: yInnerTop };
+    const ibTL = { x: xiL, y: yInnerTop + itTL };
     const arcI=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
-    const inner=[];
-    const leftShallow = blPx < brPx;
-    const rightShallow = brPx < blPx;
-    const yBotMax = yTop + Math.max(blPx, brPx);
-    // Common top and right vertical with arcs
-    inner.push(`M ${iaTL.x} ${iaTL.y}`);
-    inner.push(`L ${ibTR.x} ${ibTR.y}`);
-    if (I_TR.mode==='radius'){ const r=I_TR.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaTR)); } else if (I_TR.mode==='clip'){ inner.push(`L ${iaTR.x} ${iaTR.y}`); }
-    inner.push(`L ${ibBR.x} ${ibBR.y}`);
-    if (I_BR.mode==='radius'){ const r=I_BR.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaBR)); } else if (I_BR.mode==='clip'){ inner.push(`L ${iaBR.x} ${iaBR.y}`); }
-    // Bottom inner run toward left along the inner-bottom edge
-    inner.push(`L ${ibBL.x} ${ibBL.y}`);
-    // Finish left side up with BL/TL corners
-    if (I_BL.mode==='radius'){ const r=I_BL.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaBL)); } else if (I_BL.mode==='clip'){ inner.push(`L ${iaBL.x} ${iaBL.y}`); }
-    inner.push(`L ${ibTL.x} ${ibTL.y}`);
-    if (I_TL.mode==='radius'){ const r=I_TL.t/Math.tan(Math.PI/4)||0; inner.push(arcI(r, iaTL)); } else if (I_TL.mode==='clip'){ inner.push(`L ${iaTL.x} ${iaTL.y}`); }
-    inner.push('Z');
-  uPath.setAttribute('d', `${outer.join(' ')} ${inner.join(' ')}`);
-  uPath.setAttribute('fill', fillColor);
-    uPath.setAttribute('fill-rule', 'evenodd');
-  uPath.setAttribute('stroke', 'none');
+    const dParts=[];
+    // Top run with TL/TR
+    dParts.push(`M ${aTL.x} ${aTL.y}`);
+    dParts.push(`L ${bTR.x} ${bTR.y}`);
+    if ((rc.TR?.mode||'square')==='radius'){ const r=tTR/Math.tan(Math.PI/4)||0; dParts.push(arc(r, aTR)); } else if ((rc.TR?.mode||'square')==='clip'){ dParts.push(`L ${aTR.x} ${aTR.y}`); }
+    // Right outer down to before BR
+    dParts.push(`L ${bBR.x} ${bBR.y}`);
+    if ((rc.BR?.mode||'square')==='radius'){ const r=tBR/Math.tan(Math.PI/4)||0; dParts.push(arc(r, aBR)); } else if ((rc.BR?.mode||'square')==='clip'){ dParts.push(`L ${aBR.x} ${aBR.y}`); }
+    // Bottom right return to inner right bottom corner
+    dParts.push(`L ${xiR} ${yTop + brPx}`);
+    // Up inner right to start of iTR arc
+    dParts.push(`L ${ibTR.x} ${ibTR.y}`);
+    if ((ic.iTR?.mode||'square')==='radius'){ const r=itTR/Math.tan(Math.PI/4)||0; dParts.push(arcI(r, iaTR)); } else if ((ic.iTR?.mode||'square')==='clip'){ dParts.push(`L ${iaTR.x} ${iaTR.y}`); }
+    // Inner top across to just before iTL
+    dParts.push(`L ${iaTL.x} ${iaTL.y}`);
+    if ((ic.iTL?.mode||'square')==='radius'){ const r=itTL/Math.tan(Math.PI/4)||0; dParts.push(arcI(r, ibTL)); } else if ((ic.iTL?.mode||'square')==='clip'){ dParts.push(`L ${ibTL.x} ${ibTL.y}`); }
+    // Down inner left to bottom of left leg
+    dParts.push(`L ${xiL} ${yTop + blPx}`);
+    // Bottom left return to before BL
+    dParts.push(`L ${bBL.x} ${bBL.y}`);
+    if ((rc.BL?.mode||'square')==='radius'){ const r=tBL/Math.tan(Math.PI/4)||0; dParts.push(arc(r, aBL)); } else if ((rc.BL?.mode||'square')==='clip'){ dParts.push(`L ${aBL.x} ${aBL.y}`); }
+    // Up left outer to before TL and close
+    dParts.push(`L ${bTL.x} ${bTL.y}`);
+    if ((rc.TL?.mode||'square')==='radius'){ const r=tTL/Math.tan(Math.PI/4)||0; dParts.push(arc(r, aTL)); } else if ((rc.TL?.mode||'square')==='clip'){ dParts.push(`L ${aTL.x} ${aTL.y}`); }
+    dParts.push('Z');
+    uPath.setAttribute('d', dParts.join(' '));
+    uPath.setAttribute('fill', fillColor);
+    uPath.setAttribute('stroke', 'none');
     rotG.appendChild(uPath);
 
           // backsplash along U edges (render above countertop)
@@ -1116,22 +1107,14 @@
             addHandle(idx, TRm.x, TRm.y, 0, 'RC-TR');
             addHandle(idx, BRm.x, BRm.y, 0, 'RC-BR');
             addHandle(idx, BLm.x, BLm.y, 0, 'RC-BL');
-            // Inside-corner handles for U
-            const icC = cur.icCorners || { iTL:{value:0}, iTR:{value:0}, iBR:{value:0}, iBL:{value:0} };
-            const innerWpx = Math.max(0, (x + a) - x); // a is already px width
-            const tMaxPx = Math.max(0, Math.min((xiR - xiL)/2, (yInnerBottom - yInnerTop)/2));
-            const itpx=(k)=> Math.min(Math.max(0, Number(icC[k]?.value||0))*2, tMaxPx);
+            // Inside-corner handles for U: only iTL and iTR (no inner-bottom corners)
+            const icC = cur.icCorners || { iTL:{value:0}, iTR:{value:0} };
+            const itpx=(k)=> Math.max(0, Number(icC[k]?.value||0))*2;
             const yInnerTopLocal = (-hMax/2) + px(dIn);
-            const yInnerBottomLocal = (-hMax/2) + Math.min(blPx, brPx);
             const iTLm = toWorld(-a/2 + px(eIn) + itpx('iTL')/2, yInnerTopLocal + itpx('iTL')/2);
             const iTRm = toWorld( a/2 - px(hIn) - itpx('iTR')/2, yInnerTopLocal + itpx('iTR')/2);
-            const iBRm = toWorld( a/2 - px(hIn) - itpx('iBR')/2, yInnerBottomLocal - itpx('iBR')/2);
-            const iBLm = toWorld(-a/2 + px(eIn) + itpx('iBL')/2, yInnerBottomLocal - itpx('iBL')/2);
             addHandle(idx, iTLm.x, iTLm.y, 0, 'IC-TL');
             addHandle(idx, iTRm.x, iTRm.y, 0, 'IC-TR');
-            // Show all inside-corner handles (supported by single inner-contour)
-            addHandle(idx, iBRm.x, iBRm.y, 0, 'IC-BR');
-            addHandle(idx, iBLm.x, iBLm.y, 0, 'IC-BL');
           }
         } else if (shape==='poly'){
           const fillActive = '#f8c4a0';
@@ -1748,10 +1731,10 @@
                 </span>
               </label>`; list.appendChild(row); };
               mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
-              // Inside corners for U (iTL, iTR, iBR, iBL)
-              const iHdr=document.createElement('div'); iHdr.className='kc-subtle'; iHdr.textContent='Inside Corners'; list.appendChild(iHdr);
+              // Inside corners for U: only the inner top corners exist (no inner-bottom span)
+              const iHdr=document.createElement('div'); iHdr.className='kc-subtle'; iHdr.textContent='Inside Corners (top only)'; list.appendChild(iHdr);
               const allRowUI=document.createElement('div'); allRowUI.className='row';
-              allRowUI.innerHTML = `<label><span>Apply to all</span>
+              allRowUI.innerHTML = `<label><span>Apply to both</span>
                 <select data-ct-ic-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
                 <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-all-val placeholder="size (in)" />
                 <button type="button" class="kc-mini" data-ct-ic-corner-apply-all>Apply</button>
@@ -1767,7 +1750,7 @@
                   <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="2">2"</button>
                 </span>
               </label>`; list.appendChild(row); };
-              mkIC('iTL','Inside TL'); mkIC('iTR','Inside TR'); mkIC('iBR','Inside BR'); mkIC('iBL','Inside BL');
+              mkIC('iTL','Inside TL'); mkIC('iTR','Inside TR');
             }
           } else if (cur.type==='poly'){
             const n = (Array.isArray(cur.points)?cur.points.length:0); for(let i=0;i<n;i++){ const letter=String.fromCharCode(65+i); addRow(`Side ${letter}`, `P${i}`); }
@@ -1888,7 +1871,8 @@
         });
         if (cur.type==='l' || cur.type==='u'){
           if (!cur.icCorners) cur.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-          ['iTL','iTR','iBR','iBL'].forEach(k=>{
+          const keys = (cur.type==='u') ? ['iTL','iTR'] : ['iTL','iTR','iBR','iBL'];
+          keys.forEach(k=>{
             const selEl = sel(`[data-ct-ic-corner-mode="${k}"]`, root);
             const valEl = sel(`[data-ct-ic-corner-val="${k}"]`, root);
             const c = cur.icCorners[k]||{mode:'square',value:0};
@@ -2140,15 +2124,18 @@
       const key = el.getAttribute('data-ct-ic-corner-val'); let v=parseFloat((el).value||'0'); if(!isFinite(v)||v<0)v=0; if(v>12)v=12;
       // Geometric clamp based on current inner opening
       if (s.type==='u'){
+        // Only top inside corners exist. Clamp per side height and inner width.
         const A = Number(s.len?.A||0);
         const eIn = Number(s.len?.E||0), hIn = Number(s.len?.H||0);
         const dIn = Number(s.len?.D||0);
         const BL = Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25));
         const BR = Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25));
         const innerW = Math.max(1, A - (eIn + hIn));
-        const innerH = Math.max(0, Math.min(BL,BR) - dIn);
-        const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
-        v = Math.min(v, tMaxIn);
+        const heightTL = Math.max(0, BL - dIn), heightTR = Math.max(0, BR - dIn);
+        const tMaxTL = Math.max(0, Math.min(innerW/2, heightTL/2));
+        const tMaxTR = Math.max(0, Math.min(innerW/2, heightTR/2));
+        const lim = (key==='iTR') ? tMaxTR : tMaxTL;
+        v = Math.min(v, lim);
       } else if (s.type==='l'){
         const aIn = Number(s.len?.A||0), bIn = Number(s.len?.B||0);
         const cIn = Number(s.len?.C||0), dIn = Number(s.len?.D||0);
@@ -2215,8 +2202,9 @@
         const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
         val = Math.min(val, tMaxIn);
       }
-      if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-      ['iTL','iTR','iBR','iBL'].forEach(k=>{ if (s.type==='l' && (k==='iTR' || k==='iBL')) return; s.icCorners[k] = { mode, value: val }; });
+  if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+  const keys = (s.type==='u') ? ['iTL','iTR'] : ['iTL','iTR','iBR','iBL'];
+  keys.forEach(k=>{ if (s.type==='l' && (k==='iTR' || k==='iBL')) return; s.icCorners[k] = { mode, value: val }; });
       updateSummary(); save(); draw();
     });
     // Corner presets handler
@@ -2874,7 +2862,7 @@
   // Expose a tiny runtime for diagnostics/manual boot
   try{
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-23T37';
+  window.KC_CT.version = '2025-09-23T38';
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
   }catch(e){}
