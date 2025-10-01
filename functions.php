@@ -243,6 +243,77 @@ add_action( 'enqueue_block_editor_assets', function() {
   wp_enqueue_script( 'kc-ct-js', get_stylesheet_directory_uri() . '/assets/js/countertop-config.js', array(), kc_asset_ver( 'assets/js/countertop-config.js' ), true );
 }, 20 );
 
+/* -------------------------------------------------------------
+| SiteGround helpers: dev cache-bypass and quick purge
+| - Adds a toolbar button (admins) to purge SiteGround caches
+| - Allows front-end purge via ?kc_purge=1 (admins only)
+| - Disables cache for the configurator when kc_dev=1 (or KC_DEV)
+-------------------------------------------------------------- */
+
+// Lightweight detector: does this request likely include the configurator?
+if ( ! function_exists( 'kc_is_configurator_request' ) ) {
+  function kc_is_configurator_request() {
+    if ( isset( $_GET['kc_ct'] ) && $_GET['kc_ct'] == '1' ) { return true; }
+    if ( is_singular() ) {
+      global $post;
+      $html = $post ? (string) $post->post_content : '';
+      if ( $html && ( strpos( $html, 'kc-ct-configurator' ) !== false || strpos( $html, 'kadence-child/countertop-configurator' ) !== false ) ) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+// Attempt to purge SiteGround caches safely (works if SG Optimizer is active)
+if ( ! function_exists( 'kc_sg_purge_cache' ) ) {
+  function kc_sg_purge_cache() {
+    $did = false;
+    // Newer action names first
+    if ( has_action( 'sg_cachepress_purge_cache' ) ) { do_action( 'sg_cachepress_purge_cache' ); $did = true; }
+    if ( has_action( 'sg_cachepress_purge_everything' ) ) { do_action( 'sg_cachepress_purge_everything' ); $did = true; }
+    // CDN purge if action exists
+    if ( has_action( 'sg_cachepress_purge_cdn_cache' ) ) { do_action( 'sg_cachepress_purge_cdn_cache' ); $did = true; }
+    return $did;
+  }
+}
+
+// Front-end purge trigger for admins: /?kc_purge=1
+add_action( 'template_redirect', function() {
+  if ( empty( $_GET['kc_purge'] ) ) { return; }
+  if ( ! current_user_can( 'manage_options' ) ) { return; }
+  $ok = kc_sg_purge_cache();
+  if ( ! headers_sent() ) {
+    header( 'X-KC-Purge: ' . ( $ok ? 'ok' : 'noop' ) );
+  }
+} );
+
+// Admin bar button to purge caches quickly
+add_action( 'admin_bar_menu', function( $wp_admin_bar ) {
+  if ( ! is_admin_bar_showing() || ! current_user_can( 'manage_options' ) ) { return; }
+  $args = array(
+    'id'    => 'kc-purge-cache',
+    'title' => 'Purge SG Cache',
+    'href'  => add_query_arg( 'kc_purge', '1', home_url( '/' ) ),
+    'meta'  => array( 'title' => 'Purge SiteGround cache now' ),
+  );
+  $wp_admin_bar->add_node( $args );
+}, 90 );
+
+// During dev, disable caching for the configurator only (kc_dev=1 or KC_DEV)
+add_action( 'template_redirect', function() {
+  $dev = ( isset( $_GET['kc_dev'] ) && $_GET['kc_dev'] == '1' ) || ( defined( 'KC_DEV' ) && KC_DEV );
+  if ( ! $dev ) { return; }
+  if ( ! kc_is_configurator_request() ) { return; }
+  if ( ! defined( 'DONOTCACHEPAGE' ) ) { define( 'DONOTCACHEPAGE', true ); }
+  if ( ! headers_sent() ) {
+    header( 'Cache-Control: no-cache, no-store, must-revalidate, max-age=0' );
+    header( 'Pragma: no-cache' );
+    header( 'Expires: 0' );
+    header( 'X-KC-NoCache: ct-dev' );
+  }
+}, 5 );
+
 /**
  * Theme setup: load translations, enable features.
  */
