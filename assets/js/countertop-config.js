@@ -1521,6 +1521,17 @@
     // swap BL/BR backsplash flags
     const tmpB = cur.bs.BL; cur.bs.BL = cur.bs.BR; cur.bs.BR = tmpB;
   }
+  // swap wall flags for left/right sides and returns
+  if (cur.wall){
+    const tmpWLR = cur.wall.BL; cur.wall.BL = cur.wall.BR; cur.wall.BR = tmpWLR;
+    const tmpWEH = cur.wall.E; cur.wall.E = cur.wall.H; cur.wall.H = tmpWEH;
+  }
+  // swap outside corners TL<->TR and BL<->BR
+  if (!cur.rcCorners) cur.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
+  { const rc = cur.rcCorners; const t1 = rc.TL; rc.TL = rc.TR; rc.TR = t1; const t2 = rc.BL; rc.BL = rc.BR; rc.BR = t2; }
+  // swap inside top corners iTL <-> iTR
+  if (!cur.icCorners) cur.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+  { const ic = cur.icCorners; const t = ic.iTL; ic.iTL = ic.iTR; ic.iTR = t; ic.iBL = {mode:'square',value:0}; ic.iBR = {mode:'square',value:0}; }
     } // rect/poly: no-op for now
     draw(); updateConstraintsUI(); save();
   }));
@@ -1557,8 +1568,12 @@
           const applyUVirtual=(virt, val)=>{
           if (virt==='UA'){ // A -> outer top width (A)
             s.len.A = Math.max(1, val);
-            // recompute C from existing E/H
-            s.len.C = Math.max(1, (s.len.A||0) - Math.max(0,s.len.E||0) - Math.max(0,s.len.H||0));
+            // Clamp E/H first so inner width >= 1
+            const A = s.len.A||0;
+            s.len.E = Math.max(0, Math.min(s.len.E||0, Math.max(0, A-1 - Math.max(0,s.len.H||0))));
+            s.len.H = Math.max(0, Math.min(s.len.H||0, Math.max(0, A-1 - Math.max(0,s.len.E||0))));
+            // recompute C from (A - E - H)
+            s.len.C = Math.max(1, A - Math.max(0,s.len.E||0) - Math.max(0,s.len.H||0));
             return true;
           }
           if (virt==='UB'){ // B -> BR (right depth)
