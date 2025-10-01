@@ -2408,7 +2408,12 @@
       if (s.type==='poly' && Array.isArray(s.points)){
         const n=s.points.length; if (!Array.isArray(s.bsPoly)) s.bsPoly=new Array(n).fill(false); s.bsPoly = new Array(n).fill(true);
       } else {
-        s.bs = s.bs || {}; ['A','BL','BR','B','C','D','E','H'].forEach(k=>{ if (k in (s.len||{}) || ['A','B','C','D'].includes(k)) s.bs[k]=true; });
+        s.bs = s.bs || {};
+        if (s.type==='u'){
+          ['A','BL','BR','C','D','E','H'].forEach(k=>{ s.bs[k] = true; });
+        } else {
+          ['A','B','C','D'].forEach(k=>{ s.bs[k] = true; });
+        }
       }
       updateSummary(); save(); draw();
     });
