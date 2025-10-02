@@ -340,35 +340,54 @@
         label.setAttribute("fill", "#1f2b56");
         label.setAttribute("class", "kc-hlabel");
         let ltxt = "";
-        if (keyStr === "A-right") ltxt = "A";
-        // suppress duplicate 'A' label on the left side
-        else if (keyStr === "A-left") ltxt = "";
-        else if (keyStr === "B-top" || keyStr === "B-bottom") ltxt = "B";
-        else if (keyStr === "BL") ltxt = "BL";
-        else if (keyStr === "BR") ltxt = "BR";
-        else if (keyStr === "C") ltxt = "C";
-        else if (keyStr === "D") ltxt = "D";
-        else if (keyStr === "E") ltxt = "E";
-        else if (keyStr === "H") ltxt = "H";
-        else if (keyStr.startsWith("P-")) ltxt = "Side";
-        else if (keyStr.startsWith("V-")) ltxt = "Pt";
-        else if (keyStr.startsWith("RC-")) {
-          const map = {
-            "RC-TL": "TL",
-            "RC-TR": "TR",
-            "RC-BR": "BR",
-            "RC-BL": "BL",
-          };
-          ltxt = map[keyStr] || "RC";
-        } else if (keyStr.startsWith("IC-")) {
-          const map = {
-            "IC-TL": "iTL",
-            "IC-TR": "iTR",
-            "IC-BR": "iBR",
-            "IC-BL": "iBL",
-            "IC-L": "iC",
-          };
-          ltxt = map[keyStr] || "IC";
+        const sCtx = shapes[idx];
+        const isL = sCtx && sCtx.type === "l";
+        const flipXForL = isL ? !!sCtx.flipX : false;
+        // For L-shapes, we want 'A' on the top wall side only, and 'B' only on the wall vertical side.
+        if (isL) {
+          // Top handles are keyed as B-top/B-bottom in our geometry, but the visible label should be 'A' only on the top side.
+          if (keyStr === "B-top") ltxt = "A";
+          else if (keyStr === "B-bottom") ltxt = ""; // hide bottom duplicate
+          // Side handles are keyed as A-left/A-right; show 'B' only on the wall side (left when not flipped, right when flipped)
+          else if (keyStr === "A-left") ltxt = flipXForL ? "" : "B";
+          else if (keyStr === "A-right") ltxt = flipXForL ? "B" : "";
+          else if (keyStr === "C") ltxt = "C";
+          else if (keyStr === "D") ltxt = "D";
+          else if (keyStr === "BL") ltxt = "BL";
+          else if (keyStr === "BR") ltxt = "BR";
+          else if (keyStr === "E") ltxt = "E";
+          else if (keyStr === "H") ltxt = "H";
+        } else {
+          if (keyStr === "A-right") ltxt = "A";
+          // suppress duplicate 'A' label on the left side
+          else if (keyStr === "A-left") ltxt = "";
+          else if (keyStr === "B-top" || keyStr === "B-bottom") ltxt = "B";
+          else if (keyStr === "BL") ltxt = "BL";
+          else if (keyStr === "BR") ltxt = "BR";
+          else if (keyStr === "C") ltxt = "C";
+          else if (keyStr === "D") ltxt = "D";
+          else if (keyStr === "E") ltxt = "E";
+          else if (keyStr === "H") ltxt = "H";
+          else if (keyStr.startsWith("P-")) ltxt = "Side";
+          else if (keyStr.startsWith("V-")) ltxt = "Pt";
+          else if (keyStr.startsWith("RC-")) {
+            const map = {
+              "RC-TL": "TL",
+              "RC-TR": "TR",
+              "RC-BR": "BR",
+              "RC-BL": "BL",
+            };
+            ltxt = map[keyStr] || "RC";
+          } else if (keyStr.startsWith("IC-")) {
+            const map = {
+              "IC-TL": "iTL",
+              "IC-TR": "iTR",
+              "IC-BR": "iBR",
+              "IC-BL": "iBL",
+              "IC-L": "iC",
+            };
+            ltxt = map[keyStr] || "IC";
+          }
         }
         // Color IC handles distinctly for quick recognition
         if (keyStr.startsWith("IC-")) {
@@ -386,50 +405,80 @@
         };
         let vtxt = "";
         if (sForLbl) {
-          if (["A-right", "A-left"].includes(keyStr))
-            vtxt = fmtVal(sForLbl.len?.A);
-          else if (["B-top", "B-bottom"].includes(keyStr))
-            vtxt = fmtVal(sForLbl.len?.B);
-          else if (keyStr === "BL")
-            vtxt = fmtVal(
-              sForLbl.len?.BL != null
-                ? sForLbl.len.BL
-                : sForLbl.len?.B != null
-                ? sForLbl.len.B
-                : 25
-            );
-          else if (keyStr === "BR")
-            vtxt = fmtVal(
-              sForLbl.len?.BR != null
-                ? sForLbl.len.BR
-                : sForLbl.len?.B != null
-                ? sForLbl.len.B
-                : 25
-            );
-          else if (keyStr === "C") vtxt = fmtVal(sForLbl.len?.C);
-          else if (keyStr === "D") vtxt = fmtVal(sForLbl.len?.D);
-          else if (keyStr === "E") vtxt = fmtVal(sForLbl.len?.E);
-          else if (keyStr === "H") vtxt = fmtVal(sForLbl.len?.H);
-          else if (keyStr.startsWith("RC-")) {
-            const mapK = {
-              "RC-TL": "TL",
-              "RC-TR": "TR",
-              "RC-BR": "BR",
-              "RC-BL": "BL",
-            };
-            const rk = mapK[keyStr];
-            const v = sForLbl.rcCorners?.[rk]?.value || 0;
-            vtxt = fmtVal(v);
-          } else if (keyStr.startsWith("IC-")) {
-            const mapK = {
-              "IC-TL": "iTL",
-              "IC-TR": "iTR",
-              "IC-BR": "iBR",
-              "IC-BL": "iBL",
-            };
-            const rk = mapK[keyStr];
-            const v = sForLbl.icCorners?.[rk]?.value || 0;
-            vtxt = fmtVal(v);
+          if (isL) {
+            // Override values for L-shape so labels match wall-side semantics
+            if (keyStr === "B-top") vtxt = fmtVal(sForLbl.len?.A); // show A value on top
+            else if (keyStr === "B-bottom") vtxt = ""; // hide bottom duplicate
+            else if (keyStr === "A-left" || keyStr === "A-right")
+              vtxt = (flipXForL && keyStr === "A-right") || (!flipXForL && keyStr === "A-left")
+                ? fmtVal(sForLbl.len?.B)
+                : ""; // only show B on wall side
+            else if (keyStr === "C") vtxt = fmtVal(sForLbl.len?.C);
+            else if (keyStr === "D") vtxt = fmtVal(sForLbl.len?.D);
+            else if (keyStr === "BL")
+              vtxt = fmtVal(
+                sForLbl.len?.BL != null
+                  ? sForLbl.len.BL
+                  : sForLbl.len?.B != null
+                  ? sForLbl.len.B
+                  : 25
+              );
+            else if (keyStr === "BR")
+              vtxt = fmtVal(
+                sForLbl.len?.BR != null
+                  ? sForLbl.len.BR
+                  : sForLbl.len?.B != null
+                  ? sForLbl.len.B
+                  : 25
+              );
+            else if (keyStr === "E") vtxt = fmtVal(sForLbl.len?.E);
+            else if (keyStr === "H") vtxt = fmtVal(sForLbl.len?.H);
+          } else {
+            if (["A-right", "A-left"].includes(keyStr))
+              vtxt = fmtVal(sForLbl.len?.A);
+            else if (["B-top", "B-bottom"].includes(keyStr))
+              vtxt = fmtVal(sForLbl.len?.B);
+            else if (keyStr === "BL")
+              vtxt = fmtVal(
+                sForLbl.len?.BL != null
+                  ? sForLbl.len.BL
+                  : sForLbl.len?.B != null
+                  ? sForLbl.len.B
+                  : 25
+              );
+            else if (keyStr === "BR")
+              vtxt = fmtVal(
+                sForLbl.len?.BR != null
+                  ? sForLbl.len.BR
+                  : sForLbl.len?.B != null
+                  ? sForLbl.len.B
+                  : 25
+              );
+            else if (keyStr === "C") vtxt = fmtVal(sForLbl.len?.C);
+            else if (keyStr === "D") vtxt = fmtVal(sForLbl.len?.D);
+            else if (keyStr === "E") vtxt = fmtVal(sForLbl.len?.E);
+            else if (keyStr === "H") vtxt = fmtVal(sForLbl.len?.H);
+            else if (keyStr.startsWith("RC-")) {
+              const mapK = {
+                "RC-TL": "TL",
+                "RC-TR": "TR",
+                "RC-BR": "BR",
+                "RC-BL": "BL",
+              };
+              const rk = mapK[keyStr];
+              const v = sForLbl.rcCorners?.[rk]?.value || 0;
+              vtxt = fmtVal(v);
+            } else if (keyStr.startsWith("IC-")) {
+              const mapK = {
+                "IC-TL": "iTL",
+                "IC-TR": "iTR",
+                "IC-BR": "iBR",
+                "IC-BL": "iBL",
+              };
+              const rk = mapK[keyStr];
+              const v = sForLbl.icCorners?.[rk]?.value || 0;
+              vtxt = fmtVal(v);
+            }
           }
         }
         label.textContent = vtxt ? `${ltxt}: ${vtxt}` : ltxt;
@@ -498,15 +547,12 @@
             bPx = px(b),
             cPx = px(c),
             dPx = px(d);
-          // A top
+          // A label: top wall side only
           mk(cx, cy - bPx / 2 - 10, `${a}\"`);
           const flipX = !!cur.flipX;
-          // B side mirrors
-          if (!flipX) {
-            mkRot(cx - aPx / 2 - 22, cy, `${b}\"`, -90);
-          } else {
-            mkRot(cx + aPx / 2 + 22, cy, `${b}\"`, -90);
-          }
+          // B label: only on the wall vertical side (left when not flipped, right when flipped)
+          if (!flipX) mkRot(cx - aPx / 2 - 22, cy, `${b}\"`, -90);
+          else mkRot(cx + aPx / 2 + 22, cy, `${b}\"`, -90);
           // C bottom inner run
           const cMidX = !flipX
             ? cx - aPx / 2 + cPx / 2
