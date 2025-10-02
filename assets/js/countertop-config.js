@@ -3020,28 +3020,17 @@
         // Default assignment, then shape-specific clamps
         const applyUVirtual = (virt, val) => {
           if (virt === "UA") {
-            // A -> outer top width (A)
-            s.len.A = Math.max(1, val);
-            // Clamp E/H first so inner width >= 1
-            const A = s.len.A || 0;
-            s.len.E = Math.max(
-              0,
-              Math.min(
-                s.len.E || 0,
-                Math.max(0, A - 1 - Math.max(0, s.len.H || 0))
-              )
-            );
+            // UA in the UI represents bottom-right return (H)
             s.len.H = Math.max(
               0,
-              Math.min(
-                s.len.H || 0,
-                Math.max(0, A - 1 - Math.max(0, s.len.E || 0))
-              )
+              Math.min(val, Math.max(0, (s.len.A || 0) - 1 - (s.len.E || 0)))
             );
-            // recompute C from (A - E - H)
+            // keep C consistent with A - E - H
             s.len.C = Math.max(
               1,
-              A - Math.max(0, s.len.E || 0) - Math.max(0, s.len.H || 0)
+              (s.len.A || 0) -
+                Math.max(0, s.len.E || 0) -
+                Math.max(0, s.len.H || 0)
             );
             return true;
           }
@@ -3059,16 +3048,28 @@
             return true;
           }
           if (virt === "UC") {
-            // C -> inner top span (C)
-            const A = Number(s.len.A || 0);
-            // keep E/H proportionally centered when C changes
-            const newC = Math.max(1, Math.min(val, Math.max(1, A - 1)));
-            const spare = Math.max(0, A - newC);
-            const e = Math.floor(spare / 2),
-              h = spare - e;
-            s.len.C = newC;
-            s.len.E = e;
-            s.len.H = h;
+            // UC in the UI represents outer top width (A)
+            s.len.A = Math.max(1, val);
+            const A = s.len.A || 0;
+            // clamp E/H so inner span >= 1
+            s.len.E = Math.max(
+              0,
+              Math.min(
+                s.len.E || 0,
+                Math.max(0, A - 1 - Math.max(0, s.len.H || 0))
+              )
+            );
+            s.len.H = Math.max(
+              0,
+              Math.min(
+                s.len.H || 0,
+                Math.max(0, A - 1 - Math.max(0, s.len.E || 0))
+              )
+            );
+            s.len.C = Math.max(
+              1,
+              A - Math.max(0, s.len.E || 0) - Math.max(0, s.len.H || 0)
+            );
             return true;
           }
           if (virt === "UD") {
@@ -3931,9 +3932,10 @@
           const set = (k) => {
             if (s.wall) s.wall[k] = el.checked;
           };
-          if (letter === "A") set("A");
+          // A in UI maps to right return (H) per U semantics; C maps to outer top (A)
+          if (letter === "A") set("H");
           else if (letter === "B") set("BR");
-          else if (letter === "C") set("C");
+          else if (letter === "C") set("A");
           else if (letter === "D") set("BL");
           else if (letter === "E") set("E");
           // Ignore F: no wall option for inner setback
@@ -3951,15 +3953,25 @@
         let key = el.getAttribute("data-ct-backsplash-inline");
         const s = shapes[active];
         if (s) {
+          // Auto-enable global backsplash and provide a default height if needed
+          if (!opts.bsOn || !Number(opts.bsHeight || 0)) {
+            opts.bsOn = true;
+            if (!Number(opts.bsHeight || 0)) opts.bsHeight = 4;
+            const bsOnEl2 = sel("[data-ct-bs-on]", root);
+            if (bsOnEl2) bsOnEl2.checked = true;
+            const bsH2 = sel("[data-ct-bs-height]", root);
+            if (bsH2) bsH2.value = String(opts.bsHeight);
+          }
           if (!s.bs) s.bs = {};
           if (s.type === "u" && key && key.startsWith("U-")) {
             const letter = key.slice(2);
             const set = (k) => {
               s.bs[k] = el.checked;
             };
-            if (letter === "A") set("A");
+            // A in UI maps to right return (H); C maps to outer top (A)
+            if (letter === "A") set("H");
             else if (letter === "B") set("BR");
-            else if (letter === "C") set("C");
+            else if (letter === "C") set("A");
             else if (letter === "D") set("BL");
             else if (letter === "E") set("E");
             // Ignore F: no backsplash option for inner setback
@@ -3987,6 +3999,15 @@
       const s = shapes[active];
       const checked =
         inp.tagName === "INPUT" ? inp.checked : !!inp.getAttribute("checked");
+      // Ensure global backsplash is on so strips actually render
+      if (checked && (!opts.bsOn || !Number(opts.bsHeight || 0))) {
+        opts.bsOn = true;
+        if (!Number(opts.bsHeight || 0)) opts.bsHeight = 4;
+        const bsOnEl = sel("[data-ct-bs-on]", root);
+        if (bsOnEl) bsOnEl.checked = true;
+        const bsH = sel("[data-ct-bs-height]", root);
+        if (bsH) bsH.value = String(opts.bsHeight);
+      }
       if (s.type === "poly" && /^P\d+$/.test(k)) {
         const idx = parseInt(k.slice(1), 10);
         const n = Array.isArray(s.points) ? s.points.length : 0;
@@ -4532,6 +4553,12 @@
       bsOnEl.addEventListener("change", () => {
         pushHistory();
         opts.bsOn = !!bsOnEl.checked;
+        // If enabling backsplash without a height set, apply a sensible default
+        if (opts.bsOn && !Number(opts.bsHeight || 0)) {
+          opts.bsHeight = 4;
+          const bsH = sel("[data-ct-bs-height]", root);
+          if (bsH) bsH.value = String(opts.bsHeight);
+        }
         updateSummary();
         save();
         draw();
