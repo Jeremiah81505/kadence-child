@@ -1,41 +1,61 @@
 <?php
+
 /**
  * Kadence Child Theme core functions (repaired).
  */
-if ( ! defined( 'ABSPATH' ) ) { exit; }
+if (! defined('ABSPATH')) {
+  exit;
+}
 
 // Utilities (version helper, etc.)
-if ( file_exists( get_theme_file_path( 'utils.php' ) ) ) {
-  require_once get_theme_file_path( 'utils.php' );
+if (file_exists(get_theme_file_path('utils.php'))) {
+  require_once get_theme_file_path('utils.php');
 }
-if ( ! function_exists( 'kc_get_theme_version' ) ) {
-  function kc_get_theme_version() { return wp_get_theme()->get( 'Version' ); }
+if (! function_exists('kc_get_theme_version')) {
+  function kc_get_theme_version()
+  {
+    return wp_get_theme()->get('Version');
+  }
 }
 
 // PHP 8 polyfill (older hosts)
-if ( ! function_exists( 'str_starts_with' ) ) {
-  function str_starts_with( $haystack, $needle ) {
-    if ( $needle === '' ) { return true; }
-    return strpos( $haystack, $needle ) === 0;
+if (! function_exists('str_starts_with')) {
+  function str_starts_with($haystack, $needle)
+  {
+    if ($needle === '') {
+      return true;
+    }
+    return strpos($haystack, $needle) === 0;
   }
 }
 
 // Editor-friendly defaults for optional constants (no runtime behavior change)
-if ( ! defined( 'KC_DEV' ) ) { define( 'KC_DEV', false ); }
-if ( ! defined( 'KC_DEBUG_PATTERNS' ) ) { define( 'KC_DEBUG_PATTERNS', false ); }
-if ( ! defined( 'KC_ENABLE_HERO_FRONT' ) ) { define( 'KC_ENABLE_HERO_FRONT', false ); }
+if (! defined('KC_DEV')) {
+  define('KC_DEV', false);
+}
+if (! defined('KC_DEBUG_PATTERNS')) {
+  define('KC_DEBUG_PATTERNS', false);
+}
+if (! defined('KC_ENABLE_HERO_FRONT')) {
+  define('KC_ENABLE_HERO_FRONT', false);
+}
+// Always bypass caches for the configurator page(s). Set to false to allow caching.
+if (! defined('KC_CT_NOCACHE')) {
+  define('KC_CT_NOCACHE', true);
+}
 
 /*--------------------------------------------------------------
 | ASSETS
 --------------------------------------------------------------*/
 // Simple file-based version (cache bust on change) with fallback to theme version.
-if ( ! function_exists( 'kc_asset_ver' ) ) {
-  function kc_asset_ver( $rel_path ) {
-    $file = get_stylesheet_directory() . '/' . ltrim( $rel_path, '/' );
-    $mtime = file_exists( $file ) ? filemtime( $file ) : false;
+if (! function_exists('kc_asset_ver')) {
+  function kc_asset_ver($rel_path)
+  {
+    $file = get_stylesheet_directory() . '/' . ltrim($rel_path, '/');
+    $mtime = file_exists($file) ? filemtime($file) : false;
     // Dev override: append a fresh timestamp whenever ?kc_dev=1 or KC_DEV enabled
-    $dev = ( isset( $_GET['kc_dev'] ) && $_GET['kc_dev'] == '1' ) || ( defined( 'KC_DEV' ) && KC_DEV );
-    if ( $dev ) {
+    $dev = (isset($_GET['kc_dev']) && $_GET['kc_dev'] == '1') || (defined('KC_DEV') && KC_DEV);
+    if ($dev) {
       return (string) time();
     }
     return $mtime ? (string) $mtime : kc_get_theme_version();
@@ -45,55 +65,70 @@ if ( ! function_exists( 'kc_asset_ver' ) ) {
 /*--------------------------------------------------------------
 | THEME SETUP
 --------------------------------------------------------------*/
-add_action( 'after_setup_theme', function() {
-  load_child_theme_textdomain( 'kadence-child', get_stylesheet_directory() . '/languages' );
-  add_theme_support( 'title-tag' );
-} );
+add_action('after_setup_theme', function () {
+  load_child_theme_textdomain('kadence-child', get_stylesheet_directory() . '/languages');
+  add_theme_support('title-tag');
+});
 
 /*--------------------------------------------------------------
 | PATTERN CATEGORIES
 --------------------------------------------------------------*/
-add_action( 'init', function() {
-  if ( ! function_exists( 'register_block_pattern_category' ) ) { return; }
-  register_block_pattern_category( 'kadence-child', array( 'label' => __( 'Kadence Child', 'kadence-child' ) ) );
-  register_block_pattern_category( 'elevated', array( 'label' => __( 'Elevated', 'kadence-child' ) ) );
-  register_block_pattern_category( 'featured', array( 'label' => __( 'Featured', 'kadence-child' ) ) );
-}, 8 );
+add_action('init', function () {
+  if (! function_exists('register_block_pattern_category')) {
+    return;
+  }
+  register_block_pattern_category('kadence-child', array('label' => __('Kadence Child', 'kadence-child')));
+  register_block_pattern_category('elevated', array('label' => __('Elevated', 'kadence-child')));
+  register_block_pattern_category('featured', array('label' => __('Featured', 'kadence-child')));
+}, 8);
 
 /*--------------------------------------------------------------
 | OPTIONAL DEBUG (opt‑in with constant + query parameter)
 --------------------------------------------------------------*/
-if ( defined( 'KC_DEBUG_PATTERNS' ) && KC_DEBUG_PATTERNS ) {
-  add_action( 'admin_init', function() {
-    if ( empty( $_GET['kc_patterns_debug'] ) || ! current_user_can( 'manage_options' ) ) { return; }
-    if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) { require_once ABSPATH . 'wp-includes/class-wp-block-patterns-registry.php'; }
-    add_action( 'admin_notices', function() {
-      if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) { echo '<div class="notice notice-error"><p>Block Patterns Registry unavailable.</p></div>'; return; }
+if (defined('KC_DEBUG_PATTERNS') && KC_DEBUG_PATTERNS) {
+  add_action('admin_init', function () {
+    if (empty($_GET['kc_patterns_debug']) || ! current_user_can('manage_options')) {
+      return;
+    }
+    if (! class_exists('WP_Block_Patterns_Registry')) {
+      require_once ABSPATH . 'wp-includes/class-wp-block-patterns-registry.php';
+    }
+    add_action('admin_notices', function () {
+      if (! class_exists('WP_Block_Patterns_Registry')) {
+        echo '<div class="notice notice-error"><p>Block Patterns Registry unavailable.</p></div>';
+        return;
+      }
       $reg = WP_Block_Patterns_Registry::get_instance();
       $rows = array();
-      foreach ( $reg->get_all_registered() as $slug => $data ) {
-        if ( str_starts_with( $slug, 'kadence-child/' ) ) { $rows[] = esc_html( $slug . ' — ' . $data['title'] ); }
+      foreach ($reg->get_all_registered() as $slug => $data) {
+        if (str_starts_with($slug, 'kadence-child/')) {
+          $rows[] = esc_html($slug . ' — ' . $data['title']);
+        }
       }
-      echo '<div class="notice notice-info"><p><strong>Kadence Child Patterns (' . count( $rows ) . ')</strong><br>' . ( $rows ? implode( '<br>', $rows ) : 'None registered' ) . '</p></div>';
-    } );
-  } );
+      echo '<div class="notice notice-info"><p><strong>Kadence Child Patterns (' . count($rows) . ')</strong><br>' . ($rows ? implode('<br>', $rows) : 'None registered') . '</p></div>';
+    });
+  });
 }
 
 /*--------------------------------------------------------------
 | FORCE UNREGISTER DEPRECATED PATTERNS
 --------------------------------------------------------------*/
-add_action( 'init', function() {
-  if ( ! function_exists( 'unregister_block_pattern' ) ) { return; }
-  foreach ( array(
-    'kadence-child/carousel-3d-ring',
-    'kadence-child/carousel-3d-ring-basic',
-    'kadence-child/carousel-3d-ring-v2',
-    'kadence-child/carousel-3d-ring-adv',
-    'kadence-child/hero-showcase-carousel'
-  ) as $slug ) {
-    unregister_block_pattern( $slug );
+add_action('init', function () {
+  if (! function_exists('unregister_block_pattern')) {
+    return;
   }
-}, 99 );
+  foreach (
+    array(
+      'kadence-child/carousel-3d-ring',
+      'kadence-child/carousel-3d-ring-basic',
+      'kadence-child/carousel-3d-ring-v2',
+      'kadence-child/carousel-3d-ring-adv',
+      'kadence-child/hero-showcase-carousel'
+    ) as $slug
+  ) {
+    unregister_block_pattern($slug);
+  }
+}, 99);
 
 /*--------------------------------------------------------------
 | OPTIONAL: FORCE A SPECIFIC REUSABLE BLOCK AS HEADER (ID 1769)
@@ -101,41 +136,45 @@ add_action( 'init', function() {
 | block (e.g. "Header 1769"), this provides a guaranteed fallback.
 | Disable by commenting out the define() below.
 --------------------------------------------------------------*/
-if ( ! defined( 'KC_FORCE_HEADER_BLOCK_ID' ) ) {
+if (! defined('KC_FORCE_HEADER_BLOCK_ID')) {
   // Set to 0 to disable forced header block output.
-  define( 'KC_FORCE_HEADER_BLOCK_ID', 0 );
+  define('KC_FORCE_HEADER_BLOCK_ID', 0);
 }
 
 // Disable front-page auto hero injection so homepage shows nothing unless content exists.
-if ( ! defined( 'KC_DISABLE_HERO_FRONT' ) ) {
-  define( 'KC_DISABLE_HERO_FRONT', true );
+if (! defined('KC_DISABLE_HERO_FRONT')) {
+  define('KC_DISABLE_HERO_FRONT', true);
 }
 
 // Global motion toggle. Default to no motion for a calmer, classy feel.
-if ( ! defined( 'KC_NO_MOTION' ) ) {
-  define( 'KC_NO_MOTION', true );
+if (! defined('KC_NO_MOTION')) {
+  define('KC_NO_MOTION', true);
 }
 
 // Add a body class when motion is disabled; allow runtime override via ?kc_motion=1 to preview animations.
-add_filter( 'body_class', function( $classes ) {
-  $enable = isset( $_GET['kc_motion'] ) && $_GET['kc_motion'] == '1';
-  if ( KC_NO_MOTION && ! $enable && ! in_array( 'kc-no-motion', $classes, true ) ) {
+add_filter('body_class', function ($classes) {
+  $enable = isset($_GET['kc_motion']) && $_GET['kc_motion'] == '1';
+  if (KC_NO_MOTION && ! $enable && ! in_array('kc-no-motion', $classes, true)) {
     $classes[] = 'kc-no-motion';
   }
   return $classes;
-}, 5 );
+}, 5);
 
 // Output the forced header block just after <body> opens, BEFORE page content.
-add_action( 'wp_body_open', function() {
-  if ( ! KC_FORCE_HEADER_BLOCK_ID ) { return; }
-  $block_post = get_post( KC_FORCE_HEADER_BLOCK_ID );
-  if ( ! $block_post || 'wp_block' !== $block_post->post_type || 'publish' !== $block_post->post_status ) { return; }
+add_action('wp_body_open', function () {
+  if (! KC_FORCE_HEADER_BLOCK_ID) {
+    return;
+  }
+  $block_post = get_post(KC_FORCE_HEADER_BLOCK_ID);
+  if (! $block_post || 'wp_block' !== $block_post->post_type || 'publish' !== $block_post->post_status) {
+    return;
+  }
   // Optionally hide the normal Kadence header (uncomment style below if needed).
   // echo '<style>#masthead{display:none!important}</style>';
   echo '<header id="kc-forced-header" class="kc-forced-header" data-source="kc-force-header-block">';
-  echo do_blocks( $block_post->post_content );
+  echo do_blocks($block_post->post_content);
   echo '</header>';
-}, 5 );
+}, 5);
 
 // End of file.
 // Removed legacy carousel content scrubbing filter after full purge.
@@ -143,105 +182,111 @@ add_action( 'wp_body_open', function() {
 /**
  * Enqueue child + header assets
  */
-add_action( 'wp_enqueue_scripts', function() {
+add_action('wp_enqueue_scripts', function () {
   // Styles
-  wp_enqueue_style( 'kadence-child', get_stylesheet_uri(), array( 'kadence-theme' ), kc_asset_ver( 'style.css' ) );
-  wp_enqueue_style( 'kc-header', get_stylesheet_directory_uri() . '/assets/css/header.css', array(), kc_asset_ver( 'assets/css/header.css' ) );
-  wp_enqueue_style( 'kc-carousel-adv', get_stylesheet_directory_uri() . '/assets/css/carousel-adv.css', array(), kc_asset_ver( 'assets/css/carousel-adv.css' ) );
+  wp_enqueue_style('kadence-child', get_stylesheet_uri(), array('kadence-theme'), kc_asset_ver('style.css'));
+  wp_enqueue_style('kc-header', get_stylesheet_directory_uri() . '/assets/css/header.css', array(), kc_asset_ver('assets/css/header.css'));
+  wp_enqueue_style('kc-carousel-adv', get_stylesheet_directory_uri() . '/assets/css/carousel-adv.css', array(), kc_asset_ver('assets/css/carousel-adv.css'));
   // Dedicated hero motion styles (isolated from main style.css for reliability)
-  wp_enqueue_style( 'kc-hero-motion-css', get_stylesheet_directory_uri() . '/assets/css/hero-motion.css', array( 'kadence-child' ), kc_asset_ver( 'assets/css/hero-motion.css' ) );
+  wp_enqueue_style('kc-hero-motion-css', get_stylesheet_directory_uri() . '/assets/css/hero-motion.css', array('kadence-child'), kc_asset_ver('assets/css/hero-motion.css'));
 
   // Scripts
-  wp_enqueue_script( 'kc-header', get_stylesheet_directory_uri() . '/assets/js/header.js', array(), kc_asset_ver( 'assets/js/header.js' ), true );
-  wp_enqueue_script( 'kadence-child-js', get_stylesheet_directory_uri() . '/assets/child.js', array(), kc_asset_ver( 'assets/child.js' ), true );
-  wp_enqueue_script( 'kc-hero-motion', get_stylesheet_directory_uri() . '/assets/js/hero-ultimate-motion.js', array(), kc_asset_ver( 'assets/js/hero-ultimate-motion.js' ), true );
-  wp_enqueue_script( 'kc-carousel-adv', get_stylesheet_directory_uri() . '/assets/js/carousel-adv.js', array(), kc_asset_ver( 'assets/js/carousel-adv.js' ), true );
+  wp_enqueue_script('kc-header', get_stylesheet_directory_uri() . '/assets/js/header.js', array(), kc_asset_ver('assets/js/header.js'), true);
+  wp_enqueue_script('kadence-child-js', get_stylesheet_directory_uri() . '/assets/child.js', array(), kc_asset_ver('assets/child.js'), true);
+  wp_enqueue_script('kc-hero-motion', get_stylesheet_directory_uri() . '/assets/js/hero-ultimate-motion.js', array(), kc_asset_ver('assets/js/hero-ultimate-motion.js'), true);
+  wp_enqueue_script('kc-carousel-adv', get_stylesheet_directory_uri() . '/assets/js/carousel-adv.js', array(), kc_asset_ver('assets/js/carousel-adv.js'), true);
 
-  wp_localize_script( 'kc-header', 'KC_HEADER', array( 'stickyOffset' => 64 ) );
+  wp_localize_script('kc-header', 'KC_HEADER', array('stickyOffset' => 64));
   // Provide a flag to tone down hero motion without affecting carousel
-  wp_localize_script( 'kc-hero-motion', 'KC_HERO', array( 'minimal' => true ) );
+  wp_localize_script('kc-hero-motion', 'KC_HERO', array('minimal' => true));
 
   // Countertop configurator assets (HD-like)
   $should_load_config = false;
-  if ( is_singular() ) {
-    global $post; $html = $post ? (string) $post->post_content : '';
-    $should_load_config = ( false !== strpos( $html, 'kc-ct-configurator' ) ) || ( false !== strpos( $html, 'kadence-child/countertop-configurator' ) );
+  if (is_singular()) {
+    global $post;
+    $html = $post ? (string) $post->post_content : '';
+    $should_load_config = (false !== strpos($html, 'kc-ct-configurator')) || (false !== strpos($html, 'kadence-child/countertop-configurator'));
   }
-  if ( isset( $_GET['kc_ct'] ) && $_GET['kc_ct'] == '1' ) { $should_load_config = true; }
-  if ( $should_load_config ) {
-    wp_enqueue_style( 'kc-ct-css', get_stylesheet_directory_uri() . '/assets/css/countertop-config.css', array(), kc_asset_ver( 'assets/css/countertop-config.css' ) );
-    wp_enqueue_script( 'kc-ct-js', get_stylesheet_directory_uri() . '/assets/js/countertop-config.js', array(), kc_asset_ver( 'assets/js/countertop-config.js' ), true );
+  if (isset($_GET['kc_ct']) && $_GET['kc_ct'] == '1') {
+    $should_load_config = true;
   }
-}, 99 );
+  if ($should_load_config) {
+    wp_enqueue_style('kc-ct-css', get_stylesheet_directory_uri() . '/assets/css/countertop-config.css', array(), kc_asset_ver('assets/css/countertop-config.css'));
+    wp_enqueue_script('kc-ct-js', get_stylesheet_directory_uri() . '/assets/js/countertop-config.js', array(), kc_asset_ver('assets/js/countertop-config.js'), true);
+  }
+}, 99);
 
 // Runtime-safe detection: enqueue configurator assets when the pattern actually renders
-add_filter( 'render_block', function( $block_content, $block ) {
-  if ( is_admin() ) { return $block_content; }
+add_filter('render_block', function ($block_content, $block) {
+  if (is_admin()) {
+    return $block_content;
+  }
   // Quick checks against block metadata
   $hit = false;
-  if ( isset( $block['blockName'] ) ) {
+  if (isset($block['blockName'])) {
     // The pattern wrapper itself
-    if ( $block['blockName'] === 'core/pattern' && ! empty( $block['attrs']['slug'] ) && $block['attrs']['slug'] === 'kadence-child/countertop-configurator' ) {
+    if ($block['blockName'] === 'core/pattern' && ! empty($block['attrs']['slug']) && $block['attrs']['slug'] === 'kadence-child/countertop-configurator') {
       $hit = true;
     }
     // Or a group with our marker class
-    if ( ! $hit && $block['blockName'] === 'core/group' && ! empty( $block['attrs']['className'] ) && strpos( $block['attrs']['className'], 'kc-ct-configurator' ) !== false ) {
+    if (! $hit && $block['blockName'] === 'core/group' && ! empty($block['attrs']['className']) && strpos($block['attrs']['className'], 'kc-ct-configurator') !== false) {
       $hit = true;
     }
   }
   // Fallback: string check of rendered HTML (covers nested/third-party wrappers)
-  if ( ! $hit && is_string( $block_content ) && strpos( $block_content, 'kc-ct-configurator' ) !== false ) {
+  if (! $hit && is_string($block_content) && strpos($block_content, 'kc-ct-configurator') !== false) {
     $hit = true;
   }
-  if ( $hit ) {
-    wp_enqueue_style( 'kc-ct-css', get_stylesheet_directory_uri() . '/assets/css/countertop-config.css', array(), kc_asset_ver( 'assets/css/countertop-config.css' ) );
-    wp_enqueue_script( 'kc-ct-js', get_stylesheet_directory_uri() . '/assets/js/countertop-config.js', array(), kc_asset_ver( 'assets/js/countertop-config.js' ), true );
+  if ($hit) {
+    wp_enqueue_style('kc-ct-css', get_stylesheet_directory_uri() . '/assets/css/countertop-config.css', array(), kc_asset_ver('assets/css/countertop-config.css'));
+    wp_enqueue_script('kc-ct-js', get_stylesheet_directory_uri() . '/assets/js/countertop-config.js', array(), kc_asset_ver('assets/js/countertop-config.js'), true);
   }
   return $block_content;
-}, 20, 2 );
+}, 20, 2);
 
 // Minimal Kitchen Layout MVP: renderer, shortcode, and optional preview via ?kl=1
-if ( ! function_exists( 'kc_render_kitchen_layout_block' ) ) {
-  function kc_render_kitchen_layout_block() {
+if (! function_exists('kc_render_kitchen_layout_block')) {
+  function kc_render_kitchen_layout_block()
+  {
     ob_start();
-    ?>
+?>
     <div class="kl-wrap">
       <div class="kl-toolbar"><span class="note">Drag to move. Grab a blue handle to resize. Units are inches.</span></div>
       <div class="kl-canvas">
         <svg class="kl-svg" aria-label="Kitchen Layout Canvas"></svg>
       </div>
     </div>
-    <?php
+<?php
     return ob_get_clean();
   }
 }
 
 // Shortcode outputs the MVP and ensures assets are loaded
-add_shortcode( 'kitchen_layout', function( $atts = array(), $content = '' ) {
-  wp_enqueue_style( 'kl-css', get_stylesheet_directory_uri() . '/assets/css/kitchen-layout.css', array(), kc_asset_ver( 'assets/css/kitchen-layout.css' ) );
-  wp_enqueue_script( 'kl-js', get_stylesheet_directory_uri() . '/assets/js/kitchen-layout.js', array(), kc_asset_ver( 'assets/js/kitchen-layout.js' ), true );
+add_shortcode('kitchen_layout', function ($atts = array(), $content = '') {
+  wp_enqueue_style('kl-css', get_stylesheet_directory_uri() . '/assets/css/kitchen-layout.css', array(), kc_asset_ver('assets/css/kitchen-layout.css'));
+  wp_enqueue_script('kl-js', get_stylesheet_directory_uri() . '/assets/js/kitchen-layout.js', array(), kc_asset_ver('assets/js/kitchen-layout.js'), true);
   return kc_render_kitchen_layout_block();
-} );
+});
 
 // Optional quick preview without editing content: visit any page with ?kl=1
-add_action( 'wp_enqueue_scripts', function() {
-  if ( isset( $_GET['kl'] ) && $_GET['kl'] == '1' ) {
-    wp_enqueue_style( 'kl-css', get_stylesheet_directory_uri() . '/assets/css/kitchen-layout.css', array(), kc_asset_ver( 'assets/css/kitchen-layout.css' ) );
-    wp_enqueue_script( 'kl-js', get_stylesheet_directory_uri() . '/assets/js/kitchen-layout.js', array(), kc_asset_ver( 'assets/js/kitchen-layout.js' ), true );
+add_action('wp_enqueue_scripts', function () {
+  if (isset($_GET['kl']) && $_GET['kl'] == '1') {
+    wp_enqueue_style('kl-css', get_stylesheet_directory_uri() . '/assets/css/kitchen-layout.css', array(), kc_asset_ver('assets/css/kitchen-layout.css'));
+    wp_enqueue_script('kl-js', get_stylesheet_directory_uri() . '/assets/js/kitchen-layout.js', array(), kc_asset_ver('assets/js/kitchen-layout.js'), true);
   }
-}, 100 );
-add_action( 'wp_footer', function() {
-  if ( isset( $_GET['kl'] ) && $_GET['kl'] == '1' ) {
+}, 100);
+add_action('wp_footer', function () {
+  if (isset($_GET['kl']) && $_GET['kl'] == '1') {
     echo kc_render_kitchen_layout_block(); // phpcs:ignore WordPress.Security.EscapeOutput
   }
-}, 99 );
+}, 99);
 
 // Load kitchen designer assets inside the block editor when pattern block is present
-add_action( 'enqueue_block_editor_assets', function() {
+add_action('enqueue_block_editor_assets', function () {
   // Editor: always load configurator assets if editing
-  wp_enqueue_style( 'kc-ct-css', get_stylesheet_directory_uri() . '/assets/css/countertop-config.css', array(), kc_asset_ver( 'assets/css/countertop-config.css' ) );
-  wp_enqueue_script( 'kc-ct-js', get_stylesheet_directory_uri() . '/assets/js/countertop-config.js', array(), kc_asset_ver( 'assets/js/countertop-config.js' ), true );
-}, 20 );
+  wp_enqueue_style('kc-ct-css', get_stylesheet_directory_uri() . '/assets/css/countertop-config.css', array(), kc_asset_ver('assets/css/countertop-config.css'));
+  wp_enqueue_script('kc-ct-js', get_stylesheet_directory_uri() . '/assets/js/countertop-config.js', array(), kc_asset_ver('assets/js/countertop-config.js'), true);
+}, 20);
 
 /* -------------------------------------------------------------
 | SiteGround helpers: dev cache-bypass and quick purge
@@ -251,13 +296,16 @@ add_action( 'enqueue_block_editor_assets', function() {
 -------------------------------------------------------------- */
 
 // Lightweight detector: does this request likely include the configurator?
-if ( ! function_exists( 'kc_is_configurator_request' ) ) {
-  function kc_is_configurator_request() {
-    if ( isset( $_GET['kc_ct'] ) && $_GET['kc_ct'] == '1' ) { return true; }
-    if ( is_singular() ) {
+if (! function_exists('kc_is_configurator_request')) {
+  function kc_is_configurator_request()
+  {
+    if (isset($_GET['kc_ct']) && $_GET['kc_ct'] == '1') {
+      return true;
+    }
+    if (is_singular()) {
       global $post;
       $html = $post ? (string) $post->post_content : '';
-      if ( $html && ( strpos( $html, 'kc-ct-configurator' ) !== false || strpos( $html, 'kadence-child/countertop-configurator' ) !== false ) ) {
+      if ($html && (strpos($html, 'kc-ct-configurator') !== false || strpos($html, 'kadence-child/countertop-configurator') !== false)) {
         return true;
       }
     }
@@ -266,77 +314,118 @@ if ( ! function_exists( 'kc_is_configurator_request' ) ) {
 }
 
 // Attempt to purge SiteGround caches safely (works if SG Optimizer is active)
-if ( ! function_exists( 'kc_sg_purge_cache' ) ) {
-  function kc_sg_purge_cache() {
+if (! function_exists('kc_sg_purge_cache')) {
+  function kc_sg_purge_cache()
+  {
     $did = false;
     // Newer action names first
-    if ( has_action( 'sg_cachepress_purge_cache' ) ) { do_action( 'sg_cachepress_purge_cache' ); $did = true; }
-    if ( has_action( 'sg_cachepress_purge_everything' ) ) { do_action( 'sg_cachepress_purge_everything' ); $did = true; }
+    if (has_action('sg_cachepress_purge_cache')) {
+      do_action('sg_cachepress_purge_cache');
+      $did = true;
+    }
+    if (has_action('sg_cachepress_purge_everything')) {
+      do_action('sg_cachepress_purge_everything');
+      $did = true;
+    }
     // CDN purge if action exists
-    if ( has_action( 'sg_cachepress_purge_cdn_cache' ) ) { do_action( 'sg_cachepress_purge_cdn_cache' ); $did = true; }
+    if (has_action('sg_cachepress_purge_cdn_cache')) {
+      do_action('sg_cachepress_purge_cdn_cache');
+      $did = true;
+    }
     return $did;
   }
 }
 
 // Front-end purge trigger for admins: /?kc_purge=1
-add_action( 'template_redirect', function() {
-  if ( empty( $_GET['kc_purge'] ) ) { return; }
-  if ( ! current_user_can( 'manage_options' ) ) { return; }
-  $ok = kc_sg_purge_cache();
-  if ( ! headers_sent() ) {
-    header( 'X-KC-Purge: ' . ( $ok ? 'ok' : 'noop' ) );
+add_action('template_redirect', function () {
+  if (empty($_GET['kc_purge'])) {
+    return;
   }
-} );
+  if (! current_user_can('manage_options')) {
+    return;
+  }
+  $ok = kc_sg_purge_cache();
+  if (! headers_sent()) {
+    header('X-KC-Purge: ' . ($ok ? 'ok' : 'noop'));
+  }
+});
 
 // Admin bar button to purge caches quickly
-add_action( 'admin_bar_menu', function( $wp_admin_bar ) {
-  if ( ! is_admin_bar_showing() || ! current_user_can( 'manage_options' ) ) { return; }
+add_action('admin_bar_menu', function ($wp_admin_bar) {
+  if (! is_admin_bar_showing() || ! current_user_can('manage_options')) {
+    return;
+  }
   $args = array(
     'id'    => 'kc-purge-cache',
     'title' => 'Purge SG Cache',
-    'href'  => add_query_arg( 'kc_purge', '1', home_url( '/' ) ),
-    'meta'  => array( 'title' => 'Purge SiteGround cache now' ),
+    'href'  => add_query_arg('kc_purge', '1', home_url('/')),
+    'meta'  => array('title' => 'Purge SiteGround cache now'),
   );
-  $wp_admin_bar->add_node( $args );
-}, 90 );
+  $wp_admin_bar->add_node($args);
+}, 90);
 
 // During dev, disable caching for the configurator only (kc_dev=1 or KC_DEV)
-add_action( 'template_redirect', function() {
-  $dev = ( isset( $_GET['kc_dev'] ) && $_GET['kc_dev'] == '1' ) || ( defined( 'KC_DEV' ) && KC_DEV );
-  if ( ! $dev ) { return; }
-  if ( ! kc_is_configurator_request() ) { return; }
-  if ( ! defined( 'DONOTCACHEPAGE' ) ) { define( 'DONOTCACHEPAGE', true ); }
-  if ( ! headers_sent() ) {
-    header( 'Cache-Control: no-cache, no-store, must-revalidate, max-age=0' );
-    header( 'Pragma: no-cache' );
-    header( 'Expires: 0' );
-    header( 'X-KC-NoCache: ct-dev' );
+add_action('template_redirect', function () {
+  $dev = (isset($_GET['kc_dev']) && $_GET['kc_dev'] == '1') || (defined('KC_DEV') && KC_DEV);
+  if (! $dev) {
+    return;
   }
-}, 5 );
+  if (! kc_is_configurator_request()) {
+    return;
+  }
+  if (! defined('DONOTCACHEPAGE')) {
+    define('DONOTCACHEPAGE', true);
+  }
+  if (! headers_sent()) {
+    header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    header('X-KC-NoCache: ct-dev');
+  }
+}, 5);
+
+// Production-friendly: optionally always bypass cache on configurator requests
+add_action('template_redirect', function () {
+  if (! KC_CT_NOCACHE) {
+    return;
+  }
+  if (! kc_is_configurator_request()) {
+    return;
+  }
+  if (! defined('DONOTCACHEPAGE')) {
+    define('DONOTCACHEPAGE', true);
+  }
+  if (! headers_sent()) {
+    header('Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    header('X-KC-NoCache: ct-prod');
+  }
+}, 6);
 
 /**
  * Theme setup: load translations, enable features.
  */
-add_action( 'after_setup_theme', function() {
-  load_child_theme_textdomain( 'kadence-child', get_stylesheet_directory() . '/languages' );
+add_action('after_setup_theme', function () {
+  load_child_theme_textdomain('kadence-child', get_stylesheet_directory() . '/languages');
   // Support for automatic title tag if not already by parent.
-  add_theme_support( 'title-tag' );
-} );
+  add_theme_support('title-tag');
+});
 
 // Removed legacy automatic raw file registration of patterns.
 // Inc patterns loader removed; rely solely on core /patterns auto-discovery.
 
 // Load pattern registration scripts (each script buffers and registers a pattern).
 // First ensure our custom pattern categories exist.
-add_action( 'init', function() {
-  if ( ! function_exists( 'register_block_pattern_category' ) ) {
+add_action('init', function () {
+  if (! function_exists('register_block_pattern_category')) {
     return; // Older WP.
   }
   // Register (duplicate calls safely ignored by core)
-  register_block_pattern_category( 'kadence-child', array( 'label' => __( 'Kadence Child', 'kadence-child' ) ) );
-  register_block_pattern_category( 'elevated', array( 'label' => __( 'Elevated', 'kadence-child' ) ) );
-  register_block_pattern_category( 'featured', array( 'label' => __( 'Featured', 'kadence-child' ) ) );
-}, 8 );
+  register_block_pattern_category('kadence-child', array('label' => __('Kadence Child', 'kadence-child')));
+  register_block_pattern_category('elevated', array('label' => __('Elevated', 'kadence-child')));
+  register_block_pattern_category('featured', array('label' => __('Featured', 'kadence-child')));
+}, 8);
 
 // Removed old manual loader for inc/patterns/*.php (now relying on core /patterns auto-registration).
 // Removed custom manual loader. Relying on core pattern auto-discovery (child + parent /patterns directory).
@@ -350,35 +439,48 @@ add_action( 'init', function() {
  * a list of registered Kadence Child patterns & categories.
  */
 // Lightweight optional pattern debug: enable by defining KC_DEBUG_PATTERNS true and visiting /wp-admin/?kc_patterns_debug=1
-if ( defined( 'KC_DEBUG_PATTERNS' ) && KC_DEBUG_PATTERNS ) {
-  add_action( 'admin_init', function() {
-    if ( empty( $_GET['kc_patterns_debug'] ) || ! current_user_can( 'manage_options' ) ) { return; }
-    if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) { require_once ABSPATH . 'wp-includes/class-wp-block-patterns-registry.php'; }
-    add_action( 'admin_notices', function() {
-      if ( ! class_exists( 'WP_Block_Patterns_Registry' ) ) { echo '<div class="notice notice-error"><p>Block Patterns Registry unavailable.</p></div>'; return; }
+if (defined('KC_DEBUG_PATTERNS') && KC_DEBUG_PATTERNS) {
+  add_action('admin_init', function () {
+    if (empty($_GET['kc_patterns_debug']) || ! current_user_can('manage_options')) {
+      return;
+    }
+    if (! class_exists('WP_Block_Patterns_Registry')) {
+      require_once ABSPATH . 'wp-includes/class-wp-block-patterns-registry.php';
+    }
+    add_action('admin_notices', function () {
+      if (! class_exists('WP_Block_Patterns_Registry')) {
+        echo '<div class="notice notice-error"><p>Block Patterns Registry unavailable.</p></div>';
+        return;
+      }
       $registry = WP_Block_Patterns_Registry::get_instance();
       $rows = array();
-      foreach ( $registry->get_all_registered() as $slug => $data ) {
-        if ( str_starts_with( $slug, 'kadence-child/' ) ) { $rows[] = esc_html( $slug . ' — ' . $data['title'] ); }
+      foreach ($registry->get_all_registered() as $slug => $data) {
+        if (str_starts_with($slug, 'kadence-child/')) {
+          $rows[] = esc_html($slug . ' — ' . $data['title']);
+        }
       }
-      echo '<div class="notice notice-info"><p><strong>Kadence Child Patterns (' . count( $rows ) . '):</strong><br>' . ( $rows ? implode( '<br>', $rows ) : 'None registered' ) . '</p></div>';
-    } );
-  } );
+      echo '<div class="notice notice-info"><p><strong>Kadence Child Patterns (' . count($rows) . '):</strong><br>' . ($rows ? implode('<br>', $rows) : 'None registered') . '</p></div>';
+    });
+  });
 }
 
 // Final safeguard: explicitly unregister any deprecated carousel pattern slugs if they somehow exist.
-add_action( 'init', function() {
-  if ( ! function_exists( 'unregister_block_pattern' ) ) { return; }
-  foreach ( array(
-    'kadence-child/carousel-3d-ring',
-    'kadence-child/carousel-3d-ring-basic',
-    'kadence-child/carousel-3d-ring-v2',
-    'kadence-child/carousel-3d-ring-adv',
-    'kadence-child/hero-showcase-carousel'
-  ) as $slug ) {
-    unregister_block_pattern( $slug );
+add_action('init', function () {
+  if (! function_exists('unregister_block_pattern')) {
+    return;
   }
-}, 99 );
+  foreach (
+    array(
+      'kadence-child/carousel-3d-ring',
+      'kadence-child/carousel-3d-ring-basic',
+      'kadence-child/carousel-3d-ring-v2',
+      'kadence-child/carousel-3d-ring-adv',
+      'kadence-child/hero-showcase-carousel'
+    ) as $slug
+  ) {
+    unregister_block_pattern($slug);
+  }
+}, 99);
 
 /* -------------------------------------------------------------
 | HERO ULTIMATE AUTO-UPGRADE (non-destructive frontend patch)
@@ -395,125 +497,142 @@ add_action( 'init', function() {
 |  - Light regex; avoids heavy DOM libs for performance
 | Remove once all pages re-saved with new pattern structure.
 -------------------------------------------------------------- */
-add_filter( 'the_content', function( $content ) {
-  if ( is_admin() || ! is_singular() ) { return $content; }
-  if ( false === strpos( $content, 'kc-hero-ultimate' ) ) { return $content; }
+add_filter('the_content', function ($content) {
+  if (is_admin() || ! is_singular()) {
+    return $content;
+  }
+  if (false === strpos($content, 'kc-hero-ultimate')) {
+    return $content;
+  }
   // Already enhanced? Presence of data-enhanced attr or colorwash layer.
-  if ( preg_match( '/kc-hero-ultimate[^>]*data-enhanced="true"/i', $content ) || strpos( $content, 'kc-colorwash' ) !== false ) {
+  if (preg_match('/kc-hero-ultimate[^>]*data-enhanced="true"/i', $content) || strpos($content, 'kc-colorwash') !== false) {
     return $content;
   }
   $modified = $content;
   // 1. Add data-enhanced attribute to first hero container.
-  $modified = preg_replace( '/(<div[^>]*class="[^"]*kc-hero-ultimate[^"]*"[^>]*)>/', '$1 data-enhanced="true">', $modified, 1 );
+  $modified = preg_replace('/(<div[^>]*class="[^"]*kc-hero-ultimate[^"]*"[^>]*)>/', '$1 data-enhanced="true">', $modified, 1);
   // 2. Inject colorwash layer after background image element.
-  $modified = preg_replace( '/(<img[^>]*wp-block-cover__image-background[^>]*>)/', "$1\n  <div class=\"kc-colorwash\" aria-hidden=\"true\"></div>", $modified, 1 );
+  $modified = preg_replace('/(<img[^>]*wp-block-cover__image-background[^>]*>)/', "$1\n  <div class=\"kc-colorwash\" aria-hidden=\"true\"></div>", $modified, 1);
   // 3. Inject floating blobs just inside hero wrap container.
-  $modified = preg_replace( '/(<div[^>]*class="[^"]*kc-hero-wrap[^"]*"[^>]*>)/', '$1\n  <div class="kc-float a" aria-hidden="true"></div><div class="kc-float b" aria-hidden="true"></div><div class="kc-float c" aria-hidden="true"></div>', $modified, 1 );
+  $modified = preg_replace('/(<div[^>]*class="[^"]*kc-hero-wrap[^"]*"[^>]*>)/', '$1\n  <div class="kc-float a" aria-hidden="true"></div><div class="kc-float b" aria-hidden="true"></div><div class="kc-float c" aria-hidden="true"></div>', $modified, 1);
   return $modified;
-}, 12 );
+}, 12);
 
 /**
  * Lightweight diagnostic output: append HTML comment in footer with hero detection.
  * Usage: add ?kc_hero_diag=1 to a singular URL while logged in or not.
  */
-add_action( 'wp_footer', function() {
-  if ( empty( $_GET['kc_hero_diag'] ) || ! is_singular() ) { return; }
-  global $post; $raw = $post ? $post->post_content : '';
-  $has_pattern_slug = ( false !== strpos( $raw, 'kc-hero-ultimate' ) );
-  $has_enhanced_attr = ( false !== strpos( $raw, 'data-enhanced="true"' ) );
-  echo "\n<!-- kc-hero-diag id=" . ( $post ? intval( $post->ID ) : 0 ) . " pattern_present=" . ( $has_pattern_slug ? 'yes' : 'no' ) . " enhanced_attr_present=" . ( $has_enhanced_attr ? 'yes' : 'no' ) . " -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
-}, 99 );
+add_action('wp_footer', function () {
+  if (empty($_GET['kc_hero_diag']) || ! is_singular()) {
+    return;
+  }
+  global $post;
+  $raw = $post ? $post->post_content : '';
+  $has_pattern_slug = (false !== strpos($raw, 'kc-hero-ultimate'));
+  $has_enhanced_attr = (false !== strpos($raw, 'data-enhanced="true"'));
+  echo "\n<!-- kc-hero-diag id=" . ($post ? intval($post->ID) : 0) . " pattern_present=" . ($has_pattern_slug ? 'yes' : 'no') . " enhanced_attr_present=" . ($has_enhanced_attr ? 'yes' : 'no') . " -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
+}, 99);
 
 // Lightweight footer hook diagnostic: visit any page with ?kc_footer_diag=1 and view-source
-add_action( 'wp_footer', function() {
-  if ( empty( $_GET['kc_footer_diag'] ) ) { return; }
-  $ts = gmdate( 'c' );
+add_action('wp_footer', function () {
+  if (empty($_GET['kc_footer_diag'])) {
+    return;
+  }
+  $ts = gmdate('c');
   // Emit multiple signals so minifiers/caches can't hide them all
-  $v_css = function_exists('kc_asset_ver') ? kc_asset_ver( 'assets/css/hero-motion.css' ) : 'n/a';
-  $v_js  = function_exists('kc_asset_ver') ? kc_asset_ver( 'assets/js/hero-ultimate-motion.js' ) : 'n/a';
-  $v_car_css = function_exists('kc_asset_ver') ? kc_asset_ver( 'assets/css/carousel-adv.css' ) : 'n/a';
+  $v_css = function_exists('kc_asset_ver') ? kc_asset_ver('assets/css/hero-motion.css') : 'n/a';
+  $v_js  = function_exists('kc_asset_ver') ? kc_asset_ver('assets/js/hero-ultimate-motion.js') : 'n/a';
+  $v_car_css = function_exists('kc_asset_ver') ? kc_asset_ver('assets/css/carousel-adv.css') : 'n/a';
   echo "\n<!-- kc-footer-hook ok ts={$ts} hero_css_ver={$v_css} hero_js_ver={$v_js} carousel_css_ver={$v_car_css} -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
-  $v_ct_css = function_exists('kc_asset_ver') ? kc_asset_ver( 'assets/css/countertop-config.css' ) : 'n/a';
-  $v_ct_js  = function_exists('kc_asset_ver') ? kc_asset_ver( 'assets/js/countertop-config.js' ) : 'n/a';
+  $v_ct_css = function_exists('kc_asset_ver') ? kc_asset_ver('assets/css/countertop-config.css') : 'n/a';
+  $v_ct_js  = function_exists('kc_asset_ver') ? kc_asset_ver('assets/js/countertop-config.js') : 'n/a';
   // Existence + enqueue state
   $ct_css_file = get_stylesheet_directory() . '/assets/css/countertop-config.css';
   $ct_js_file  = get_stylesheet_directory() . '/assets/js/countertop-config.js';
-  $ct_css_exists = file_exists( $ct_css_file );
-  $ct_js_exists  = file_exists( $ct_js_file );
+  $ct_css_exists = file_exists($ct_css_file);
+  $ct_js_exists  = file_exists($ct_js_file);
   $ct_css_url = get_stylesheet_directory_uri() . '/assets/css/countertop-config.css';
   $ct_js_url  = get_stylesheet_directory_uri() . '/assets/js/countertop-config.js';
-  $ct_css_enq = function_exists( 'wp_style_is' ) && wp_style_is( 'kc-ct-css', 'enqueued' );
-  $ct_js_enq  = function_exists( 'wp_script_is' ) && wp_script_is( 'kc-ct-js', 'enqueued' );
-  echo '<script>window.KC_FOOTER_HOOK_OK = ' . json_encode( $ts ) . '; console.log("[kc] footer hook ok", window.KC_FOOTER_HOOK_OK, {'
-    . ' hero_css_ver: ' . json_encode( $v_css ) . ', hero_js_ver: ' . json_encode( $v_js ) . ', carousel_css_ver: ' . json_encode( $v_car_css ) . ','
-    . ' ct_css_ver: ' . json_encode( $v_ct_css ) . ', ct_js_ver: ' . json_encode( $v_ct_js ) . ','
-    . ' ct_css_exists: ' . json_encode( $ct_css_exists ) . ', ct_js_exists: ' . json_encode( $ct_js_exists ) . ','
-    . ' ct_css_enqueued: ' . json_encode( $ct_css_enq ) . ', ct_js_enqueued: ' . json_encode( $ct_js_enq ) . ','
-    . ' ct_css_url: ' . json_encode( $ct_css_url ) . ', ct_js_url: ' . json_encode( $ct_js_url ) . ' });'
+  $ct_css_enq = function_exists('wp_style_is') && wp_style_is('kc-ct-css', 'enqueued');
+  $ct_js_enq  = function_exists('wp_script_is') && wp_script_is('kc-ct-js', 'enqueued');
+  echo '<script>window.KC_FOOTER_HOOK_OK = ' . json_encode($ts) . '; console.log("[kc] footer hook ok", window.KC_FOOTER_HOOK_OK, {'
+    . ' hero_css_ver: ' . json_encode($v_css) . ', hero_js_ver: ' . json_encode($v_js) . ', carousel_css_ver: ' . json_encode($v_car_css) . ','
+    . ' ct_css_ver: ' . json_encode($v_ct_css) . ', ct_js_ver: ' . json_encode($v_ct_js) . ','
+    . ' ct_css_exists: ' . json_encode($ct_css_exists) . ', ct_js_exists: ' . json_encode($ct_js_exists) . ','
+    . ' ct_css_enqueued: ' . json_encode($ct_css_enq) . ', ct_js_enqueued: ' . json_encode($ct_js_enq) . ','
+    . ' ct_css_url: ' . json_encode($ct_css_url) . ', ct_js_url: ' . json_encode($ct_js_url) . ' });'
     . ' console.log("[kc][ct] nodes present:", document.querySelectorAll(".kc-ct-configurator").length);'
     . '</script>'; // phpcs:ignore WordPress.Security.EscapeOutput
-  echo '<div id="kc-footer-marker" data-ts="' . esc_attr( $ts ) . '" data-hero-css="' . esc_attr( $v_css ) . '" data-hero-js="' . esc_attr( $v_js ) . '" data-ct-css="' . esc_attr( $v_ct_css ) . '" data-ct-js="' . esc_attr( $v_ct_js ) . '" data-ct-css-exists="' . ( $ct_css_exists ? '1' : '0' ) . '" data-ct-js-exists="' . ( $ct_js_exists ? '1' : '0' ) . '" data-ct-css-enqueued="' . ( $ct_css_enq ? '1' : '0' ) . '" data-ct-js-enqueued="' . ( $ct_js_enq ? '1' : '0' ) . '" style="display:none"></div>' ; // phpcs:ignore WordPress.Security.EscapeOutput
-}, 999 );
+  echo '<div id="kc-footer-marker" data-ts="' . esc_attr($ts) . '" data-hero-css="' . esc_attr($v_css) . '" data-hero-js="' . esc_attr($v_js) . '" data-ct-css="' . esc_attr($v_ct_css) . '" data-ct-js="' . esc_attr($v_ct_js) . '" data-ct-css-exists="' . ($ct_css_exists ? '1' : '0') . '" data-ct-js-exists="' . ($ct_js_exists ? '1' : '0') . '" data-ct-css-enqueued="' . ($ct_css_enq ? '1' : '0') . '" data-ct-js-enqueued="' . ($ct_js_enq ? '1' : '0') . '" style="display:none"></div>'; // phpcs:ignore WordPress.Security.EscapeOutput
+}, 999);
 
 // Optional: append the configurator markup at footer for debugging with ?kc_ct_inline=1
-add_action( 'wp_footer', function() {
-  if ( empty( $_GET['kc_ct_inline'] ) ) { return; }
+add_action('wp_footer', function () {
+  if (empty($_GET['kc_ct_inline'])) {
+    return;
+  }
   $file = get_stylesheet_directory() . '/patterns/countertop-configurator.php';
-  if ( file_exists( $file ) ) {
+  if (file_exists($file)) {
     echo "\n<!-- kc-ct-inline injecting pattern markup for debug -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
     include $file; // phpcs:ignore WPThemeReview.CoreFunctionality.FileInclude.FileIncludeFound
   } else {
     echo "\n<!-- kc-ct-inline: pattern file missing -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
   }
-}, 998 );
+}, 998);
 
 // Add diagnostics header early to confirm child theme is active and hooks run.
-add_action( 'send_headers', function( $wp ) {
-  if ( empty( $_GET['kc_footer_diag'] ) && empty( $_GET['kc_diag'] ) ) { return; }
-  header( 'X-KC-Child: active' );
-  $now = gmdate( 'c' );
-  header( 'X-KC-Time: ' . $now );
+add_action('send_headers', function ($wp) {
+  if (empty($_GET['kc_footer_diag']) && empty($_GET['kc_diag'])) {
+    return;
+  }
+  header('X-KC-Child: active');
+  $now = gmdate('c');
+  header('X-KC-Time: ' . $now);
   // Report asset versions in headers for quick checks
-  if ( function_exists( 'kc_asset_ver' ) ) {
-    header( 'X-KC-Hero-CSS: ' . kc_asset_ver( 'assets/css/hero-motion.css' ) );
-    header( 'X-KC-Hero-JS: ' . kc_asset_ver( 'assets/js/hero-ultimate-motion.js' ) );
-    header( 'X-KC-Carousel-CSS: ' . kc_asset_ver( 'assets/css/carousel-adv.css' ) );
+  if (function_exists('kc_asset_ver')) {
+    header('X-KC-Hero-CSS: ' . kc_asset_ver('assets/css/hero-motion.css'));
+    header('X-KC-Hero-JS: ' . kc_asset_ver('assets/js/hero-ultimate-motion.js'));
+    header('X-KC-Carousel-CSS: ' . kc_asset_ver('assets/css/carousel-adv.css'));
   }
   // Strongly discourage caches when diagnosing
-  header( 'Cache-Control: no-cache, no-store, must-revalidate, max-age=0' );
-  header( 'Pragma: no-cache' );
-  header( 'Expires: 0' );
-} );
+  header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+  header('Pragma: no-cache');
+  header('Expires: 0');
+});
 
 // Body-open marker for verification
-add_action( 'wp_body_open', function() {
-  if ( empty( $_GET['kc_diag'] ) ) { return; }
+add_action('wp_body_open', function () {
+  if (empty($_GET['kc_diag'])) {
+    return;
+  }
   echo "\n<!-- kc-body-open ok -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
-}, 1 );
+}, 1);
 
 // Optional visible admin-only footer outline (toggle with ?kc_footer_outline=1)
-add_action( 'wp_head', function() {
-  if ( empty( $_GET['kc_footer_outline'] ) || ! function_exists( 'current_user_can' ) || ! current_user_can( 'manage_options' ) ) { return; }
+add_action('wp_head', function () {
+  if (empty($_GET['kc_footer_outline']) || ! function_exists('current_user_can') || ! current_user_can('manage_options')) {
+    return;
+  }
   echo '<style>#colophon,.kc-footer{outline: 3px solid #e91e63 !important; outline-offset: -3px;}</style>'; // phpcs:ignore WordPress.Security.EscapeOutput
-}, 99 );
+}, 99);
 
 /**
  * Body class helper: add `has-hero` when the Ultimate Hero exists on the page.
  * Enables header transparency and removes any hairline border gap above hero.
  */
-add_filter( 'body_class', function( $classes ) {
+add_filter('body_class', function ($classes) {
   $has = false;
-  if ( is_front_page() ) {
+  if (is_front_page()) {
     $has = true; // front page commonly hosts hero
-  } elseif ( is_singular() ) {
+  } elseif (is_singular()) {
     global $post;
-    $has = $post && ( false !== strpos( (string) $post->post_content, 'kc-hero-ultimate' ) );
+    $has = $post && (false !== strpos((string) $post->post_content, 'kc-hero-ultimate'));
   }
-  if ( $has && ! in_array( 'has-hero', $classes, true ) ) {
+  if ($has && ! in_array('has-hero', $classes, true)) {
     $classes[] = 'has-hero';
   }
   return $classes;
-}, 20 );
+}, 20);
 
 /* -------------------------------------------------------------
 | OPTIONAL AUTO FRONT PAGE HERO INJECTION (for debugging)
@@ -523,26 +642,31 @@ add_filter( 'body_class', function( $classes ) {
 | disable (define KC_DISABLE_HERO_FRONT true) once resolved.
 -------------------------------------------------------------- */
 // Disabled by default: only inject when KC_ENABLE_HERO_FRONT is explicitly true.
-add_action( 'wp_body_open', function() {
-  if ( ! ( defined( 'KC_ENABLE_HERO_FRONT' ) && KC_ENABLE_HERO_FRONT ) ) { return; }
-  if ( ! is_front_page() ) { return; }
+add_action('wp_body_open', function () {
+  if (! (defined('KC_ENABLE_HERO_FRONT') && KC_ENABLE_HERO_FRONT)) {
+    return;
+  }
+  if (! is_front_page()) {
+    return;
+  }
   $file = get_stylesheet_directory() . '/patterns/hero-ultimate-motion.php';
-  if ( file_exists( $file ) ) {
+  if (file_exists($file)) {
     echo "\n<!-- kc-hero-auto (front page) -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
     include $file; // phpcs:ignore WPThemeReview.CoreFunctionality.FileInclude
   } else {
     echo "\n<!-- kc-hero-auto missing pattern file -->\n"; // phpcs:ignore WordPress.Security.EscapeOutput
   }
-}, 15 );
+}, 15);
 
 /* -------------------------------------------------------------
 | CRITICAL INLINE HERO CSS (failsafe)
 | If style.css isn't loading or caching strips rules, this ensures
 | minimal visuals so JS doesn't flag missing CSS. Remove after fix.
 -------------------------------------------------------------- */
-add_action( 'wp_head', function() {
+add_action('wp_head', function () {
   // Failsafe critical CSS: only output when explicitly requested
-  if ( is_admin() || empty( $_GET['kc_critical'] ) ) { return; }
+  if (is_admin() || empty($_GET['kc_critical'])) {
+    return;
+  }
   echo '<style id="kc-hero-critical">.kc-hero-ultimate{position:relative;overflow:hidden;color:#fff;} .kc-hero-ultimate .wp-block-cover__image-background{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;z-index:0;filter:brightness(.72);} .kc-hero-ultimate .kc-colorwash{position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;background:radial-gradient(circle at 30% 40%,rgba(120,160,255,.55),transparent 60%),radial-gradient(circle at 75% 70%,rgba(125,226,209,.45),transparent 65%),linear-gradient(120deg,rgba(20,26,36,.4),rgba(12,16,26,.55));opacity:.45;z-index:1;} .kc-hero-ultimate .kc-hero-wrap{position:relative;z-index:2;} .kc-hero-ultimate .kc-float{position:absolute;border-radius:50%;filter:blur(38px) saturate(140%);opacity:.5;mix-blend-mode:screen;} .kc-hero-ultimate .kc-float.a{width:320px;height:320px;top:-80px;left:-100px;background:radial-gradient(circle at 30% 30%,rgba(185,156,255,.75),rgba(120,90,255,.28) 70%,transparent 74%);} .kc-hero-ultimate .kc-float.b{width:260px;height:260px;bottom:-40px;right:8%;background:radial-gradient(circle at 40% 40%,rgba(125,226,209,.75),rgba(60,170,150,.3) 68%,transparent 72%);} .kc-hero-ultimate .kc-float.c{width:220px;height:220px;top:12%;right:-4%;background:radial-gradient(circle at 45% 30%,rgba(255,212,121,.8),rgba(220,160,80,.25) 72%,transparent 76%);} .kc-hero-ultimate .kc-title{margin:.5em 0;font-weight:800;line-height:1.05;} .kc-hero-ultimate .kc-title .kc-gradient{background:linear-gradient(90deg,#fff,#dfe7ff);-webkit-background-clip:text;background-clip:text;color:transparent;} .kc-hero-ultimate .kc-materials-card{background:rgba(10,10,20,.6);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.4);} .kc-hero-ultimate .kc-chip{display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);padding:10px 14px;border-radius:12px;margin:4px;font-size:.85rem;color:#fff;text-decoration:none;} </style>';
-}, 5 );
-
+}, 5);

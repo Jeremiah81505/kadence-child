@@ -1,11 +1,11 @@
 {
   "recommendations": [
-    "ms-vscode.powershell",
-    "ms-vscode.vscode-typescript-next",
-    "dbaeumer.vscode-eslint",
+    "bmewburn.vscode-intelephense-client",
+    "johnbillion.vscode-wordpress-hooks",
     "esbenp.prettier-vscode",
-    "EditorConfig.EditorConfig",
-    "bmewburn.vscode-intelephense-client"
+    "dbaeumer.vscode-eslint",
+    "ms-vscode.powershell",
+    "EditorConfig.EditorConfig"
   ],
   "unwantedRecommendations": []
 }
