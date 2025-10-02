@@ -1,126 +1,171 @@
-(function(){
-  const sel = (s, el=document)=> el.querySelector(s);
-  const all = (s, el=document)=> Array.from(el.querySelectorAll(s));
+(function () {
+  const sel = (s, el = document) => el.querySelector(s);
+  const all = (s, el = document) => Array.from(el.querySelectorAll(s));
 
-  function init(root){
-  if (!root || root.__ctInit) return;
-  const svg = sel('[data-ct-svg]', root);
-  if (!svg){ try{ console.warn('[kc][ct] init skipped: svg not found in root', root); }catch(e){} return; }
-  root.__ctInit = true;
-    const shapeLabel = sel('[data-ct-shape-label]', root);
-  const actions = root;
-  let mode = 'move'; // move | resize
-  let isGestureActive = false; // disables undo/redo during active drag/resize
-  let gestureHintTimer = null;
+  function init(root) {
+    if (!root || root.__ctInit) return;
+    const svg = sel("[data-ct-svg]", root);
+    if (!svg) {
+      try {
+        console.warn("[kc][ct] init skipped: svg not found in root", root);
+      } catch (e) {}
+      return;
+    }
+    root.__ctInit = true;
+    const shapeLabel = sel("[data-ct-shape-label]", root);
+    const actions = root;
+    let mode = "move"; // move | resize
+    let isGestureActive = false; // disables undo/redo during active drag/resize
+    let gestureHintTimer = null;
 
-  // Simple multi-shape state
-  let shapes = [];
-  let active = -1;
-  let hover = -1;
-  let handles = [];
-  let hoverHandle = null; // {i,h} from pickHandle
-  let inlineHost = sel('[data-ct-inline]', root);
-  // Poly drawing state
-  let drawingPoly = false; // when true, clicks add vertices to the active poly
-  let drawingIdx = -1;
-  // Global options state (not per shape for now)
-  const opts = {
-    material: ['Laminate'], edge: 'Bevel',
-    sinks: 'No',
-    'cutout-cooktop': 0, 'cutout-faucet': 0, 'cutout-other': 0,
-    'corner-small': 0, 'corner-medium': 0, 'corner-large': 0,
-    removal: 'Countertops Only',
-    color: '',
-  bsOn: true,
-  bsHeight: 4,
-  snap: true,
-  showSeams: false,
-  showGuides: false,
-  simpleUI: true
-  };
-  const STATE_KEY = 'kcCountertopConfig:v1';
-  let toolMode = 'move';
-  let zoom = 1;
-  // Debounce timer for measurement input history
-  let lenEditTimer = null;
-  // Lightweight announcer for a11y status updates
-  const announce = (msg)=>{ try{ const live = sel('[data-ct-live]', root); if (live){ live.textContent=''; setTimeout(()=>{ live.textContent = String(msg||''); }, 10); } }catch(e){} };
-  // Simple visual toast for quick feedback
-  let toastTimer = null;
-  const toast = (msg)=>{
-    try{
-      const el = sel('[data-ct-toast]', root);
-      if (!el) return;
-      el.textContent = String(msg||'');
-      el.classList.add('is-show');
-      el.setAttribute('aria-hidden', 'false');
-      if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>{ el.classList.remove('is-show'); el.setAttribute('aria-hidden','true'); }, 900);
-    }catch(e){}
-  };
+    // Simple multi-shape state
+    let shapes = [];
+    let active = -1;
+    let hover = -1;
+    let handles = [];
+    let hoverHandle = null; // {i,h} from pickHandle
+    let inlineHost = sel("[data-ct-inline]", root);
+    // Poly drawing state
+    let drawingPoly = false; // when true, clicks add vertices to the active poly
+    let drawingIdx = -1;
+    // Global options state (not per shape for now)
+    const opts = {
+      material: ["Laminate"],
+      edge: "Bevel",
+      sinks: "No",
+      "cutout-cooktop": 0,
+      "cutout-faucet": 0,
+      "cutout-other": 0,
+      "corner-small": 0,
+      "corner-medium": 0,
+      "corner-large": 0,
+      removal: "Countertops Only",
+      color: "",
+      bsOn: true,
+      bsHeight: 4,
+      snap: true,
+      showSeams: false,
+      showGuides: false,
+      simpleUI: true,
+    };
+    const STATE_KEY = "kcCountertopConfig:v1";
+    let toolMode = "move";
+    let zoom = 1;
+    // Debounce timer for measurement input history
+    let lenEditTimer = null;
+    // Lightweight announcer for a11y status updates
+    const announce = (msg) => {
+      try {
+        const live = sel("[data-ct-live]", root);
+        if (live) {
+          live.textContent = "";
+          setTimeout(() => {
+            live.textContent = String(msg || "");
+          }, 10);
+        }
+      } catch (e) {}
+    };
+    // Simple visual toast for quick feedback
+    let toastTimer = null;
+    const toast = (msg) => {
+      try {
+        const el = sel("[data-ct-toast]", root);
+        if (!el) return;
+        el.textContent = String(msg || "");
+        el.classList.add("is-show");
+        el.setAttribute("aria-hidden", "false");
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          el.classList.remove("is-show");
+          el.setAttribute("aria-hidden", "true");
+        }, 900);
+      } catch (e) {}
+    };
 
     // Normalize/migrate a shape object to current schema and constraints
-    function normalizeShape(s){
-      try{
-        if (!s || typeof s !== 'object') return s;
+    function normalizeShape(s) {
+      try {
+        if (!s || typeof s !== "object") return s;
         if (!s.len) s.len = {};
-        if (s.type === 'u'){
-          const clamp=(v,min,max)=> Math.min(Math.max(Number(v||0),min),max);
-          const A = Number(s.len.A||0);
-          const hasB = (s.len.B!=null);
-          let BL = (s.len.BL!=null) ? Number(s.len.BL) : (hasB ? Number(s.len.B) : 25);
-          let BR = (s.len.BR!=null) ? Number(s.len.BR) : (hasB ? Number(s.len.B) : 25);
-          if (s.len.BL==null) s.len.BL = BL;
-          if (s.len.BR==null) s.len.BR = BR;
+        if (s.type === "u") {
+          const clamp = (v, min, max) =>
+            Math.min(Math.max(Number(v || 0), min), max);
+          const A = Number(s.len.A || 0);
+          const hasB = s.len.B != null;
+          let BL =
+            s.len.BL != null ? Number(s.len.BL) : hasB ? Number(s.len.B) : 25;
+          let BR =
+            s.len.BR != null ? Number(s.len.BR) : hasB ? Number(s.len.B) : 25;
+          if (s.len.BL == null) s.len.BL = BL;
+          if (s.len.BR == null) s.len.BR = BR;
           // E/H/C interplay with 1" minimum inner span
           const minSpan = 1;
-          let E = Math.max(0, Number(s.len.E||0));
-          let H = Math.max(0, Number(s.len.H||0));
+          let E = Math.max(0, Number(s.len.E || 0));
+          let H = Math.max(0, Number(s.len.H || 0));
           E = Math.min(E, Math.max(0, A - minSpan - H));
           H = Math.min(H, Math.max(0, A - minSpan - E));
-          let C = Number(s.len.C|| (A ? Math.max(1, A - (E + H)) : 0));
+          let C = Number(s.len.C || (A ? Math.max(1, A - (E + H)) : 0));
           C = Math.max(1, Math.min(C, Math.max(1, A - minSpan)));
-          if (E + H > Math.max(0, A - 1)){
+          if (E + H > Math.max(0, A - 1)) {
             const spare = Math.max(0, A - C);
-            const e = Math.floor(spare/2); const h = spare - e;
-            E = e; H = h;
+            const e = Math.floor(spare / 2);
+            const h = spare - e;
+            E = e;
+            H = h;
           }
           s.len.E = Math.round(E);
           s.len.H = Math.round(H);
-          s.len.C = Math.round(Math.max(1, A - Math.max(0, s.len.E||0) - Math.max(0, s.len.H||0)));
+          s.len.C = Math.round(
+            Math.max(
+              1,
+              A - Math.max(0, s.len.E || 0) - Math.max(0, s.len.H || 0)
+            )
+          );
           // D clamp to shallower leg - 1
           const minSide = Math.max(0, Math.min(BL, BR));
           const dMax = Math.max(0, minSide - 1);
-          s.len.D = clamp(s.len.D||0, 0, dMax);
+          s.len.D = clamp(s.len.D || 0, 0, dMax);
           // Backsplash keys migration (B -> BL/BR)
           s.bs = s.bs || {};
-          if (s.bs.B!=null){
-            if (s.bs.BL==null) s.bs.BL = !!s.bs.B;
-            if (s.bs.BR==null) s.bs.BR = !!s.bs.B;
+          if (s.bs.B != null) {
+            if (s.bs.BL == null) s.bs.BL = !!s.bs.B;
+            if (s.bs.BR == null) s.bs.BR = !!s.bs.B;
           }
-          if (s.bs.BL==null) s.bs.BL = false;
-          if (s.bs.BR==null) s.bs.BR = false;
-          if (s.bs.E==null) s.bs.E = false;
-          if (s.bs.D==null) s.bs.D = false; // inner verticals backsplash
-          if (s.bs.H==null) s.bs.H = false;
-          if (s.bs.A==null) s.bs.A = !!s.bs.A;
-          if (s.bs.C==null) s.bs.C = !!s.bs.C;
+          if (s.bs.BL == null) s.bs.BL = false;
+          if (s.bs.BR == null) s.bs.BR = false;
+          if (s.bs.E == null) s.bs.E = false;
+          if (s.bs.D == null) s.bs.D = false; // inner verticals backsplash
+          if (s.bs.H == null) s.bs.H = false;
+          if (s.bs.A == null) s.bs.A = !!s.bs.A;
+          if (s.bs.C == null) s.bs.C = !!s.bs.C;
           // Inside-corner defaults
-          if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+          if (!s.icCorners)
+            s.icCorners = {
+              iTL: { mode: "square", value: 0 },
+              iTR: { mode: "square", value: 0 },
+              iBR: { mode: "square", value: 0 },
+              iBL: { mode: "square", value: 0 },
+            };
           // Wall flags: make U sides independent (A, BL, BR, C, D, E, H)
           s.wall = s.wall || {};
           // Legacy migration: B -> BL/BR, C(bottom outer) -> E/H
-          if (s.wall.B!=null){ if (s.wall.BL==null) s.wall.BL = !!s.wall.B; if (s.wall.BR==null) s.wall.BR = !!s.wall.B; }
-          if (s.wall.C!=null){ if (s.wall.E==null) s.wall.E = !!s.wall.C; if (s.wall.H==null) s.wall.H = !!s.wall.C; }
-          if (s.wall.A==null) s.wall.A = !!s.wall.A;
-          if (s.wall.BL==null) s.wall.BL = false;
-          if (s.wall.BR==null) s.wall.BR = false;
-          if (s.wall.C==null) s.wall.C = false; // For U: reinterpret C as inner top wall
-          if (s.wall.D==null) s.wall.D = false; // For U: inner vertical wall (two short segments)
-          if (s.wall.E==null) s.wall.E = false;
-          if (s.wall.H==null) s.wall.H = false;
+          if (s.wall.B != null) {
+            if (s.wall.BL == null) s.wall.BL = !!s.wall.B;
+            if (s.wall.BR == null) s.wall.BR = !!s.wall.B;
+          }
+          if (s.wall.C != null) {
+            if (s.wall.E == null) s.wall.E = !!s.wall.C;
+            if (s.wall.H == null) s.wall.H = !!s.wall.C;
+          }
+          if (s.wall.A == null) s.wall.A = !!s.wall.A;
+          if (s.wall.BL == null) s.wall.BL = false;
+          if (s.wall.BR == null) s.wall.BR = false;
+          if (s.wall.C == null) s.wall.C = false; // For U: reinterpret C as inner top wall
+          if (s.wall.D == null) s.wall.D = false; // For U: inner vertical wall (two short segments)
+          if (s.wall.E == null) s.wall.E = false;
+          if (s.wall.H == null) s.wall.H = false;
         }
-      }catch(e){}
+      } catch (e) {}
       return s;
     }
 
@@ -128,1247 +173,2460 @@
     const HISTORY_LIMIT = 50;
     let _past = [];
     let _future = [];
-    const snapshot = ()=> JSON.parse(JSON.stringify({ shapes, active, opts }));
-    function restore(state){
+    const snapshot = () => JSON.parse(JSON.stringify({ shapes, active, opts }));
+    function restore(state) {
       shapes = Array.isArray(state?.shapes) ? state.shapes : [];
-      active = Math.max(-1, Math.min(Number(state?.active ?? -1), shapes.length-1));
+      active = Math.max(
+        -1,
+        Math.min(Number(state?.active ?? -1), shapes.length - 1)
+      );
       const restoredOpts = state?.opts || {};
       // mutate opts (const) back to restored state
-      Object.keys(opts).forEach(k=>{ delete opts[k]; });
+      Object.keys(opts).forEach((k) => {
+        delete opts[k];
+      });
       Object.assign(opts, restoredOpts);
-      renderTabs(); syncInputs(); syncOptionsUI(); draw(); updateOversize(); updateActionStates(); updateSummary(); save();
+      renderTabs();
+      syncInputs();
+      syncOptionsUI();
+      draw();
+      updateOversize();
+      updateActionStates();
+      updateSummary();
+      save();
     }
-    function pushHistory(){
-      try{ _past.push(snapshot()); if (_past.length>HISTORY_LIMIT) _past.shift(); _future.length = 0; }catch(e){}
+    function pushHistory() {
+      try {
+        _past.push(snapshot());
+        if (_past.length > HISTORY_LIMIT) _past.shift();
+        _future.length = 0;
+      } catch (e) {}
       // reflect new history availability in UI
-      try{ updateActionStates(); }catch(e){}
+      try {
+        updateActionStates();
+      } catch (e) {}
     }
-  function undo(){ if(!_past.length) return; try{ _future.push(snapshot()); const st=_past.pop(); restore(st); updateActionStates(); announce('Undid last change'); toast('Undid'); }catch(e){} }
-  function redo(){ if(!_future.length) return; try{ _past.push(snapshot()); const st=_future.pop(); restore(st); updateActionStates(); announce('Redid last change'); toast('Redid'); }catch(e){} }
+    function undo() {
+      if (!_past.length) return;
+      try {
+        _future.push(snapshot());
+        const st = _past.pop();
+        restore(st);
+        updateActionStates();
+        announce("Undid last change");
+        toast("Undid");
+      } catch (e) {}
+    }
+    function redo() {
+      if (!_future.length) return;
+      try {
+        _past.push(snapshot());
+        const st = _future.pop();
+        restore(st);
+        updateActionStates();
+        announce("Redid last change");
+        toast("Redid");
+      } catch (e) {}
+    }
 
-    function draw(){
-  svg.innerHTML = '';
-      const ns = 'http://www.w3.org/2000/svg';
-      const gRoot = document.createElementNS(ns, 'g');
+    function draw() {
+      svg.innerHTML = "";
+      const ns = "http://www.w3.org/2000/svg";
+      const gRoot = document.createElementNS(ns, "g");
       svg.appendChild(gRoot);
 
-      const px = (v)=> v * 2; // 2px per inch roughly
+      const px = (v) => v * 2; // 2px per inch roughly
       hitAreas = [];
       handles = [];
       // Helper to draw a small rotated label along an edge
-      const drawBsLabel=(parent,x1,y1,x2,y2,txt='Backsplash')=>{
-        try{
-          const mx=(x1+x2)/2, my=(y1+y2)/2;
-          const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI;
-          const t=document.createElementNS(ns,'text');
-          t.setAttribute('x', String(mx));
-          t.setAttribute('y', String(my - 4));
-          t.setAttribute('text-anchor','middle');
-          t.setAttribute('font-size','11');
-          t.setAttribute('font-weight','600');
-          t.setAttribute('fill','#333');
+      const drawBsLabel = (parent, x1, y1, x2, y2, txt = "Backsplash") => {
+        try {
+          const mx = (x1 + x2) / 2,
+            my = (y1 + y2) / 2;
+          const ang = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
+          const t = document.createElementNS(ns, "text");
+          t.setAttribute("x", String(mx));
+          t.setAttribute("y", String(my - 4));
+          t.setAttribute("text-anchor", "middle");
+          t.setAttribute("font-size", "11");
+          t.setAttribute("font-weight", "600");
+          t.setAttribute("fill", "#333");
           t.textContent = txt;
-          t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`);
+          t.setAttribute("transform", `rotate(${ang} ${mx} ${my})`);
           parent.appendChild(t);
-        }catch(e){}
+        } catch (e) {}
       };
       // Helper to draw a shape label in world (unrotated) space
-      const drawShapeName = (x, y, text)=>{
+      const drawShapeName = (x, y, text) => {
         if (!text) return;
-        const t = document.createElementNS(ns, 'text');
-        t.setAttribute('x', String(x));
-        t.setAttribute('y', String(y));
-        t.setAttribute('text-anchor', 'middle');
-        t.setAttribute('font-size', '12');
-        t.setAttribute('font-weight', '700');
-        t.setAttribute('fill', '#333');
+        const t = document.createElementNS(ns, "text");
+        t.setAttribute("x", String(x));
+        t.setAttribute("y", String(y));
+        t.setAttribute("text-anchor", "middle");
+        t.setAttribute("font-size", "12");
+        t.setAttribute("font-weight", "700");
+        t.setAttribute("fill", "#333");
         t.textContent = String(text);
         gRoot.appendChild(t);
       };
-      const drawGuideLine=(parent,x1,y1,x2,y2,txt)=>{
-        const l=document.createElementNS(ns,'line');
-        l.setAttribute('x1',String(x1)); l.setAttribute('y1',String(y1));
-        l.setAttribute('x2',String(x2)); l.setAttribute('y2',String(y2));
-        l.setAttribute('stroke','#bdc6da'); l.setAttribute('stroke-width','2');
+      const drawGuideLine = (parent, x1, y1, x2, y2, txt) => {
+        const l = document.createElementNS(ns, "line");
+        l.setAttribute("x1", String(x1));
+        l.setAttribute("y1", String(y1));
+        l.setAttribute("x2", String(x2));
+        l.setAttribute("y2", String(y2));
+        l.setAttribute("stroke", "#bdc6da");
+        l.setAttribute("stroke-width", "2");
         parent.appendChild(l);
-        if (txt){
-          const mx=(x1+x2)/2, my=(y1+y2)/2 - 6; const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI;
-          const t=document.createElementNS(ns,'text'); t.setAttribute('x', String(mx)); t.setAttribute('y', String(my)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=txt; t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`); parent.appendChild(t);
+        if (txt) {
+          const mx = (x1 + x2) / 2,
+            my = (y1 + y2) / 2 - 6;
+          const ang = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
+          const t = document.createElementNS(ns, "text");
+          t.setAttribute("x", String(mx));
+          t.setAttribute("y", String(my));
+          t.setAttribute("text-anchor", "middle");
+          t.setAttribute("font-size", "12");
+          t.setAttribute("font-weight", "600");
+          t.textContent = txt;
+          t.setAttribute("transform", `rotate(${ang} ${mx} ${my})`);
+          parent.appendChild(t);
         }
       };
 
-      const addHandle=(idx, cx, cy, rot, key)=>{
+      const addHandle = (idx, cx, cy, rot, key) => {
         // Expect world-space coordinates; no extra rotation here (alignment handled by localToWorld upstream)
-        handles.push({ idx, cx, cy, rot, key, r:8 });
-  // Only render visible handles when Resize mode is active on the selected shape
-  if (!(idx===active && toolMode==='resize')) return;
-  const c=document.createElementNS(ns,'circle');
-  c.setAttribute('cx', String(cx)); c.setAttribute('cy', String(cy)); c.setAttribute('r','6');
-  c.setAttribute('fill','#fff');
-  // Default handle style (outer/side handles)
-  c.setAttribute('stroke','#4f6bd8'); c.setAttribute('stroke-width','2');
+        handles.push({ idx, cx, cy, rot, key, r: 8 });
+        // Only render visible handles when Resize mode is active on the selected shape
+        if (!(idx === active && toolMode === "resize")) return;
+        const c = document.createElementNS(ns, "circle");
+        c.setAttribute("cx", String(cx));
+        c.setAttribute("cy", String(cy));
+        c.setAttribute("r", "6");
+        c.setAttribute("fill", "#fff");
+        // Default handle style (outer/side handles)
+        c.setAttribute("stroke", "#4f6bd8");
+        c.setAttribute("stroke-width", "2");
         // Add an accessible tooltip describing the handle purpose
-        const t=document.createElementNS(ns,'title');
-        let tip='Adjust';
-        const keyStr=String(key||'');
-        if (keyStr==='A-right') tip='Drag to change A (increase)';
-        else if (keyStr==='A-left') tip='Drag to change A (decrease)';
-        else if (keyStr==='B-top') tip='Drag to change B (decrease)';
-        else if (keyStr==='B-bottom') tip='Drag to change B (increase)';
-        else if (keyStr==='C') tip='Drag to adjust C';
-        else if (keyStr==='D') tip='Drag to adjust D';
-        else if (keyStr==='BL') tip='Drag to adjust Left depth (BL)';
-        else if (keyStr==='BR') tip='Drag to adjust Right depth (BR)';
-        else if (keyStr==='E') tip='Drag to adjust Left return (E)';
-        else if (keyStr==='H') tip='Drag to adjust Right return (H)';
-  else if (keyStr.startsWith('P-')) tip='Drag to scale this side length';
-  else if (keyStr.startsWith('RC-')) tip='Drag to adjust outer corner size';
-  else if (keyStr.startsWith('IC-')) tip='Drag to adjust inner corner size';
-        else if (keyStr.startsWith('V-')) tip='Drag to move this vertex';
-        t.textContent=tip; c.appendChild(t);
-        if (idx===active) gRoot.appendChild(c);
+        const t = document.createElementNS(ns, "title");
+        let tip = "Adjust";
+        const keyStr = String(key || "");
+        if (keyStr === "A-right") tip = "Drag to change A (increase)";
+        else if (keyStr === "A-left") tip = "Drag to change A (decrease)";
+        else if (keyStr === "B-top") tip = "Drag to change B (decrease)";
+        else if (keyStr === "B-bottom") tip = "Drag to change B (increase)";
+        else if (keyStr === "C") tip = "Drag to adjust C";
+        else if (keyStr === "D") tip = "Drag to adjust D";
+        else if (keyStr === "BL") tip = "Drag to adjust Left depth (BL)";
+        else if (keyStr === "BR") tip = "Drag to adjust Right depth (BR)";
+        else if (keyStr === "E") tip = "Drag to adjust Left return (E)";
+        else if (keyStr === "H") tip = "Drag to adjust Right return (H)";
+        else if (keyStr.startsWith("P-"))
+          tip = "Drag to scale this side length";
+        else if (keyStr.startsWith("RC-"))
+          tip = "Drag to adjust outer corner size";
+        else if (keyStr.startsWith("IC-"))
+          tip = "Drag to adjust inner corner size";
+        else if (keyStr.startsWith("V-")) tip = "Drag to move this vertex";
+        t.textContent = tip;
+        c.appendChild(t);
+        if (idx === active) gRoot.appendChild(c);
         // Draw a small label near the handle for clarity (only on hover to declutter)
-    const label=document.createElementNS(ns,'text');
-        label.setAttribute('x', String(cx + 10));
-        label.setAttribute('y', String(cy - 10));
-        label.setAttribute('font-size','11');
-        label.setAttribute('font-weight','700');
-        label.setAttribute('fill','#1f2b56');
-        label.setAttribute('class','kc-hlabel');
-  let ltxt='';
-    if (keyStr==='A-right') ltxt='A';
-    // suppress duplicate 'A' label on the left side
-    else if (keyStr==='A-left') ltxt='';
-        else if (keyStr==='B-top' || keyStr==='B-bottom') ltxt='B';
-        else if (keyStr==='BL') ltxt='BL';
-        else if (keyStr==='BR') ltxt='BR';
-        else if (keyStr==='C') ltxt='C';
-        else if (keyStr==='D') ltxt='D';
-        else if (keyStr==='E') ltxt='E';
-        else if (keyStr==='H') ltxt='H';
-        else if (keyStr.startsWith('P-')) ltxt='Side';
-        else if (keyStr.startsWith('V-')) ltxt='Pt';
-        else if (keyStr.startsWith('RC-')){
-          const map={ 'RC-TL':'TL','RC-TR':'TR','RC-BR':'BR','RC-BL':'BL'}; ltxt = map[keyStr]||'RC';
-        } else if (keyStr.startsWith('IC-')){
-          const map={ 'IC-TL':'iTL','IC-TR':'iTR','IC-BR':'iBR','IC-BL':'iBL','IC-L':'iC'}; ltxt = map[keyStr]||'IC';
+        const label = document.createElementNS(ns, "text");
+        label.setAttribute("x", String(cx + 10));
+        label.setAttribute("y", String(cy - 10));
+        label.setAttribute("font-size", "11");
+        label.setAttribute("font-weight", "700");
+        label.setAttribute("fill", "#1f2b56");
+        label.setAttribute("class", "kc-hlabel");
+        let ltxt = "";
+        if (keyStr === "A-right") ltxt = "A";
+        // suppress duplicate 'A' label on the left side
+        else if (keyStr === "A-left") ltxt = "";
+        else if (keyStr === "B-top" || keyStr === "B-bottom") ltxt = "B";
+        else if (keyStr === "BL") ltxt = "BL";
+        else if (keyStr === "BR") ltxt = "BR";
+        else if (keyStr === "C") ltxt = "C";
+        else if (keyStr === "D") ltxt = "D";
+        else if (keyStr === "E") ltxt = "E";
+        else if (keyStr === "H") ltxt = "H";
+        else if (keyStr.startsWith("P-")) ltxt = "Side";
+        else if (keyStr.startsWith("V-")) ltxt = "Pt";
+        else if (keyStr.startsWith("RC-")) {
+          const map = {
+            "RC-TL": "TL",
+            "RC-TR": "TR",
+            "RC-BR": "BR",
+            "RC-BL": "BL",
+          };
+          ltxt = map[keyStr] || "RC";
+        } else if (keyStr.startsWith("IC-")) {
+          const map = {
+            "IC-TL": "iTL",
+            "IC-TR": "iTR",
+            "IC-BR": "iBR",
+            "IC-BL": "iBL",
+            "IC-L": "iC",
+          };
+          ltxt = map[keyStr] || "IC";
         }
         // Color IC handles distinctly for quick recognition
-        if (keyStr.startsWith('IC-')){
-          c.setAttribute('stroke', '#7db320');
-          label.setAttribute('fill', '#1a3f14');
+        if (keyStr.startsWith("IC-")) {
+          c.setAttribute("stroke", "#7db320");
+          label.setAttribute("fill", "#1a3f14");
         }
         // Build label text with live values for clarity
         const sForLbl = shapes[idx];
-        const fmtVal = (v)=>{ if (v==null) return ''; const n=Number(v)||0; return (Math.round(n*100)%100===0)? `${Math.round(n)}"` : `${(Math.round(n*4)/4).toFixed(2).replace(/\.00$/,'')}"`; };
-        let vtxt = '';
-        if (sForLbl){
-          if (['A-right','A-left'].includes(keyStr)) vtxt = fmtVal(sForLbl.len?.A);
-          else if (['B-top','B-bottom'].includes(keyStr)) vtxt = fmtVal(sForLbl.len?.B);
-          else if (keyStr==='BL') vtxt = fmtVal((sForLbl.len?.BL!=null)?sForLbl.len.BL:((sForLbl.len?.B!=null)?sForLbl.len.B:25));
-          else if (keyStr==='BR') vtxt = fmtVal((sForLbl.len?.BR!=null)?sForLbl.len.BR:((sForLbl.len?.B!=null)?sForLbl.len.B:25));
-          else if (keyStr==='C') vtxt = fmtVal(sForLbl.len?.C);
-          else if (keyStr==='D') vtxt = fmtVal(sForLbl.len?.D);
-          else if (keyStr==='E') vtxt = fmtVal(sForLbl.len?.E);
-          else if (keyStr==='H') vtxt = fmtVal(sForLbl.len?.H);
-          else if (keyStr.startsWith('RC-')){
-            const mapK={ 'RC-TL':'TL','RC-TR':'TR','RC-BR':'BR','RC-BL':'BL'}; const rk=mapK[keyStr]; const v=(sForLbl.rcCorners?.[rk]?.value)||0; vtxt = fmtVal(v);
-          } else if (keyStr.startsWith('IC-')){
-            const mapK={ 'IC-TL':'iTL','IC-TR':'iTR','IC-BR':'iBR','IC-BL':'iBL'}; const rk=mapK[keyStr]; const v=(sForLbl.icCorners?.[rk]?.value)||0; vtxt = fmtVal(v);
+        const fmtVal = (v) => {
+          if (v == null) return "";
+          const n = Number(v) || 0;
+          return Math.round(n * 100) % 100 === 0
+            ? `${Math.round(n)}"`
+            : `${(Math.round(n * 4) / 4).toFixed(2).replace(/\.00$/, "")}"`;
+        };
+        let vtxt = "";
+        if (sForLbl) {
+          if (["A-right", "A-left"].includes(keyStr))
+            vtxt = fmtVal(sForLbl.len?.A);
+          else if (["B-top", "B-bottom"].includes(keyStr))
+            vtxt = fmtVal(sForLbl.len?.B);
+          else if (keyStr === "BL")
+            vtxt = fmtVal(
+              sForLbl.len?.BL != null
+                ? sForLbl.len.BL
+                : sForLbl.len?.B != null
+                ? sForLbl.len.B
+                : 25
+            );
+          else if (keyStr === "BR")
+            vtxt = fmtVal(
+              sForLbl.len?.BR != null
+                ? sForLbl.len.BR
+                : sForLbl.len?.B != null
+                ? sForLbl.len.B
+                : 25
+            );
+          else if (keyStr === "C") vtxt = fmtVal(sForLbl.len?.C);
+          else if (keyStr === "D") vtxt = fmtVal(sForLbl.len?.D);
+          else if (keyStr === "E") vtxt = fmtVal(sForLbl.len?.E);
+          else if (keyStr === "H") vtxt = fmtVal(sForLbl.len?.H);
+          else if (keyStr.startsWith("RC-")) {
+            const mapK = {
+              "RC-TL": "TL",
+              "RC-TR": "TR",
+              "RC-BR": "BR",
+              "RC-BL": "BL",
+            };
+            const rk = mapK[keyStr];
+            const v = sForLbl.rcCorners?.[rk]?.value || 0;
+            vtxt = fmtVal(v);
+          } else if (keyStr.startsWith("IC-")) {
+            const mapK = {
+              "IC-TL": "iTL",
+              "IC-TR": "iTR",
+              "IC-BR": "iBR",
+              "IC-BL": "iBL",
+            };
+            const rk = mapK[keyStr];
+            const v = sForLbl.icCorners?.[rk]?.value || 0;
+            vtxt = fmtVal(v);
           }
         }
         label.textContent = vtxt ? `${ltxt}: ${vtxt}` : ltxt;
         // Hide the left 'A' label by default to avoid A on both sides
-        const primaryKeys = new Set(['A-right','B-top','B-bottom','BL','BR','C','D','E','H']);
-        const showLabel = (idx===active && (primaryKeys.has(String(key)) || (toolMode==='resize' && hoverHandle && hoverHandle.h && hoverHandle.h.key===key)));
+        const primaryKeys = new Set([
+          "A-right",
+          "B-top",
+          "B-bottom",
+          "BL",
+          "BR",
+          "C",
+          "D",
+          "E",
+          "H",
+        ]);
+        const showLabel =
+          idx === active &&
+          (primaryKeys.has(String(key)) ||
+            (toolMode === "resize" &&
+              hoverHandle &&
+              hoverHandle.h &&
+              hoverHandle.h.key === key));
         if (showLabel) gRoot.appendChild(label);
       };
 
-      const labelNumbers=(parent, cx, cy, cur, dims)=>{
-        const mk=(x,y,txt)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x',String(x)); t.setAttribute('y',String(y)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','14'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; parent.appendChild(t); };
-        const mkRot=(x,y,txt,deg)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x',String(x)); t.setAttribute('y',String(y)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; t.setAttribute('transform', `rotate(${deg} ${x} ${y})`); parent.appendChild(t); };
-  const a=Number(dims.A ?? (cur.len?.A ?? 0)), b=Number(dims.B ?? (cur.len?.B ?? 0)), c=Number(dims.C ?? (cur.len?.C ?? 0)), d=Number(dims.D ?? (cur.len?.D ?? 0));
+      const labelNumbers = (parent, cx, cy, cur, dims) => {
+        const mk = (x, y, txt) => {
+          const t = document.createElementNS(ns, "text");
+          t.setAttribute("x", String(x));
+          t.setAttribute("y", String(y));
+          t.setAttribute("text-anchor", "middle");
+          t.setAttribute("font-size", "14");
+          t.setAttribute("font-weight", "700");
+          t.setAttribute("fill", "#2d4a7a");
+          t.textContent = txt;
+          parent.appendChild(t);
+        };
+        const mkRot = (x, y, txt, deg) => {
+          const t = document.createElementNS(ns, "text");
+          t.setAttribute("x", String(x));
+          t.setAttribute("y", String(y));
+          t.setAttribute("text-anchor", "middle");
+          t.setAttribute("font-size", "12");
+          t.setAttribute("font-weight", "700");
+          t.setAttribute("fill", "#2d4a7a");
+          t.textContent = txt;
+          t.setAttribute("transform", `rotate(${deg} ${x} ${y})`);
+          parent.appendChild(t);
+        };
+        const a = Number(dims.A ?? cur.len?.A ?? 0),
+          b = Number(dims.B ?? cur.len?.B ?? 0),
+          c = Number(dims.C ?? cur.len?.C ?? 0),
+          d = Number(dims.D ?? cur.len?.D ?? 0);
 
-        if (cur.type==='rect'){
-          const aPx=px(a), bPx=px(b);
+        if (cur.type === "rect") {
+          const aPx = px(a),
+            bPx = px(b);
           // A top
-          mk(cx, cy - (bPx/2) - 10, `${a}\"`);
+          mk(cx, cy - bPx / 2 - 10, `${a}\"`);
           // B left
-          mkRot(cx - (aPx/2) - 22, cy, `${b}\"`, -90);
+          mkRot(cx - aPx / 2 - 22, cy, `${b}\"`, -90);
           return;
         }
-        if (cur.type==='l'){
-          const aPx=px(a), bPx=px(b), cPx=px(c), dPx=px(d);
+        if (cur.type === "l") {
+          const aPx = px(a),
+            bPx = px(b),
+            cPx = px(c),
+            dPx = px(d);
           // A top
-          mk(cx, cy - (bPx/2) - 10, `${a}\"`);
+          mk(cx, cy - bPx / 2 - 10, `${a}\"`);
           const flipX = !!cur.flipX;
           // B side mirrors
-          if (!flipX){ mkRot(cx - (aPx/2) - 22, cy, `${b}\"`, -90); }
-          else { mkRot(cx + (aPx/2) + 22, cy, `${b}\"`, -90); }
+          if (!flipX) {
+            mkRot(cx - aPx / 2 - 22, cy, `${b}\"`, -90);
+          } else {
+            mkRot(cx + aPx / 2 + 22, cy, `${b}\"`, -90);
+          }
           // C bottom inner run
-          const cMidX = !flipX ? (cx - aPx/2 + cPx/2) : (cx + aPx/2 - cPx/2);
-          const cY = cy + bPx/2 + 14; mk(cMidX, cY, `${c}\"`);
+          const cMidX = !flipX
+            ? cx - aPx / 2 + cPx / 2
+            : cx + aPx / 2 - cPx / 2;
+          const cY = cy + bPx / 2 + 14;
+          mk(cMidX, cY, `${c}\"`);
           // D outer vertical segment on mirrored side
-          const dYmid = cy - bPx/2 + dPx/2;
-          if (!flipX){ mkRot(cx + (aPx/2) + 22, dYmid, `${d}\"`, -90); }
-          else { mkRot(cx - (aPx/2) - 22, dYmid, `${d}\"`, -90); }
+          const dYmid = cy - bPx / 2 + dPx / 2;
+          if (!flipX) {
+            mkRot(cx + aPx / 2 + 22, dYmid, `${d}\"`, -90);
+          } else {
+            mkRot(cx - aPx / 2 - 22, dYmid, `${d}\"`, -90);
+          }
           return;
         }
-  if (cur.type==='u'){
+        if (cur.type === "u") {
           const aPx = px(a);
           const dPx = px(Number(dims.D ?? cur.len?.D ?? 0));
           const bl = Number(dims.BL ?? cur.len?.BL ?? cur.len?.B ?? 25);
           const br = Number(dims.BR ?? cur.len?.BR ?? cur.len?.B ?? 25);
-          const blPx = px(bl), brPx = px(br);
+          const blPx = px(bl),
+            brPx = px(br);
           const hMax = Math.max(blPx, brPx);
-          const yTop = cy - hMax/2;
-    // A top outer width
-    mk(cx, yTop - 10, `${a}\"`);
+          const yTop = cy - hMax / 2;
+          // A top outer width
+          mk(cx, yTop - 10, `${a}\"`);
           // B-L and B-R numbers (left and right verticals)
-          mkRot(cx - (aPx/2) - 22, yTop + blPx/2, `${bl}\"`, -90);
-          mkRot(cx + (aPx/2) + 22, yTop + brPx/2, `${br}\"`, -90);
+          mkRot(cx - aPx / 2 - 22, yTop + blPx / 2, `${bl}\"`, -90);
+          mkRot(cx + aPx / 2 + 22, yTop + brPx / 2, `${br}\"`, -90);
           // Inner top C and D positions derived from E/H splits
-          const e = Number(cur.len?.E ?? Math.max(0, Math.round((a - c)/2)));
-          const h = Number(cur.len?.H ?? Math.max(0, Math.round((a - c)/2)));
-          const xiL = cx - aPx/2 + px(e);
-          const xiR = cx + aPx/2 - px(h);
+          const e = Number(cur.len?.E ?? Math.max(0, Math.round((a - c) / 2)));
+          const h = Number(cur.len?.H ?? Math.max(0, Math.round((a - c) / 2)));
+          const xiL = cx - aPx / 2 + px(e);
+          const xiR = cx + aPx / 2 - px(h);
           const innerTopY = yTop + dPx;
-    const cX = xiL + (xiR - xiL) * 0.5; mk(cX, innerTopY - 6, `${c}\"`);
-    // D label near vertical center
-    const dX = xiL + (xiR - xiL) * 0.5; mk(dX, yTop + dPx/2, `${d}\"`);
+          const cX = xiL + (xiR - xiL) * 0.5;
+          mk(cX, innerTopY - 6, `${c}\"`);
+          // D label near vertical center
+          const dX = xiL + (xiR - xiL) * 0.5;
+          mk(dX, yTop + dPx / 2, `${d}\"`);
           // E/H bottom return labels
-          const eMidX = cx - aPx/2 + px(e)/2; mk(eMidX, yTop + blPx + 14, `${e}\"`);
-          const hMidX = cx + aPx/2 - px(h)/2; mk(hMidX, yTop + brPx + 14, `${h}\"`);
+          const eMidX = cx - aPx / 2 + px(e) / 2;
+          mk(eMidX, yTop + blPx + 14, `${e}\"`);
+          const hMidX = cx + aPx / 2 - px(h) / 2;
+          mk(hMidX, yTop + brPx + 14, `${h}\"`);
           return;
         }
       };
 
       // Inline numeric inputs are disabled per request; clear any remnants and no-op.
-      const renderInlineInputs = () =>{
+      const renderInlineInputs = () => {
         if (!inlineHost) return;
-        inlineHost.innerHTML = '';
+        inlineHost.innerHTML = "";
         return;
       };
 
-  shapes.forEach((cur, idx)=>{
-  const centerX = cur.pos?.x ?? 300;
-  const centerY = cur.pos?.y ?? 300;
-        const len = cur.len; const shape = cur.type; const rotation = cur.rot;
+      shapes.forEach((cur, idx) => {
+        const centerX = cur.pos?.x ?? 300;
+        const centerY = cur.pos?.y ?? 300;
+        const len = cur.len;
+        const shape = cur.type;
+        const rotation = cur.rot;
         // Helpers to convert local (unrotated, origin at center in viewBox units) to world
         const toWorld = (lx, ly) => {
-          const rad=(rotation||0)*Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad);
-          return { x: centerX + lx*cos - ly*sin, y: centerY + lx*sin + ly*cos };
+          const rad = ((rotation || 0) * Math.PI) / 180;
+          const cos = Math.cos(rad),
+            sin = Math.sin(rad);
+          return {
+            x: centerX + lx * cos - ly * sin,
+            y: centerY + lx * sin + ly * cos,
+          };
         };
 
-        if (shape==='rect'){
-          const fillActive = '#f8c4a0';
-          const fillInactive = '#cfd8dc';
-          const fillColor = (idx===active) ? fillActive : fillInactive;
+        if (shape === "rect") {
+          const fillActive = "#f8c4a0";
+          const fillInactive = "#cfd8dc";
+          const fillColor = idx === active ? fillActive : fillInactive;
           const w = px(len.A || 60);
           const h = px(len.B || 25);
-          const rotG = document.createElementNS(ns, 'g');
-          rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
+          const rotG = document.createElementNS(ns, "g");
+          rotG.setAttribute(
+            "transform",
+            `rotate(${rotation} ${centerX} ${centerY})`
+          );
 
           // overhang removed
 
           // backsplash per side
-          const bh = px(Number(opts.bsHeight||0));
-      if (bh>0){
-            ['A','B','C','D'].forEach(side=>{
-              if (cur.bs[side]){
-                const r = document.createElementNS(ns,'rect');
-                if (side==='A'){ r.setAttribute('x', String(centerX - w/2)); r.setAttribute('y', String(centerY - h/2 - bh)); r.setAttribute('width', String(w)); r.setAttribute('height', String(bh)); }
-                if (side==='B'){ r.setAttribute('x', String(centerX - w/2 - bh)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(h)); }
-                if (side==='C'){ r.setAttribute('x', String(centerX - w/2)); r.setAttribute('y', String(centerY + h/2)); r.setAttribute('width', String(w)); r.setAttribute('height', String(bh)); }
-                if (side==='D'){ r.setAttribute('x', String(centerX + w/2)); r.setAttribute('y', String(centerY - h/2)); r.setAttribute('width', String(bh)); r.setAttribute('height', String(h)); }
-        r.setAttribute('fill', '#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r);
+          const bh = px(Number(opts.bsHeight || 0));
+          if (bh > 0) {
+            ["A", "B", "C", "D"].forEach((side) => {
+              if (cur.bs[side]) {
+                const r = document.createElementNS(ns, "rect");
+                if (side === "A") {
+                  r.setAttribute("x", String(centerX - w / 2));
+                  r.setAttribute("y", String(centerY - h / 2 - bh));
+                  r.setAttribute("width", String(w));
+                  r.setAttribute("height", String(bh));
+                }
+                if (side === "B") {
+                  r.setAttribute("x", String(centerX - w / 2 - bh));
+                  r.setAttribute("y", String(centerY - h / 2));
+                  r.setAttribute("width", String(bh));
+                  r.setAttribute("height", String(h));
+                }
+                if (side === "C") {
+                  r.setAttribute("x", String(centerX - w / 2));
+                  r.setAttribute("y", String(centerY + h / 2));
+                  r.setAttribute("width", String(w));
+                  r.setAttribute("height", String(bh));
+                }
+                if (side === "D") {
+                  r.setAttribute("x", String(centerX + w / 2));
+                  r.setAttribute("y", String(centerY - h / 2));
+                  r.setAttribute("width", String(bh));
+                  r.setAttribute("height", String(h));
+                }
+                r.setAttribute("fill", "#e6f2ff");
+                r.setAttribute("stroke", "#7fb3ff");
+                r.setAttribute("stroke-width", "1");
+                rotG.appendChild(r);
                 // Label the backsplash strip like in the screenshot
-                if (side==='A') drawBsLabel(rotG, centerX - w/2, centerY - h/2 - bh, centerX + w/2, centerY - h/2 - bh, 'Backsplash');
-                if (side==='B') drawBsLabel(rotG, centerX - w/2 - bh, centerY - h/2, centerX - w/2 - bh, centerY + h/2, 'Backsplash');
-                if (side==='C') drawBsLabel(rotG, centerX - w/2, centerY + h/2 + bh, centerX + w/2, centerY + h/2 + bh, 'Backsplash');
-                if (side==='D') drawBsLabel(rotG, centerX + w/2 + bh, centerY - h/2, centerX + w/2 + bh, centerY + h/2, 'Backsplash');
+                if (side === "A")
+                  drawBsLabel(
+                    rotG,
+                    centerX - w / 2,
+                    centerY - h / 2 - bh,
+                    centerX + w / 2,
+                    centerY - h / 2 - bh,
+                    "Backsplash"
+                  );
+                if (side === "B")
+                  drawBsLabel(
+                    rotG,
+                    centerX - w / 2 - bh,
+                    centerY - h / 2,
+                    centerX - w / 2 - bh,
+                    centerY + h / 2,
+                    "Backsplash"
+                  );
+                if (side === "C")
+                  drawBsLabel(
+                    rotG,
+                    centerX - w / 2,
+                    centerY + h / 2 + bh,
+                    centerX + w / 2,
+                    centerY + h / 2 + bh,
+                    "Backsplash"
+                  );
+                if (side === "D")
+                  drawBsLabel(
+                    rotG,
+                    centerX + w / 2 + bh,
+                    centerY - h / 2,
+                    centerX + w / 2 + bh,
+                    centerY + h / 2,
+                    "Backsplash"
+                  );
               }
             });
           }
 
           // main top surface with optional corner ops
           let useCorners = cur.rcCorners;
-          if (!useCorners){
-            const rect = document.createElementNS(ns, 'rect');
-            rect.setAttribute('x', String(centerX - w/2)); rect.setAttribute('y', String(centerY - h/2)); rect.setAttribute('width', String(w)); rect.setAttribute('height', String(h)); rect.setAttribute('fill', fillColor); rect.setAttribute('stroke', 'none'); rotG.appendChild(rect);
+          if (!useCorners) {
+            const rect = document.createElementNS(ns, "rect");
+            rect.setAttribute("x", String(centerX - w / 2));
+            rect.setAttribute("y", String(centerY - h / 2));
+            rect.setAttribute("width", String(w));
+            rect.setAttribute("height", String(h));
+            rect.setAttribute("fill", fillColor);
+            rect.setAttribute("stroke", "none");
+            rotG.appendChild(rect);
           } else {
             // Render-time geometric clamp for rcCorners (Rect): ensure sums fit width/height
             try {
-              const widthIn = Number(len.A||0);
-              const heightIn = Number(len.B||0);
-              if (!cur.rcCorners) cur.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
-              let TLv = Math.max(0, Number(cur.rcCorners.TL?.value||0));
-              let TRv = Math.max(0, Number(cur.rcCorners.TR?.value||0));
-              let BRv = Math.max(0, Number(cur.rcCorners.BR?.value||0));
-              let BLv = Math.max(0, Number(cur.rcCorners.BL?.value||0));
-              for (let i=0;i<2;i++){
-                TLv = Math.min(TLv, Math.max(0, widthIn - TRv), Math.max(0, heightIn - BLv));
-                TRv = Math.min(TRv, Math.max(0, widthIn - TLv), Math.max(0, heightIn - BRv));
-                BRv = Math.min(BRv, Math.max(0, widthIn - BLv), Math.max(0, heightIn - TRv));
-                BLv = Math.min(BLv, Math.max(0, widthIn - BRv), Math.max(0, heightIn - TLv));
+              const widthIn = Number(len.A || 0);
+              const heightIn = Number(len.B || 0);
+              if (!cur.rcCorners)
+                cur.rcCorners = {
+                  TL: { mode: "square", value: 0 },
+                  TR: { mode: "square", value: 0 },
+                  BR: { mode: "square", value: 0 },
+                  BL: { mode: "square", value: 0 },
+                };
+              let TLv = Math.max(0, Number(cur.rcCorners.TL?.value || 0));
+              let TRv = Math.max(0, Number(cur.rcCorners.TR?.value || 0));
+              let BRv = Math.max(0, Number(cur.rcCorners.BR?.value || 0));
+              let BLv = Math.max(0, Number(cur.rcCorners.BL?.value || 0));
+              for (let i = 0; i < 2; i++) {
+                TLv = Math.min(
+                  TLv,
+                  Math.max(0, widthIn - TRv),
+                  Math.max(0, heightIn - BLv)
+                );
+                TRv = Math.min(
+                  TRv,
+                  Math.max(0, widthIn - TLv),
+                  Math.max(0, heightIn - BRv)
+                );
+                BRv = Math.min(
+                  BRv,
+                  Math.max(0, widthIn - BLv),
+                  Math.max(0, heightIn - TRv)
+                );
+                BLv = Math.min(
+                  BLv,
+                  Math.max(0, widthIn - BRv),
+                  Math.max(0, heightIn - TLv)
+                );
               }
               cur.rcCorners = {
-                TL: { mode: cur.rcCorners.TL?.mode||'square', value: TLv },
-                TR: { mode: cur.rcCorners.TR?.mode||'square', value: TRv },
-                BR: { mode: cur.rcCorners.BR?.mode||'square', value: BRv },
-                BL: { mode: cur.rcCorners.BL?.mode||'square', value: BLv },
+                TL: { mode: cur.rcCorners.TL?.mode || "square", value: TLv },
+                TR: { mode: cur.rcCorners.TR?.mode || "square", value: TRv },
+                BR: { mode: cur.rcCorners.BR?.mode || "square", value: BRv },
+                BL: { mode: cur.rcCorners.BL?.mode || "square", value: BLv },
               };
               // Immediate input sync for rcCorners (L)
-              try{
-                ['TL','TR','BR','BL'].forEach(k=>{
+              try {
+                ["TL", "TR", "BR", "BL"].forEach((k) => {
                   const vEl = sel(`[data-ct-rc-corner-val="${k}"]`, root);
-                  if (vEl) vEl.value = String(cur.rcCorners[k]?.value||0);
+                  if (vEl) vEl.value = String(cur.rcCorners[k]?.value || 0);
                   const mEl = sel(`[data-ct-rc-corner-mode="${k}"]`, root);
-                  if (mEl) mEl.value = cur.rcCorners[k]?.mode || 'square';
+                  if (mEl) mEl.value = cur.rcCorners[k]?.mode || "square";
                 });
-              }catch(e){}
+              } catch (e) {}
               // Immediate input sync for rcCorners (Rect)
-              try{
-                ['TL','TR','BR','BL'].forEach(k=>{
+              try {
+                ["TL", "TR", "BR", "BL"].forEach((k) => {
                   const vEl = sel(`[data-ct-rc-corner-val="${k}"]`, root);
-                  if (vEl) vEl.value = String(cur.rcCorners[k]?.value||0);
+                  if (vEl) vEl.value = String(cur.rcCorners[k]?.value || 0);
                   const mEl = sel(`[data-ct-rc-corner-mode="${k}"]`, root);
-                  if (mEl) mEl.value = cur.rcCorners[k]?.mode || 'square';
+                  if (mEl) mEl.value = cur.rcCorners[k]?.mode || "square";
                 });
-              }catch(e){}
+              } catch (e) {}
               useCorners = cur.rcCorners;
-            } catch(e){}
-            const t = (k)=> Math.max(0, Number(useCorners[k]?.value||0))*2; // inches->px along edges
-            const mTL = useCorners.TL?.mode||'square', mTR=useCorners.TR?.mode||'square', mBR=useCorners.BR?.mode||'square', mBL=useCorners.BL?.mode||'square';
-            const TL = {mode:mTL, t:t('TL')}, TR={mode:mTR, t:t('TR')}, BR={mode:mBR, t:t('BR')}, BL={mode:mBL, t:t('BL')};
-            const x0 = centerX - w/2, y0 = centerY - h/2, x1 = centerX + w/2, y1 = centerY + h/2;
-            const pTL = {x:x0, y:y0}, pTR={x:x1,y:y0}, pBR={x:x1,y:y1}, pBL={x:x0,y:y1};
-            const off = (pA,pB,t)=>{ const len=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/len, uy=(pB.y-pA.y)/len; return { x: pA.x + ux*t, y: pA.y + uy*t }; };
-            const aTL = off(pTL,pTR, TL.t), bTL = off(pTL,pBL, TL.t);
-            const aTR = off(pTR,pBR, TR.t), bTR = off(pTR,pTL, TR.t);
-            const aBR = off(pBR,pBL, BR.t), bBR = off(pBR,pTR, BR.t);
-            const aBL = off(pBL,pTL, BL.t), bBL = off(pBL,pBR, BL.t);
-            const arcTo = (r, to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
-            const d=[];
+            } catch (e) {}
+            const t = (k) => Math.max(0, Number(useCorners[k]?.value || 0)) * 2; // inches->px along edges
+            const mTL = useCorners.TL?.mode || "square",
+              mTR = useCorners.TR?.mode || "square",
+              mBR = useCorners.BR?.mode || "square",
+              mBL = useCorners.BL?.mode || "square";
+            const TL = { mode: mTL, t: t("TL") },
+              TR = { mode: mTR, t: t("TR") },
+              BR = { mode: mBR, t: t("BR") },
+              BL = { mode: mBL, t: t("BL") };
+            const x0 = centerX - w / 2,
+              y0 = centerY - h / 2,
+              x1 = centerX + w / 2,
+              y1 = centerY + h / 2;
+            const pTL = { x: x0, y: y0 },
+              pTR = { x: x1, y: y0 },
+              pBR = { x: x1, y: y1 },
+              pBL = { x: x0, y: y1 };
+            const off = (pA, pB, t) => {
+              const len = Math.hypot(pB.x - pA.x, pB.y - pA.y) || 1;
+              const ux = (pB.x - pA.x) / len,
+                uy = (pB.y - pA.y) / len;
+              return { x: pA.x + ux * t, y: pA.y + uy * t };
+            };
+            const aTL = off(pTL, pTR, TL.t),
+              bTL = off(pTL, pBL, TL.t);
+            const aTR = off(pTR, pBR, TR.t),
+              bTR = off(pTR, pTL, TR.t);
+            const aBR = off(pBR, pBL, BR.t),
+              bBR = off(pBR, pTR, BR.t);
+            const aBL = off(pBL, pTL, BL.t),
+              bBL = off(pBL, pBR, BL.t);
+            const arcTo = (r, to) => `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
+            const d = [];
             // Start at top edge, after TL
             d.push(`M ${aTL.x} ${aTL.y}`);
             // Top edge to before TR
             d.push(`L ${bTR.x} ${bTR.y}`);
             // TR corner
-            if (TR.mode==='radius'){ const r=TR.t/Math.tan(Math.PI/4)||0; d.push(arcTo(r, aTR)); } else if (TR.mode==='clip'){ d.push(`L ${aTR.x} ${aTR.y}`); }
+            if (TR.mode === "radius") {
+              const r = TR.t / Math.tan(Math.PI / 4) || 0;
+              d.push(arcTo(r, aTR));
+            } else if (TR.mode === "clip") {
+              d.push(`L ${aTR.x} ${aTR.y}`);
+            }
             // Right edge to before BR
             d.push(`L ${bBR.x} ${bBR.y}`);
             // BR corner
-            if (BR.mode==='radius'){ const r=BR.t/Math.tan(Math.PI/4)||0; d.push(arcTo(r, aBR)); } else if (BR.mode==='clip'){ d.push(`L ${aBR.x} ${aBR.y}`); }
+            if (BR.mode === "radius") {
+              const r = BR.t / Math.tan(Math.PI / 4) || 0;
+              d.push(arcTo(r, aBR));
+            } else if (BR.mode === "clip") {
+              d.push(`L ${aBR.x} ${aBR.y}`);
+            }
             // Bottom edge to before BL
             d.push(`L ${bBL.x} ${bBL.y}`);
             // BL corner
-            if (BL.mode==='radius'){ const r=BL.t/Math.tan(Math.PI/4)||0; d.push(arcTo(r, aBL)); } else if (BL.mode==='clip'){ d.push(`L ${aBL.x} ${aBL.y}`); }
+            if (BL.mode === "radius") {
+              const r = BL.t / Math.tan(Math.PI / 4) || 0;
+              d.push(arcTo(r, aBL));
+            } else if (BL.mode === "clip") {
+              d.push(`L ${aBL.x} ${aBL.y}`);
+            }
             // Left edge to before TL
             d.push(`L ${bTL.x} ${bTL.y}`);
             // TL corner closing back to start
-            if (TL.mode==='radius'){ const r=TL.t/Math.tan(Math.PI/4)||0; d.push(arcTo(r, aTL)); } else if (TL.mode==='clip'){ d.push(`L ${aTL.x} ${aTL.y}`); }
-            d.push('Z');
-            const p=document.createElementNS(ns,'path'); p.setAttribute('d', d.join(' ')); p.setAttribute('fill', fillColor); p.setAttribute('stroke','none'); rotG.appendChild(p);
+            if (TL.mode === "radius") {
+              const r = TL.t / Math.tan(Math.PI / 4) || 0;
+              d.push(arcTo(r, aTL));
+            } else if (TL.mode === "clip") {
+              d.push(`L ${aTL.x} ${aTL.y}`);
+            }
+            d.push("Z");
+            const p = document.createElementNS(ns, "path");
+            p.setAttribute("d", d.join(" "));
+            p.setAttribute("fill", fillColor);
+            p.setAttribute("stroke", "none");
+            rotG.appendChild(p);
           }
 
           // wall side overlays (black if against wall)
-          const sideColor = '#000';
-          const mkLine = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke', sideColor); l.setAttribute('stroke-width','3'); return l; };
-          if (cur.wall.A) rotG.appendChild(mkLine(centerX - w/2, centerY - h/2, centerX + w/2, centerY - h/2));
-          if (cur.wall.B) rotG.appendChild(mkLine(centerX - w/2, centerY - h/2, centerX - w/2, centerY + h/2));
-          if (cur.wall.C) rotG.appendChild(mkLine(centerX - w/2, centerY + h/2, centerX + w/2, centerY + h/2));
-          if (cur.wall.D) rotG.appendChild(mkLine(centerX + w/2, centerY - h/2, centerX + w/2, centerY + h/2));
+          const sideColor = "#000";
+          const mkLine = (x1, y1, x2, y2) => {
+            const l = document.createElementNS(ns, "line");
+            l.setAttribute("x1", x1);
+            l.setAttribute("y1", y1);
+            l.setAttribute("x2", x2);
+            l.setAttribute("y2", y2);
+            l.setAttribute("stroke", sideColor);
+            l.setAttribute("stroke-width", "3");
+            return l;
+          };
+          if (cur.wall.A)
+            rotG.appendChild(
+              mkLine(
+                centerX - w / 2,
+                centerY - h / 2,
+                centerX + w / 2,
+                centerY - h / 2
+              )
+            );
+          if (cur.wall.B)
+            rotG.appendChild(
+              mkLine(
+                centerX - w / 2,
+                centerY - h / 2,
+                centerX - w / 2,
+                centerY + h / 2
+              )
+            );
+          if (cur.wall.C)
+            rotG.appendChild(
+              mkLine(
+                centerX - w / 2,
+                centerY + h / 2,
+                centerX + w / 2,
+                centerY + h / 2
+              )
+            );
+          if (cur.wall.D)
+            rotG.appendChild(
+              mkLine(
+                centerX + w / 2,
+                centerY - h / 2,
+                centerX + w / 2,
+                centerY + h / 2
+              )
+            );
 
           // seams (draw before highlight)
-          if (opts.showSeams && Array.isArray(cur.seams)){
-            cur.seams.forEach(seam=>{
-              const line=document.createElementNS(ns,'line');
-              if (seam.type==='v'){
-                const x = centerX + px(seam.atIn||0);
-                line.setAttribute('x1', String(x)); line.setAttribute('y1', String(centerY - h/2));
-                line.setAttribute('x2', String(x)); line.setAttribute('y2', String(centerY + h/2));
-              } else { // 'h'
-                const y = centerY + px(seam.atIn||0);
-                line.setAttribute('x1', String(centerX - w/2)); line.setAttribute('y1', String(y));
-                line.setAttribute('x2', String(centerX + w/2)); line.setAttribute('y2', String(y));
+          if (opts.showSeams && Array.isArray(cur.seams)) {
+            cur.seams.forEach((seam) => {
+              const line = document.createElementNS(ns, "line");
+              if (seam.type === "v") {
+                const x = centerX + px(seam.atIn || 0);
+                line.setAttribute("x1", String(x));
+                line.setAttribute("y1", String(centerY - h / 2));
+                line.setAttribute("x2", String(x));
+                line.setAttribute("y2", String(centerY + h / 2));
+              } else {
+                // 'h'
+                const y = centerY + px(seam.atIn || 0);
+                line.setAttribute("x1", String(centerX - w / 2));
+                line.setAttribute("y1", String(y));
+                line.setAttribute("x2", String(centerX + w / 2));
+                line.setAttribute("y2", String(y));
               }
-              line.setAttribute('stroke','#666'); line.setAttribute('stroke-width','2'); line.setAttribute('stroke-dasharray','6 6');
+              line.setAttribute("stroke", "#666");
+              line.setAttribute("stroke-width", "2");
+              line.setAttribute("stroke-dasharray", "6 6");
               rotG.appendChild(line);
             });
           }
 
           // active highlight
-          if (idx===active){
-            const hi = document.createElementNS(ns,'rect');
-            hi.setAttribute('x', String(centerX - w/2 - 4));
-            hi.setAttribute('y', String(centerY - h/2 - 4));
-            hi.setAttribute('width', String(w + 8));
-            hi.setAttribute('height', String(h + 8));
-            hi.setAttribute('fill','none'); hi.setAttribute('stroke','#4f6bd8'); hi.setAttribute('stroke-width','2'); hi.setAttribute('stroke-dasharray','6 4');
+          if (idx === active) {
+            const hi = document.createElementNS(ns, "rect");
+            hi.setAttribute("x", String(centerX - w / 2 - 4));
+            hi.setAttribute("y", String(centerY - h / 2 - 4));
+            hi.setAttribute("width", String(w + 8));
+            hi.setAttribute("height", String(h + 8));
+            hi.setAttribute("fill", "none");
+            hi.setAttribute("stroke", "#4f6bd8");
+            hi.setAttribute("stroke-width", "2");
+            hi.setAttribute("stroke-dasharray", "6 4");
             rotG.appendChild(hi);
           }
 
           // side guides sized to A (top) and B (left)
-          if (opts.showGuides){
-            const m=18;
+          if (opts.showGuides) {
+            const m = 18;
             // top (A)
-            drawGuideLine(rotG, centerX - w/2 + m, centerY - h/2 + m, centerX + w/2 - m, centerY - h/2 + m, 'A');
+            drawGuideLine(
+              rotG,
+              centerX - w / 2 + m,
+              centerY - h / 2 + m,
+              centerX + w / 2 - m,
+              centerY - h / 2 + m,
+              "A"
+            );
             // left (B)
-            drawGuideLine(rotG, centerX - w/2 + m, centerY - h/2 + m, centerX - w/2 + m, centerY + h/2 - m, 'B');
+            drawGuideLine(
+              rotG,
+              centerX - w / 2 + m,
+              centerY - h / 2 + m,
+              centerX - w / 2 + m,
+              centerY + h / 2 - m,
+              "B"
+            );
           }
           gRoot.appendChild(rotG);
           // Label: center of rectangle
-          drawShapeName(centerX, centerY, cur.name || `Shape ${idx+1}`);
-          if (opts.showGuides){ labelNumbers(rotG, centerX, centerY, cur, {A:len.A,B:len.B}); }
-          hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation });
-          if (idx===active){
-            // local anchors relative to center, then convert
-            const pTop = toWorld(0, -h/2);
-            const pRight = toWorld(w/2, 0);
-            const pLeft = toWorld(-w/2, 0);
-            const pBottom = toWorld(0, h/2);
-            addHandle(idx, pTop.x, pTop.y, 0, 'B-top');
-            addHandle(idx, pRight.x, pRight.y, 0, 'A-right');
-            addHandle(idx, pLeft.x, pLeft.y, 0, 'A-left');
-            addHandle(idx, pBottom.x, pBottom.y, 0, 'B-bottom');
-            // Corner size handles (midpoint of offset points)
-            const rc = cur.rcCorners || {TL:{value:0},TR:{value:0},BR:{value:0},BL:{value:0}};
-            const tpx=(k)=> Math.max(0, Number(rc[k]?.value||0))*2;
-            const TLm = toWorld(-w/2 + tpx('TL')/2, -h/2 + tpx('TL')/2);
-            const TRm = toWorld( w/2 - tpx('TR')/2, -h/2 + tpx('TR')/2);
-            const BRm = toWorld( w/2 - tpx('BR')/2,  h/2 - tpx('BR')/2);
-            const BLm = toWorld(-w/2 + tpx('BL')/2,  h/2 - tpx('BL')/2);
-            addHandle(idx, TLm.x, TLm.y, 0, 'RC-TL');
-            addHandle(idx, TRm.x, TRm.y, 0, 'RC-TR');
-            addHandle(idx, BRm.x, BRm.y, 0, 'RC-BR');
-            addHandle(idx, BLm.x, BLm.y, 0, 'RC-BL');
+          drawShapeName(centerX, centerY, cur.name || `Shape ${idx + 1}`);
+          if (opts.showGuides) {
+            labelNumbers(rotG, centerX, centerY, cur, { A: len.A, B: len.B });
           }
-
-  } else if (shape==='l'){
-    const fillActive = '#f8c4a0';
-    const fillInactive = '#cfd8dc';
-    const fillColor = (idx===active) ? fillActive : fillInactive;
+          hitAreas.push({ idx, cx: centerX, cy: centerY, w, h, rot: rotation });
+          if (idx === active) {
+            // local anchors relative to center, then convert
+            const pTop = toWorld(0, -h / 2);
+            const pRight = toWorld(w / 2, 0);
+            const pLeft = toWorld(-w / 2, 0);
+            const pBottom = toWorld(0, h / 2);
+            addHandle(idx, pTop.x, pTop.y, 0, "B-top");
+            addHandle(idx, pRight.x, pRight.y, 0, "A-right");
+            addHandle(idx, pLeft.x, pLeft.y, 0, "A-left");
+            addHandle(idx, pBottom.x, pBottom.y, 0, "B-bottom");
+            // Corner size handles (midpoint of offset points)
+            const rc = cur.rcCorners || {
+              TL: { value: 0 },
+              TR: { value: 0 },
+              BR: { value: 0 },
+              BL: { value: 0 },
+            };
+            const tpx = (k) => Math.max(0, Number(rc[k]?.value || 0)) * 2;
+            const TLm = toWorld(-w / 2 + tpx("TL") / 2, -h / 2 + tpx("TL") / 2);
+            const TRm = toWorld(w / 2 - tpx("TR") / 2, -h / 2 + tpx("TR") / 2);
+            const BRm = toWorld(w / 2 - tpx("BR") / 2, h / 2 - tpx("BR") / 2);
+            const BLm = toWorld(-w / 2 + tpx("BL") / 2, h / 2 - tpx("BL") / 2);
+            addHandle(idx, TLm.x, TLm.y, 0, "RC-TL");
+            addHandle(idx, TRm.x, TRm.y, 0, "RC-TR");
+            addHandle(idx, BRm.x, BRm.y, 0, "RC-BR");
+            addHandle(idx, BLm.x, BLm.y, 0, "RC-BL");
+          }
+        } else if (shape === "l") {
+          const fillActive = "#f8c4a0";
+          const fillInactive = "#cfd8dc";
+          const fillColor = idx === active ? fillActive : fillInactive;
           // L as outer A x B minus inner notch sized by C (width) and D (height)
-          let aIn = Number(len.A||60), bIn = Number(len.B||25), cIn = Number(len.C||20), dIn = Number(len.D||10);
+          let aIn = Number(len.A || 60),
+            bIn = Number(len.B || 25),
+            cIn = Number(len.C || 20),
+            dIn = Number(len.D || 10);
           if (cIn >= aIn) cIn = Math.max(0, aIn - 1);
           if (dIn >= bIn) dIn = Math.max(0, bIn - 1);
-          const a = px(aIn), b = px(bIn), c = px(cIn), d = px(dIn);
-          const x = centerX - a/2, y = centerY - b/2;
+          const a = px(aIn),
+            b = px(bIn),
+            c = px(cIn),
+            d = px(dIn);
+          const x = centerX - a / 2,
+            y = centerY - b / 2;
           const flipX = !!cur.flipX;
           // Inner removal rectangle anchors to right (default) or left (when flipped)
-          const xi = flipX ? (centerX - a/2) : (centerX - a/2 + c);
-          const yi = centerY - b/2 + d;
+          const xi = flipX ? centerX - a / 2 : centerX - a / 2 + c;
+          const yi = centerY - b / 2 + d;
           const wi = a - c;
           const hi = b - d;
-          const path = document.createElementNS(ns, 'path');
+          const path = document.createElementNS(ns, "path");
           // Build outer path with optional corner operations
-          let outerD = '';
-          if (!cur.rcCorners){
+          let outerD = "";
+          if (!cur.rcCorners) {
             outerD = `M ${x} ${y} h ${a} v ${b} h ${-a} Z`;
           } else {
             // Render-time geometric clamp for rcCorners (L): ensure sums fit width/height
             try {
-              const widthIn = Number(aIn||0);
-              const heightIn = Number(bIn||0);
-              if (!cur.rcCorners) cur.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
-              let TLv = Math.max(0, Number(cur.rcCorners.TL?.value||0));
-              let TRv = Math.max(0, Number(cur.rcCorners.TR?.value||0));
-              let BRv = Math.max(0, Number(cur.rcCorners.BR?.value||0));
-              let BLv = Math.max(0, Number(cur.rcCorners.BL?.value||0));
-              for (let i=0;i<2;i++){
-                TLv = Math.min(TLv, Math.max(0, widthIn - TRv), Math.max(0, heightIn - BLv));
-                TRv = Math.min(TRv, Math.max(0, widthIn - TLv), Math.max(0, heightIn - BRv));
-                BRv = Math.min(BRv, Math.max(0, widthIn - BLv), Math.max(0, heightIn - TRv));
-                BLv = Math.min(BLv, Math.max(0, widthIn - BRv), Math.max(0, heightIn - TLv));
+              const widthIn = Number(aIn || 0);
+              const heightIn = Number(bIn || 0);
+              if (!cur.rcCorners)
+                cur.rcCorners = {
+                  TL: { mode: "square", value: 0 },
+                  TR: { mode: "square", value: 0 },
+                  BR: { mode: "square", value: 0 },
+                  BL: { mode: "square", value: 0 },
+                };
+              let TLv = Math.max(0, Number(cur.rcCorners.TL?.value || 0));
+              let TRv = Math.max(0, Number(cur.rcCorners.TR?.value || 0));
+              let BRv = Math.max(0, Number(cur.rcCorners.BR?.value || 0));
+              let BLv = Math.max(0, Number(cur.rcCorners.BL?.value || 0));
+              for (let i = 0; i < 2; i++) {
+                TLv = Math.min(
+                  TLv,
+                  Math.max(0, widthIn - TRv),
+                  Math.max(0, heightIn - BLv)
+                );
+                TRv = Math.min(
+                  TRv,
+                  Math.max(0, widthIn - TLv),
+                  Math.max(0, heightIn - BRv)
+                );
+                BRv = Math.min(
+                  BRv,
+                  Math.max(0, widthIn - BLv),
+                  Math.max(0, heightIn - TRv)
+                );
+                BLv = Math.min(
+                  BLv,
+                  Math.max(0, widthIn - BRv),
+                  Math.max(0, heightIn - TLv)
+                );
               }
               cur.rcCorners = {
-                TL: { mode: cur.rcCorners.TL?.mode||'square', value: TLv },
-                TR: { mode: cur.rcCorners.TR?.mode||'square', value: TRv },
-                BR: { mode: cur.rcCorners.BR?.mode||'square', value: BRv },
-                BL: { mode: cur.rcCorners.BL?.mode||'square', value: BLv },
+                TL: { mode: cur.rcCorners.TL?.mode || "square", value: TLv },
+                TR: { mode: cur.rcCorners.TR?.mode || "square", value: TRv },
+                BR: { mode: cur.rcCorners.BR?.mode || "square", value: BRv },
+                BL: { mode: cur.rcCorners.BL?.mode || "square", value: BLv },
               };
-            } catch(e){}
+            } catch (e) {}
             const rc = cur.rcCorners || {};
-            const t = (k)=> Math.max(0, Number(rc[k]?.value||0)) * 2; // inches->px along edges
-            const TL = { mode: (rc.TL?.mode)||'square', t: t('TL') };
-            const TR = { mode: (rc.TR?.mode)||'square', t: t('TR') };
-            const BR = { mode: (rc.BR?.mode)||'square', t: t('BR') };
-            const BL = { mode: (rc.BL?.mode)||'square', t: t('BL') };
-            const pTL = { x:x,     y:y };
-            const pTR = { x:x + a, y:y };
-            const pBR = { x:x + a, y:y + b };
-            const pBL = { x:x,     y:y + b };
-            const off = (pA,pB,dist)=>{ const L=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/L, uy=(pB.y-pA.y)/L; return { x: pA.x + ux*dist, y: pA.y + uy*dist }; };
-            const aTL = off(pTL,pTR, TL.t), bTL = off(pTL,pBL, TL.t);
-            const aTR = off(pTR,pBR, TR.t), bTR = off(pTR,pTL, TR.t);
-            const aBR = off(pBR,pBL, BR.t), bBR = off(pBR,pTR, BR.t);
-            const aBL = off(pBL,pTL, BL.t), bBL = off(pBL,pBR, BL.t);
-            const arc = (r, to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`; // outside sweep
-            const dSeg=[];
+            const t = (k) => Math.max(0, Number(rc[k]?.value || 0)) * 2; // inches->px along edges
+            const TL = { mode: rc.TL?.mode || "square", t: t("TL") };
+            const TR = { mode: rc.TR?.mode || "square", t: t("TR") };
+            const BR = { mode: rc.BR?.mode || "square", t: t("BR") };
+            const BL = { mode: rc.BL?.mode || "square", t: t("BL") };
+            const pTL = { x: x, y: y };
+            const pTR = { x: x + a, y: y };
+            const pBR = { x: x + a, y: y + b };
+            const pBL = { x: x, y: y + b };
+            const off = (pA, pB, dist) => {
+              const L = Math.hypot(pB.x - pA.x, pB.y - pA.y) || 1;
+              const ux = (pB.x - pA.x) / L,
+                uy = (pB.y - pA.y) / L;
+              return { x: pA.x + ux * dist, y: pA.y + uy * dist };
+            };
+            const aTL = off(pTL, pTR, TL.t),
+              bTL = off(pTL, pBL, TL.t);
+            const aTR = off(pTR, pBR, TR.t),
+              bTR = off(pTR, pTL, TR.t);
+            const aBR = off(pBR, pBL, BR.t),
+              bBR = off(pBR, pTR, BR.t);
+            const aBL = off(pBL, pTL, BL.t),
+              bBL = off(pBL, pBR, BL.t);
+            const arc = (r, to) => `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`; // outside sweep
+            const dSeg = [];
             // Start on top edge after TL
             dSeg.push(`M ${aTL.x} ${aTL.y}`);
             // Top edge to before TR
             dSeg.push(`L ${bTR.x} ${bTR.y}`);
             // TR corner
-            if (TR.mode==='radius'){ const r=TR.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, aTR)); } else if (TR.mode==='clip'){ dSeg.push(`L ${aTR.x} ${aTR.y}`); }
+            if (TR.mode === "radius") {
+              const r = TR.t / Math.tan(Math.PI / 4) || 0;
+              dSeg.push(arc(r, aTR));
+            } else if (TR.mode === "clip") {
+              dSeg.push(`L ${aTR.x} ${aTR.y}`);
+            }
             // Right edge to before BR
             dSeg.push(`L ${bBR.x} ${bBR.y}`);
             // BR corner
-            if (BR.mode==='radius'){ const r=BR.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, aBR)); } else if (BR.mode==='clip'){ dSeg.push(`L ${aBR.x} ${aBR.y}`); }
+            if (BR.mode === "radius") {
+              const r = BR.t / Math.tan(Math.PI / 4) || 0;
+              dSeg.push(arc(r, aBR));
+            } else if (BR.mode === "clip") {
+              dSeg.push(`L ${aBR.x} ${aBR.y}`);
+            }
             // Bottom edge to before BL
             dSeg.push(`L ${bBL.x} ${bBL.y}`);
             // BL corner
-            if (BL.mode==='radius'){ const r=BL.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, aBL)); } else if (BL.mode==='clip'){ dSeg.push(`L ${aBL.x} ${aBL.y}`); }
+            if (BL.mode === "radius") {
+              const r = BL.t / Math.tan(Math.PI / 4) || 0;
+              dSeg.push(arc(r, aBL));
+            } else if (BL.mode === "clip") {
+              dSeg.push(`L ${aBL.x} ${aBL.y}`);
+            }
             // Left edge to before TL
             dSeg.push(`L ${bTL.x} ${bTL.y}`);
             // TL corner back to start
-            if (TL.mode==='radius'){ const r=TL.t/Math.tan(Math.PI/4)||0; dSeg.push(arc(r, aTL)); } else if (TL.mode==='clip'){ dSeg.push(`L ${aTL.x} ${aTL.y}`); }
-            dSeg.push('Z');
-            outerD = dSeg.join(' ');
+            if (TL.mode === "radius") {
+              const r = TL.t / Math.tan(Math.PI / 4) || 0;
+              dSeg.push(arc(r, aTL));
+            } else if (TL.mode === "clip") {
+              dSeg.push(`L ${aTL.x} ${aTL.y}`);
+            }
+            dSeg.push("Z");
+            outerD = dSeg.join(" ");
           }
           // Draw-time clamp for L inside corners vs current inner notch opening
           {
             const innerWpx = wi; // width of inner notch in px
             const innerHpx = hi; // height of inner notch in px
-            const icMaxPx = Math.max(0, Math.min(innerWpx/2, innerHpx/2));
+            const icMaxPx = Math.max(0, Math.min(innerWpx / 2, innerHpx / 2));
             const icMaxIn = icMaxPx / 2; // px to inches (2px per inch)
-            if (!cur.icCorners) cur.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-            ['iTL','iTR','iBR','iBL'].forEach(k=>{
-              const c = cur.icCorners[k]||{mode:'square',value:0};
-              const v = Math.max(0, Math.min(Number(c.value||0), icMaxIn));
-              cur.icCorners[k] = { mode:(c.mode||'square'), value:v };
+            if (!cur.icCorners)
+              cur.icCorners = {
+                iTL: { mode: "square", value: 0 },
+                iTR: { mode: "square", value: 0 },
+                iBR: { mode: "square", value: 0 },
+                iBL: { mode: "square", value: 0 },
+              };
+            ["iTL", "iTR", "iBR", "iBL"].forEach((k) => {
+              const c = cur.icCorners[k] || { mode: "square", value: 0 };
+              const v = Math.max(0, Math.min(Number(c.value || 0), icMaxIn));
+              cur.icCorners[k] = { mode: c.mode || "square", value: v };
             });
             // Anti-self-intersection guard for U inner rectangle
-            try{
-              const adj = (k1,k2,limitIn)=>{
-                const a = cur.icCorners[k1]; const b = cur.icCorners[k2];
-                const sum = (Number(a?.value||0) + Number(b?.value||0));
-                if (sum > limitIn){ const scale = limitIn / (sum||1); a.value = Math.floor(a.value*scale*4)/4; b.value = Math.floor(b.value*scale*4)/4; }
+            try {
+              const adj = (k1, k2, limitIn) => {
+                const a = cur.icCorners[k1];
+                const b = cur.icCorners[k2];
+                const sum = Number(a?.value || 0) + Number(b?.value || 0);
+                if (sum > limitIn) {
+                  const scale = limitIn / (sum || 1);
+                  a.value = Math.floor(a.value * scale * 4) / 4;
+                  b.value = Math.floor(b.value * scale * 4) / 4;
+                }
               };
-              const wIn = (xiR - xiL)/2; const hIn = (yInnerBottom - yInnerTop)/2;
-              adj('iTL','iTR', wIn/2);
-              adj('iBL','iBR', wIn/2);
-              adj('iTL','iBL', hIn/2);
-              adj('iTR','iBR', hIn/2);
-            }catch(e){}
+              const wIn = (xiR - xiL) / 2;
+              const hIn = (yInnerBottom - yInnerTop) / 2;
+              adj("iTL", "iTR", wIn / 2);
+              adj("iBL", "iBR", wIn / 2);
+              adj("iTL", "iBL", hIn / 2);
+              adj("iTR", "iBR", hIn / 2);
+            } catch (e) {}
             // Anti-self-intersection guard: ensure adjacent corners don't exceed inner side length
-            try{
-              const mW = Math.max(0, innerWpx/2)/2; const mH = Math.max(0, innerHpx/2)/2; // conservative
-              const adj = (k1,k2,limitIn)=>{
-                const a = cur.icCorners[k1]; const b = cur.icCorners[k2];
-                const sum = (Number(a?.value||0) + Number(b?.value||0));
-                if (sum > limitIn){ const scale = limitIn / (sum||1); a.value = Math.floor(a.value*scale*4)/4; b.value = Math.floor(b.value*scale*4)/4; }
+            try {
+              const mW = Math.max(0, innerWpx / 2) / 2;
+              const mH = Math.max(0, innerHpx / 2) / 2; // conservative
+              const adj = (k1, k2, limitIn) => {
+                const a = cur.icCorners[k1];
+                const b = cur.icCorners[k2];
+                const sum = Number(a?.value || 0) + Number(b?.value || 0);
+                if (sum > limitIn) {
+                  const scale = limitIn / (sum || 1);
+                  a.value = Math.floor(a.value * scale * 4) / 4;
+                  b.value = Math.floor(b.value * scale * 4) / 4;
+                }
               };
               // top: iTL + iTR; bottom: iBL + iBR; left: iTL + iBL; right: iTR + iBR
-              adj('iTL','iTR', (innerWpx/2)/2 );
-              adj('iBL','iBR', (innerWpx/2)/2 );
-              adj('iTL','iBL', (innerHpx/2)/2 );
-              adj('iTR','iBR', (innerHpx/2)/2 );
-            }catch(e){}
+              adj("iTL", "iTR", innerWpx / 2 / 2);
+              adj("iBL", "iBR", innerWpx / 2 / 2);
+              adj("iTL", "iBL", innerHpx / 2 / 2);
+              adj("iTR", "iBR", innerHpx / 2 / 2);
+            } catch (e) {}
             // Immediate input sync for L inside corners
-            try{
-              ['iTL','iTR','iBR','iBL'].forEach(k=>{
+            try {
+              ["iTL", "iTR", "iBR", "iBL"].forEach((k) => {
                 const vEl = sel(`[data-ct-ic-corner-val="${k}"]`, root);
-                if (vEl) vEl.value = String(cur.icCorners[k]?.value||0);
+                if (vEl) vEl.value = String(cur.icCorners[k]?.value || 0);
                 const mEl = sel(`[data-ct-ic-corner-mode="${k}"]`, root);
-                if (mEl) mEl.value = cur.icCorners[k]?.mode || 'square';
+                if (mEl) mEl.value = cur.icCorners[k]?.mode || "square";
               });
-            }catch(e){}
+            } catch (e) {}
           }
           // Build inner notch rectangle with optional inside-corner ops
-          let innerD = '';
-          const ic = cur.icCorners || { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+          let innerD = "";
+          const ic = cur.icCorners || {
+            iTL: { mode: "square", value: 0 },
+            iTR: { mode: "square", value: 0 },
+            iBR: { mode: "square", value: 0 },
+            iBL: { mode: "square", value: 0 },
+          };
           // For classic L-notch, only iTL and iBR are visible; others default to square
-          const it = (k)=> Math.max(0, Number(ic[k]?.value||0)) * 2;
-          const I_TL = { mode:(ic.iTL?.mode)||'square', t:it('iTL') };
-          const I_TR = { mode:(ic.iTR?.mode)||'square', t:it('iTR') };
-          const I_BR = { mode:(ic.iBR?.mode)||'square', t:it('iBR') };
-          const I_BL = { mode:(ic.iBL?.mode)||'square', t:it('iBL') };
-          const ipTL={x:xi,y:yi}, ipTR={x:xi+wi,y:yi}, ipBR={x:xi+wi,y:yi+hi}, ipBL={x:xi,y:yi+hi};
-          const offI=(pA,pB,dist)=>{ const L=Math.hypot(pB.x-pA.x,pB.y-pA.y)||1; const ux=(pB.x-pA.x)/L, uy=(pB.y-pA.y)/L; return { x:pA.x+ux*dist, y:pA.y+uy*dist }; };
-          const iaTL=offI(ipTL,ipTR,I_TL.t), ibTL=offI(ipTL,ipBL,I_TL.t);
-          const iaTR=offI(ipTR,ipBR,I_TR.t), ibTR=offI(ipTR,ipTL,I_TR.t);
-          const iaBR=offI(ipBR,ipBL,I_BR.t), ibBR=offI(ipBR,ipTR,I_BR.t);
-          const iaBL=offI(ipBL,ipTL,I_BL.t), ibBL=offI(ipBL,ipBR,I_BL.t);
-          const arcI=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`; // sweep outward relative to hole
-          const dI=[];
+          const it = (k) => Math.max(0, Number(ic[k]?.value || 0)) * 2;
+          const I_TL = { mode: ic.iTL?.mode || "square", t: it("iTL") };
+          const I_TR = { mode: ic.iTR?.mode || "square", t: it("iTR") };
+          const I_BR = { mode: ic.iBR?.mode || "square", t: it("iBR") };
+          const I_BL = { mode: ic.iBL?.mode || "square", t: it("iBL") };
+          const ipTL = { x: xi, y: yi },
+            ipTR = { x: xi + wi, y: yi },
+            ipBR = { x: xi + wi, y: yi + hi },
+            ipBL = { x: xi, y: yi + hi };
+          const offI = (pA, pB, dist) => {
+            const L = Math.hypot(pB.x - pA.x, pB.y - pA.y) || 1;
+            const ux = (pB.x - pA.x) / L,
+              uy = (pB.y - pA.y) / L;
+            return { x: pA.x + ux * dist, y: pA.y + uy * dist };
+          };
+          const iaTL = offI(ipTL, ipTR, I_TL.t),
+            ibTL = offI(ipTL, ipBL, I_TL.t);
+          const iaTR = offI(ipTR, ipBR, I_TR.t),
+            ibTR = offI(ipTR, ipTL, I_TR.t);
+          const iaBR = offI(ipBR, ipBL, I_BR.t),
+            ibBR = offI(ipBR, ipTR, I_BR.t);
+          const iaBL = offI(ipBL, ipTL, I_BL.t),
+            ibBL = offI(ipBL, ipBR, I_BL.t);
+          const arcI = (r, to) => `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`; // sweep outward relative to hole
+          const dI = [];
           dI.push(`M ${iaTL.x} ${iaTL.y}`);
           dI.push(`L ${ibTR.x} ${ibTR.y}`);
-          if (I_TR.mode==='radius'){ const r=I_TR.t/Math.tan(Math.PI/4)||0; dI.push(arcI(r, iaTR)); } else if (I_TR.mode==='clip'){ dI.push(`L ${iaTR.x} ${iaTR.y}`); }
+          if (I_TR.mode === "radius") {
+            const r = I_TR.t / Math.tan(Math.PI / 4) || 0;
+            dI.push(arcI(r, iaTR));
+          } else if (I_TR.mode === "clip") {
+            dI.push(`L ${iaTR.x} ${iaTR.y}`);
+          }
           dI.push(`L ${ibBR.x} ${ibBR.y}`);
-          if (I_BR.mode==='radius'){ const r=I_BR.t/Math.tan(Math.PI/4)||0; dI.push(arcI(r, iaBR)); } else if (I_BR.mode==='clip'){ dI.push(`L ${iaBR.x} ${iaBR.y}`); }
+          if (I_BR.mode === "radius") {
+            const r = I_BR.t / Math.tan(Math.PI / 4) || 0;
+            dI.push(arcI(r, iaBR));
+          } else if (I_BR.mode === "clip") {
+            dI.push(`L ${iaBR.x} ${iaBR.y}`);
+          }
           dI.push(`L ${ibBL.x} ${ibBL.y}`);
-          if (I_BL.mode==='radius'){ const r=I_BL.t/Math.tan(Math.PI/4)||0; dI.push(arcI(r, iaBL)); } else if (I_BL.mode==='clip'){ dI.push(`L ${iaBL.x} ${iaBL.y}`); }
+          if (I_BL.mode === "radius") {
+            const r = I_BL.t / Math.tan(Math.PI / 4) || 0;
+            dI.push(arcI(r, iaBL));
+          } else if (I_BL.mode === "clip") {
+            dI.push(`L ${iaBL.x} ${iaBL.y}`);
+          }
           dI.push(`L ${ibTL.x} ${ibTL.y}`);
-          if (I_TL.mode==='radius'){ const r=I_TL.t/Math.tan(Math.PI/4)||0; dI.push(arcI(r, iaTL)); } else if (I_TL.mode==='clip'){ dI.push(`L ${iaTL.x} ${iaTL.y}`); }
-          dI.push('Z');
-          innerD = dI.join(' ');
+          if (I_TL.mode === "radius") {
+            const r = I_TL.t / Math.tan(Math.PI / 4) || 0;
+            dI.push(arcI(r, iaTL));
+          } else if (I_TL.mode === "clip") {
+            dI.push(`L ${iaTL.x} ${iaTL.y}`);
+          }
+          dI.push("Z");
+          innerD = dI.join(" ");
           const dPath = `${outerD} ${innerD}`;
-          path.setAttribute('d', dPath);
-          path.setAttribute('fill', fillColor);
-          path.setAttribute('fill-rule', 'evenodd');
-          path.setAttribute('stroke', 'none');
-          const rotG = document.createElementNS(ns, 'g');
-          rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
+          path.setAttribute("d", dPath);
+          path.setAttribute("fill", fillColor);
+          path.setAttribute("fill-rule", "evenodd");
+          path.setAttribute("stroke", "none");
+          const rotG = document.createElementNS(ns, "g");
+          rotG.setAttribute(
+            "transform",
+            `rotate(${rotation} ${centerX} ${centerY})`
+          );
 
           // overhang removed
 
           // backsplash precise for L: A full top, B full left, C bottom segment length=c, D right-top segment length=d (mirrors with flipX)
-          { const bh = px(Number(opts.bsHeight||0)); if (opts.bsOn && bh>0){
-              const addRect=(x,y,w,h,labX1,labY1,labX2,labY2)=>{ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(x)); r.setAttribute('y', String(y)); r.setAttribute('width', String(w)); r.setAttribute('height', String(h)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); if (labX1!=null) drawBsLabel(rotG, labX1, labY1, labX2, labY2, 'Backsplash'); };
-              if (cur.bs.A){ addRect(centerX - a/2, centerY - b/2 - bh, a, bh, centerX - a/2, centerY - b/2 - bh, centerX + a/2, centerY - b/2 - bh); }
-              if (cur.bs.B){ addRect(centerX - a/2 - bh, centerY - b/2, bh, b, centerX - a/2 - bh, centerY - b/2, centerX - a/2 - bh, centerY + b/2); }
-              if (cur.bs.C){
-                if (!flipX){
+          {
+            const bh = px(Number(opts.bsHeight || 0));
+            if (opts.bsOn && bh > 0) {
+              const addRect = (x, y, w, h, labX1, labY1, labX2, labY2) => {
+                const r = document.createElementNS(ns, "rect");
+                r.setAttribute("x", String(x));
+                r.setAttribute("y", String(y));
+                r.setAttribute("width", String(w));
+                r.setAttribute("height", String(h));
+                r.setAttribute("fill", "#e6f2ff");
+                r.setAttribute("stroke", "#7fb3ff");
+                r.setAttribute("stroke-width", "1");
+                rotG.appendChild(r);
+                if (labX1 != null)
+                  drawBsLabel(rotG, labX1, labY1, labX2, labY2, "Backsplash");
+              };
+              if (cur.bs.A) {
+                addRect(
+                  centerX - a / 2,
+                  centerY - b / 2 - bh,
+                  a,
+                  bh,
+                  centerX - a / 2,
+                  centerY - b / 2 - bh,
+                  centerX + a / 2,
+                  centerY - b / 2 - bh
+                );
+              }
+              if (cur.bs.B) {
+                addRect(
+                  centerX - a / 2 - bh,
+                  centerY - b / 2,
+                  bh,
+                  b,
+                  centerX - a / 2 - bh,
+                  centerY - b / 2,
+                  centerX - a / 2 - bh,
+                  centerY + b / 2
+                );
+              }
+              if (cur.bs.C) {
+                if (!flipX) {
                   // left bottom segment from left outer to notch start (length=c)
-                  addRect(centerX - a/2, centerY + b/2, c, bh, centerX - a/2, centerY + b/2 + bh, centerX - a/2 + c, centerY + b/2 + bh);
+                  addRect(
+                    centerX - a / 2,
+                    centerY + b / 2,
+                    c,
+                    bh,
+                    centerX - a / 2,
+                    centerY + b / 2 + bh,
+                    centerX - a / 2 + c,
+                    centerY + b / 2 + bh
+                  );
                 } else {
                   // right bottom segment from notch start to right outer (length=c)
-                  addRect(centerX + a/2 - c, centerY + b/2, c, bh, centerX + a/2 - c, centerY + b/2 + bh, centerX + a/2, centerY + b/2 + bh);
+                  addRect(
+                    centerX + a / 2 - c,
+                    centerY + b / 2,
+                    c,
+                    bh,
+                    centerX + a / 2 - c,
+                    centerY + b / 2 + bh,
+                    centerX + a / 2,
+                    centerY + b / 2 + bh
+                  );
                 }
               }
-              if (cur.bs.D){
-                if (!flipX){
+              if (cur.bs.D) {
+                if (!flipX) {
                   // top segment on right edge, height=d
-                  addRect(centerX + a/2, centerY - b/2, bh, d, centerX + a/2 + bh, centerY - b/2, centerX + a/2 + bh, centerY - b/2 + d);
+                  addRect(
+                    centerX + a / 2,
+                    centerY - b / 2,
+                    bh,
+                    d,
+                    centerX + a / 2 + bh,
+                    centerY - b / 2,
+                    centerX + a / 2 + bh,
+                    centerY - b / 2 + d
+                  );
                 } else {
                   // top segment on left edge, height=d
-                  addRect(centerX - a/2 - bh, centerY - b/2, bh, d, centerX - a/2 - bh, centerY - b/2, centerX - a/2 - bh, centerY - b/2 + d);
+                  addRect(
+                    centerX - a / 2 - bh,
+                    centerY - b / 2,
+                    bh,
+                    d,
+                    centerX - a / 2 - bh,
+                    centerY - b / 2,
+                    centerX - a / 2 - bh,
+                    centerY - b / 2 + d
+                  );
                 }
               }
-          } }
+            }
+          }
           // seams for L (bounding-box approximation)
-          if (opts.showSeams && Array.isArray(cur.seams)){
-            cur.seams.forEach(seam=>{
-              const line=document.createElementNS(ns,'line');
-              if (seam.type==='v'){
-                const x = centerX + px(seam.atIn||0);
-                line.setAttribute('x1', String(x)); line.setAttribute('y1', String(centerY - b/2));
-                line.setAttribute('x2', String(x)); line.setAttribute('y2', String(centerY + b/2));
+          if (opts.showSeams && Array.isArray(cur.seams)) {
+            cur.seams.forEach((seam) => {
+              const line = document.createElementNS(ns, "line");
+              if (seam.type === "v") {
+                const x = centerX + px(seam.atIn || 0);
+                line.setAttribute("x1", String(x));
+                line.setAttribute("y1", String(centerY - b / 2));
+                line.setAttribute("x2", String(x));
+                line.setAttribute("y2", String(centerY + b / 2));
               } else {
-                const y = centerY + px(seam.atIn||0);
-                line.setAttribute('x1', String(centerX - a/2)); line.setAttribute('y1', String(y));
-                line.setAttribute('x2', String(centerX + a/2)); line.setAttribute('y2', String(y));
+                const y = centerY + px(seam.atIn || 0);
+                line.setAttribute("x1", String(centerX - a / 2));
+                line.setAttribute("y1", String(y));
+                line.setAttribute("x2", String(centerX + a / 2));
+                line.setAttribute("y2", String(y));
               }
-              line.setAttribute('stroke','#666'); line.setAttribute('stroke-width','2'); line.setAttribute('stroke-dasharray','6 6');
+              line.setAttribute("stroke", "#666");
+              line.setAttribute("stroke-width", "2");
+              line.setAttribute("stroke-dasharray", "6 6");
               rotG.appendChild(line);
             });
           }
 
           rotG.appendChild(path);
           // wall sides (approx bounding box)
-          const sideColor = '#000';
-          const mkLine = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke', sideColor); l.setAttribute('stroke-width','3'); return l; };
-          if (cur.wall.A) rotG.appendChild(mkLine(centerX - a/2, centerY - b/2, centerX + a/2, centerY - b/2));
-          if (cur.wall.B) rotG.appendChild(mkLine(centerX - a/2, centerY - b/2, centerX - a/2, centerY + b/2));
-          if (cur.wall.C) rotG.appendChild(mkLine(centerX - a/2, centerY + b/2, centerX + a/2, centerY + b/2));
-          if (cur.wall.D) rotG.appendChild(mkLine(centerX + a/2, centerY - b/2, centerX + a/2, centerY + b/2));
+          const sideColor = "#000";
+          const mkLine = (x1, y1, x2, y2) => {
+            const l = document.createElementNS(ns, "line");
+            l.setAttribute("x1", x1);
+            l.setAttribute("y1", y1);
+            l.setAttribute("x2", x2);
+            l.setAttribute("y2", y2);
+            l.setAttribute("stroke", sideColor);
+            l.setAttribute("stroke-width", "3");
+            return l;
+          };
+          if (cur.wall.A)
+            rotG.appendChild(
+              mkLine(
+                centerX - a / 2,
+                centerY - b / 2,
+                centerX + a / 2,
+                centerY - b / 2
+              )
+            );
+          if (cur.wall.B)
+            rotG.appendChild(
+              mkLine(
+                centerX - a / 2,
+                centerY - b / 2,
+                centerX - a / 2,
+                centerY + b / 2
+              )
+            );
+          if (cur.wall.C)
+            rotG.appendChild(
+              mkLine(
+                centerX - a / 2,
+                centerY + b / 2,
+                centerX + a / 2,
+                centerY + b / 2
+              )
+            );
+          if (cur.wall.D)
+            rotG.appendChild(
+              mkLine(
+                centerX + a / 2,
+                centerY - b / 2,
+                centerX + a / 2,
+                centerY + b / 2
+              )
+            );
 
-          if (idx===active){
-            const hi = document.createElementNS(ns,'rect');
-            hi.setAttribute('x', String(centerX - a/2 - 4));
-            hi.setAttribute('y', String(centerY - b/2 - 4));
-            hi.setAttribute('width', String(a + 8));
-            hi.setAttribute('height', String(b + 8));
-            hi.setAttribute('fill','none'); hi.setAttribute('stroke','#4f6bd8'); hi.setAttribute('stroke-width','2'); hi.setAttribute('stroke-dasharray','6 4');
+          if (idx === active) {
+            const hi = document.createElementNS(ns, "rect");
+            hi.setAttribute("x", String(centerX - a / 2 - 4));
+            hi.setAttribute("y", String(centerY - b / 2 - 4));
+            hi.setAttribute("width", String(a + 8));
+            hi.setAttribute("height", String(b + 8));
+            hi.setAttribute("fill", "none");
+            hi.setAttribute("stroke", "#4f6bd8");
+            hi.setAttribute("stroke-width", "2");
+            hi.setAttribute("stroke-dasharray", "6 4");
             rotG.appendChild(hi);
           }
 
           // L-guides for A(top), B(side mirror-aware), C(bottom inner run), D(right/left outer segment)
-          if (opts.showGuides){
-            const m=18;
+          if (opts.showGuides) {
+            const m = 18;
             // A top full width
-            drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + m, 'A');
+            drawGuideLine(
+              rotG,
+              centerX - a / 2 + m,
+              centerY - b / 2 + m,
+              centerX + a / 2 - m,
+              centerY - b / 2 + m,
+              "A"
+            );
             // B full height: left by default, right when flipped
-            if (!flipX){
-              drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY + b/2 - m, 'B');
+            if (!flipX) {
+              drawGuideLine(
+                rotG,
+                centerX - a / 2 + m,
+                centerY - b / 2 + m,
+                centerX - a / 2 + m,
+                centerY + b / 2 - m,
+                "B"
+              );
             } else {
-              drawGuideLine(rotG, centerX + a/2 - m, centerY - b/2 + m, centerX + a/2 - m, centerY + b/2 - m, 'B');
+              drawGuideLine(
+                rotG,
+                centerX + a / 2 - m,
+                centerY - b / 2 + m,
+                centerX + a / 2 - m,
+                centerY + b / 2 - m,
+                "B"
+              );
             }
             // C bottom inner run to notch start (mirrors when flipped)
-            if (!flipX){
-              drawGuideLine(rotG, centerX - a/2 + m, centerY + b/2 - m, centerX - a/2 + c - m, centerY + b/2 - m, 'C');
+            if (!flipX) {
+              drawGuideLine(
+                rotG,
+                centerX - a / 2 + m,
+                centerY + b / 2 - m,
+                centerX - a / 2 + c - m,
+                centerY + b / 2 - m,
+                "C"
+              );
             } else {
-              drawGuideLine(rotG, centerX + a/2 - c + m, centerY + b/2 - m, centerX + a/2 - m, centerY + b/2 - m, 'C');
+              drawGuideLine(
+                rotG,
+                centerX + a / 2 - c + m,
+                centerY + b / 2 - m,
+                centerX + a / 2 - m,
+                centerY + b / 2 - m,
+                "C"
+              );
             }
             // D inner vertical length shown on the adjacent outer edge segment only
-            if (!flipX){
+            if (!flipX) {
               // Notch on right: D is top segment on right outer edge, length = d
-              drawGuideLine(rotG, centerX + a/2 - m, centerY - b/2 + m, centerX + a/2 - m, centerY - b/2 + d - m, 'D');
+              drawGuideLine(
+                rotG,
+                centerX + a / 2 - m,
+                centerY - b / 2 + m,
+                centerX + a / 2 - m,
+                centerY - b / 2 + d - m,
+                "D"
+              );
             } else {
               // Notch on left: D is top segment on left outer edge, length = d
-              drawGuideLine(rotG, centerX - a/2 + m, centerY - b/2 + m, centerX - a/2 + m, centerY - b/2 + d - m, 'D');
+              drawGuideLine(
+                rotG,
+                centerX - a / 2 + m,
+                centerY - b / 2 + m,
+                centerX - a / 2 + m,
+                centerY - b / 2 + d - m,
+                "D"
+              );
             }
           }
           gRoot.appendChild(rotG);
           // Label: place within the solid leg (shift from center based on flip)
-          const lLabelX = !flipX ? (centerX - a/4) : (centerX + a/4);
-          drawShapeName(lLabelX, centerY, cur.name || `Shape ${idx+1}`);
-          if (opts.showGuides){ labelNumbers(rotG, centerX, centerY, cur, {A:aIn,B:bIn}); }
-          hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:b, rot:rotation });
-          if (idx===active){
-            // Outer handles via local anchors
-            addHandle(idx, toWorld(0, -b/2).x, toWorld(0, -b/2).y, 0, 'B-top');
-            addHandle(idx, toWorld(a/2, 0).x, toWorld(a/2, 0).y, 0, 'A-right');
-            addHandle(idx, toWorld(-a/2, 0).x, toWorld(-a/2, 0).y, 0, 'A-left');
-            addHandle(idx, toWorld(0, b/2).x, toWorld(0, b/2).y, 0, 'B-bottom');
-            // L-shape inner handles: C bottom inner run midpoint, D outer edge top segment midpoint
-            const ciLocalX = !flipX ? (-a/2 + c/2) : (a/2 - c/2);
-            const cP = toWorld(ciLocalX, b/2);
-            addHandle(idx, cP.x, cP.y, 0, 'C');
-            const dYlocal = -b/2 + d/2; const dXlocal = !flipX ? (a/2) : (-a/2);
-            const dP = toWorld(dXlocal, dYlocal);
-            addHandle(idx, dP.x, dP.y, 0, 'D');
-            // Corner size handles for L (outer rect corners)
-            const rc = cur.rcCorners || {TL:{value:0},TR:{value:0},BR:{value:0},BL:{value:0}};
-            const tpx=(k)=> Math.max(0, Number(rc[k]?.value||0))*2;
-            const TLm = toWorld(-a/2 + tpx('TL')/2, -b/2 + tpx('TL')/2);
-            const TRm = toWorld( a/2 - tpx('TR')/2, -b/2 + tpx('TR')/2);
-            const BRm = toWorld( a/2 - tpx('BR')/2,  b/2 - tpx('BR')/2);
-            const BLm = toWorld(-a/2 + tpx('BL')/2,  b/2 - tpx('BL')/2);
-            addHandle(idx, TLm.x, TLm.y, 0, 'RC-TL');
-            addHandle(idx, TRm.x, TRm.y, 0, 'RC-TR');
-            addHandle(idx, BRm.x, BRm.y, 0, 'RC-BR');
-            addHandle(idx, BLm.x, BLm.y, 0, 'RC-BL');
-            // Inside-corner handles for L (iTL and iBR)
-            const icC = cur.icCorners || { iTL:{value:0}, iBR:{value:0} };
-            const itpx=(k)=> Math.max(0, Number(icC[k]?.value||0)) * 2;
-            const iTLm = toWorld(-a/2 + c/2 + itpx('iTL')/2, -b/2 + d/2 + itpx('iTL')/2);
-            const iBRm = toWorld( a/2 - itpx('iBR')/2,  b/2 - itpx('iBR')/2);
-            addHandle(idx, iTLm.x, iTLm.y, 0, 'IC-TL');
-            addHandle(idx, iBRm.x, iBRm.y, 0, 'IC-BR');
+          const lLabelX = !flipX ? centerX - a / 4 : centerX + a / 4;
+          drawShapeName(lLabelX, centerY, cur.name || `Shape ${idx + 1}`);
+          if (opts.showGuides) {
+            labelNumbers(rotG, centerX, centerY, cur, { A: aIn, B: bIn });
           }
-
-  } else if (shape==='u'){
-    const fillActive = '#f8c4a0';
-    const fillInactive = '#cfd8dc';
-    const fillColor = (idx===active) ? fillActive : fillInactive;
+          hitAreas.push({
+            idx,
+            cx: centerX,
+            cy: centerY,
+            w: a,
+            h: b,
+            rot: rotation,
+          });
+          if (idx === active) {
+            // Outer handles via local anchors
+            addHandle(
+              idx,
+              toWorld(0, -b / 2).x,
+              toWorld(0, -b / 2).y,
+              0,
+              "B-top"
+            );
+            addHandle(
+              idx,
+              toWorld(a / 2, 0).x,
+              toWorld(a / 2, 0).y,
+              0,
+              "A-right"
+            );
+            addHandle(
+              idx,
+              toWorld(-a / 2, 0).x,
+              toWorld(-a / 2, 0).y,
+              0,
+              "A-left"
+            );
+            addHandle(
+              idx,
+              toWorld(0, b / 2).x,
+              toWorld(0, b / 2).y,
+              0,
+              "B-bottom"
+            );
+            // L-shape inner handles: C bottom inner run midpoint, D outer edge top segment midpoint
+            const ciLocalX = !flipX ? -a / 2 + c / 2 : a / 2 - c / 2;
+            const cP = toWorld(ciLocalX, b / 2);
+            addHandle(idx, cP.x, cP.y, 0, "C");
+            const dYlocal = -b / 2 + d / 2;
+            const dXlocal = !flipX ? a / 2 : -a / 2;
+            const dP = toWorld(dXlocal, dYlocal);
+            addHandle(idx, dP.x, dP.y, 0, "D");
+            // Corner size handles for L (outer rect corners)
+            const rc = cur.rcCorners || {
+              TL: { value: 0 },
+              TR: { value: 0 },
+              BR: { value: 0 },
+              BL: { value: 0 },
+            };
+            const tpx = (k) => Math.max(0, Number(rc[k]?.value || 0)) * 2;
+            const TLm = toWorld(-a / 2 + tpx("TL") / 2, -b / 2 + tpx("TL") / 2);
+            const TRm = toWorld(a / 2 - tpx("TR") / 2, -b / 2 + tpx("TR") / 2);
+            const BRm = toWorld(a / 2 - tpx("BR") / 2, b / 2 - tpx("BR") / 2);
+            const BLm = toWorld(-a / 2 + tpx("BL") / 2, b / 2 - tpx("BL") / 2);
+            addHandle(idx, TLm.x, TLm.y, 0, "RC-TL");
+            addHandle(idx, TRm.x, TRm.y, 0, "RC-TR");
+            addHandle(idx, BRm.x, BRm.y, 0, "RC-BR");
+            addHandle(idx, BLm.x, BLm.y, 0, "RC-BL");
+            // Inside-corner handles for L (iTL and iBR)
+            const icC = cur.icCorners || {
+              iTL: { value: 0 },
+              iBR: { value: 0 },
+            };
+            const itpx = (k) => Math.max(0, Number(icC[k]?.value || 0)) * 2;
+            const iTLm = toWorld(
+              -a / 2 + c / 2 + itpx("iTL") / 2,
+              -b / 2 + d / 2 + itpx("iTL") / 2
+            );
+            const iBRm = toWorld(
+              a / 2 - itpx("iBR") / 2,
+              b / 2 - itpx("iBR") / 2
+            );
+            addHandle(idx, iTLm.x, iTLm.y, 0, "IC-TL");
+            addHandle(idx, iBRm.x, iBRm.y, 0, "IC-BR");
+          }
+        } else if (shape === "u") {
+          const fillActive = "#f8c4a0";
+          const fillInactive = "#cfd8dc";
+          const fillColor = idx === active ? fillActive : fillInactive;
           // U with independent side depths: BL (left), BR (right)
-          let aIn = Number(len.A||60);
-          let blIn = Number((len.BL!=null ? len.BL : (len.B!=null ? len.B : 25)));
-          let brIn = Number((len.BR!=null ? len.BR : (len.B!=null ? len.B : 25)));
-          let dIn = Number(len.D||10);
-          let eIn = Number(len.E != null ? len.E :  Math.round((aIn - (len.C||20))/2));
-          let hIn = Number(len.H != null ? len.H :  Math.round((aIn - (len.C||20))/2));
+          let aIn = Number(len.A || 60);
+          let blIn = Number(
+            len.BL != null ? len.BL : len.B != null ? len.B : 25
+          );
+          let brIn = Number(
+            len.BR != null ? len.BR : len.B != null ? len.B : 25
+          );
+          let dIn = Number(len.D || 10);
+          let eIn = Number(
+            len.E != null ? len.E : Math.round((aIn - (len.C || 20)) / 2)
+          );
+          let hIn = Number(
+            len.H != null ? len.H : Math.round((aIn - (len.C || 20)) / 2)
+          );
           // clamp independently
-          if (blIn < 1) blIn = 1; if (brIn < 1) brIn = 1;
+          if (blIn < 1) blIn = 1;
+          if (brIn < 1) brIn = 1;
           const minSide = Math.min(blIn, brIn);
-          if (dIn < 0) dIn = 0; if (dIn > minSide - 1) dIn = minSide - 1;
+          if (dIn < 0) dIn = 0;
+          if (dIn > minSide - 1) dIn = minSide - 1;
           // compute local clamped values (do not mutate stored lengths here)
-          const eMax = Math.max(0, aIn - 1 - Math.max(0,hIn));
-          const hMaxRet = Math.max(0, aIn - 1 - Math.max(0,eIn));
-          let eLocal = Math.min(Math.max(eIn,0), eMax);
-          let hLocal = Math.min(Math.max(hIn,0), hMaxRet);
+          const eMax = Math.max(0, aIn - 1 - Math.max(0, hIn));
+          const hMaxRet = Math.max(0, aIn - 1 - Math.max(0, eIn));
+          let eLocal = Math.min(Math.max(eIn, 0), eMax);
+          let hLocal = Math.min(Math.max(hIn, 0), hMaxRet);
           // enforce a minimum inner width of 1 inch
           const minSpan = 1;
-          if (eLocal + hLocal > aIn - minSpan){
-            const over = (eLocal + hLocal) - (aIn - minSpan);
-            if (hLocal >= eLocal) hLocal = Math.max(0, hLocal - over); else eLocal = Math.max(0, eLocal - over);
+          if (eLocal + hLocal > aIn - minSpan) {
+            const over = eLocal + hLocal - (aIn - minSpan);
+            if (hLocal >= eLocal) hLocal = Math.max(0, hLocal - over);
+            else eLocal = Math.max(0, eLocal - over);
           }
           // derived C used only for rendering
           const cIn = Math.max(1, aIn - (eLocal + hLocal));
           const a = px(aIn);
-          const blPx = px(blIn), brPx = px(brIn);
+          const blPx = px(blIn),
+            brPx = px(brIn);
           const hMax = Math.max(blPx, brPx);
-          const x = centerX - a/2;
-          const yTop = centerY - hMax/2;
+          const x = centerX - a / 2;
+          const yTop = centerY - hMax / 2;
           // Inner U geometry: verticals extend from inner top down to each leg depth (no inner bottom span)
-          const xiL = x + px(eLocal);                // left inner x
-          const xiR = x + px(aIn - hLocal);          // right inner x
-          const yInnerTop = yTop + px(dIn);          // inner top y
-          const yBotL = yTop + blPx;                 // left vertical bottom (outer)
-          const yBotR = yTop + brPx;                 // right vertical bottom (outer)
+          const xiL = x + px(eLocal); // left inner x
+          const xiR = x + px(aIn - hLocal); // right inner x
+          const yInnerTop = yTop + px(dIn); // inner top y
+          const yBotL = yTop + blPx; // left vertical bottom (outer)
+          const yBotR = yTop + brPx; // right vertical bottom (outer)
 
           // Clamp inside corners for U: only inner top corners (iTL, iTR). No inner-bottom edge exists.
           {
             const innerWpx = Math.max(0, xiR - xiL);
             const leftHeightPx = Math.max(0, yBotL - yInnerTop);
             const rightHeightPx = Math.max(0, yBotR - yInnerTop);
-            if (!cur.icCorners) cur.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
+            if (!cur.icCorners)
+              cur.icCorners = {
+                iTL: { mode: "square", value: 0 },
+                iTR: { mode: "square", value: 0 },
+                iBR: { mode: "square", value: 0 },
+                iBL: { mode: "square", value: 0 },
+              };
             // Limit values in inches based on per-corner available span
-            const limTLin = Math.max(0, Math.min(innerWpx/2, leftHeightPx)/2);
-            const limTRin = Math.max(0, Math.min(innerWpx/2, rightHeightPx)/2);
-            const clampVal=(v,lim)=> Math.max(0, Math.min(Number(v||0), lim));
-            cur.icCorners.iTL = { mode: (cur.icCorners.iTL?.mode||'square'), value: clampVal(cur.icCorners.iTL?.value||0, limTLin) };
-            cur.icCorners.iTR = { mode: (cur.icCorners.iTR?.mode||'square'), value: clampVal(cur.icCorners.iTR?.value||0, limTRin) };
+            const limTLin = Math.max(
+              0,
+              Math.min(innerWpx / 2, leftHeightPx) / 2
+            );
+            const limTRin = Math.max(
+              0,
+              Math.min(innerWpx / 2, rightHeightPx) / 2
+            );
+            const clampVal = (v, lim) =>
+              Math.max(0, Math.min(Number(v || 0), lim));
+            cur.icCorners.iTL = {
+              mode: cur.icCorners.iTL?.mode || "square",
+              value: clampVal(cur.icCorners.iTL?.value || 0, limTLin),
+            };
+            cur.icCorners.iTR = {
+              mode: cur.icCorners.iTR?.mode || "square",
+              value: clampVal(cur.icCorners.iTR?.value || 0, limTRin),
+            };
             // Force bottom inner corners to zero for U
-            cur.icCorners.iBL = { mode: 'square', value: 0 };
-            cur.icCorners.iBR = { mode: 'square', value: 0 };
+            cur.icCorners.iBL = { mode: "square", value: 0 };
+            cur.icCorners.iBR = { mode: "square", value: 0 };
             // Immediate input sync for icCorners (U)
-            try{
-              ['iTL','iTR'].forEach(k=>{
+            try {
+              ["iTL", "iTR"].forEach((k) => {
                 const vEl = sel(`[data-ct-ic-corner-val="${k}"]`, root);
-                if (vEl) vEl.value = String(cur.icCorners[k]?.value||0);
+                if (vEl) vEl.value = String(cur.icCorners[k]?.value || 0);
                 const mEl = sel(`[data-ct-ic-corner-mode="${k}"]`, root);
-                if (mEl) mEl.value = cur.icCorners[k]?.mode || 'square';
+                if (mEl) mEl.value = cur.icCorners[k]?.mode || "square";
               });
               // Hide or zero out bottom inputs if present
-              ['iBL','iBR'].forEach(k=>{
-                const vEl = sel(`[data-ct-ic-corner-val="${k}"]`, root); if (vEl) vEl.value = '0';
+              ["iBL", "iBR"].forEach((k) => {
+                const vEl = sel(`[data-ct-ic-corner-val="${k}"]`, root);
+                if (vEl) vEl.value = "0";
               });
-            }catch(e){}
+            } catch (e) {}
           }
 
-          const rotG = document.createElementNS(ns, 'g');
-          rotG.setAttribute('transform', `rotate(${rotation} ${centerX} ${centerY})`);
+          const rotG = document.createElementNS(ns, "g");
+          rotG.setAttribute(
+            "transform",
+            `rotate(${rotation} ${centerX} ${centerY})`
+          );
 
           // overhang removed
 
-  // (removed early U backsplash block to avoid duplicates; rendered below instead)
-      // seams for U (bounding-box approximation)
-          if (opts.showSeams && Array.isArray(cur.seams)){
-            cur.seams.forEach(seam=>{
-              const line=document.createElementNS(ns,'line');
-              if (seam.type==='v'){
-                const x = centerX + px(seam.atIn||0);
-        line.setAttribute('x1', String(x)); line.setAttribute('y1', String(yTop));
-        line.setAttribute('x2', String(x)); line.setAttribute('y2', String(yTop + hMax));
+          // (removed early U backsplash block to avoid duplicates; rendered below instead)
+          // seams for U (bounding-box approximation)
+          if (opts.showSeams && Array.isArray(cur.seams)) {
+            cur.seams.forEach((seam) => {
+              const line = document.createElementNS(ns, "line");
+              if (seam.type === "v") {
+                const x = centerX + px(seam.atIn || 0);
+                line.setAttribute("x1", String(x));
+                line.setAttribute("y1", String(yTop));
+                line.setAttribute("x2", String(x));
+                line.setAttribute("y2", String(yTop + hMax));
               } else {
-        const y = yTop + px(seam.atIn||0);
-        line.setAttribute('x1', String(centerX - a/2)); line.setAttribute('y1', String(y));
-        line.setAttribute('x2', String(centerX + a/2)); line.setAttribute('y2', String(y));
+                const y = yTop + px(seam.atIn || 0);
+                line.setAttribute("x1", String(centerX - a / 2));
+                line.setAttribute("y1", String(y));
+                line.setAttribute("x2", String(centerX + a / 2));
+                line.setAttribute("y2", String(y));
               }
-              line.setAttribute('stroke','#666'); line.setAttribute('stroke-width','2'); line.setAttribute('stroke-dasharray','6 6');
+              line.setAttribute("stroke", "#666");
+              line.setAttribute("stroke-width", "2");
+              line.setAttribute("stroke-dasharray", "6 6");
               rotG.appendChild(line);
             });
           }
-    // Build U boundary as a single path (no inner rectangle). Outer corners support radius/clip; inner-top corners support iTL/iTR.
-    const uPath = document.createElementNS(ns,'path');
-    const x0 = x, y0 = yTop, x1 = x + a; // outer extents horizontally; verticals per leg
-    // Render-time geometric clamp for rcCorners (U) using per-edge available spans
-    try {
-      const widthIn = Number(aIn||0);
-      // Height available per corner varies; clamp conservatively using leg depths
-      const hTL = Number(blIn||0), hTR = Number(brIn||0);
-      const hBL = Number(blIn||0), hBR = Number(brIn||0);
-      if (!cur.rcCorners) cur.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
-      let TLv = Math.max(0, Number(cur.rcCorners.TL?.value||0));
-      let TRv = Math.max(0, Number(cur.rcCorners.TR?.value||0));
-      let BRv = Math.max(0, Number(cur.rcCorners.BR?.value||0));
-      let BLv = Math.max(0, Number(cur.rcCorners.BL?.value||0));
-      // Clamp against per-side available runs
-      TLv = Math.min(TLv, Math.max(0, widthIn), Math.max(0, hTL));
-      TRv = Math.min(TRv, Math.max(0, widthIn), Math.max(0, hTR));
-  BRv = Math.min(BRv, Math.max(0, hTR));
-  BLv = Math.min(BLv, Math.max(0, hBL));
-      cur.rcCorners = {
-        TL: { mode: cur.rcCorners.TL?.mode||'square', value: TLv },
-        TR: { mode: cur.rcCorners.TR?.mode||'square', value: TRv },
-        BR: { mode: cur.rcCorners.BR?.mode||'square', value: BRv },
-        BL: { mode: cur.rcCorners.BL?.mode||'square', value: BLv },
-      };
-      // Immediate input sync for rcCorners (U)
-      try{
-        ['TL','TR','BR','BL'].forEach(k=>{
-          const vEl = sel(`[data-ct-rc-corner-val="${k}"]`, root);
-          if (vEl) vEl.value = String(cur.rcCorners[k]?.value||0);
-          const mEl = sel(`[data-ct-rc-corner-mode="${k}"]`, root);
-          if (mEl) mEl.value = cur.rcCorners[k]?.mode || 'square';
-        });
-      }catch(e){}
-    } catch(e){}
-    const rc = cur.rcCorners || {};
-    const valIn = (k)=> Math.max(0, Number(rc[k]?.value||0));
-    const ePx = px(eLocal), hPx = px(hLocal);
-    const tTL = Math.min(valIn('TL')*2, a, blPx);
-    const tTR = Math.min(valIn('TR')*2, a, brPx);
-    const tBR = Math.min(valIn('BR')*2, hPx, brPx);
-    const tBL = Math.min(valIn('BL')*2, ePx, blPx);
-    const arc=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
-    // Outer top corner helper points
-    const aTL = { x: x0 + tTL, y: y0 };
-    const bTR = { x: x1 - tTR, y: y0 };
-    const aTR = { x: x1, y: y0 + tTR };
-    // Right edge down to before BR
-    const bBR = { x: x1, y: yTop + brPx - tBR };
-    const aBR = { x: x1 - tBR, y: yTop + brPx };
-    // Bottom left side before BL
-    const bBL = { x: x0 + tBL, y: yTop + blPx };
-    const aBL = { x: x0, y: yTop + blPx - tBL };
-    const bTL = { x: x0, y: y0 + tTL };
-    // Inner top corner helpers (only TL/TR)
-    const ic = cur.icCorners || {};
-    const itTL = Math.max(0, Math.min((Number(ic.iTL?.value||0))*2, (xiR - xiL), (yBotL - yInnerTop)));
-    const itTR = Math.max(0, Math.min((Number(ic.iTR?.value||0))*2, (xiR - xiL), (yBotR - yInnerTop)));
-    const iaTR = { x: xiR - itTR, y: yInnerTop };
-    const ibTR = { x: xiR, y: yInnerTop + itTR };
-    const iaTL = { x: xiL + itTL, y: yInnerTop };
-    const ibTL = { x: xiL, y: yInnerTop + itTL };
-    const arcI=(r,to)=> `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
-    const dParts=[];
-    // Top run with TL/TR
-    dParts.push(`M ${aTL.x} ${aTL.y}`);
-    dParts.push(`L ${bTR.x} ${bTR.y}`);
-    if ((rc.TR?.mode||'square')==='radius'){ const r=tTR/Math.tan(Math.PI/4)||0; dParts.push(arc(r, aTR)); } else if ((rc.TR?.mode||'square')==='clip'){ dParts.push(`L ${aTR.x} ${aTR.y}`); }
-    // Right outer down to before BR
-    dParts.push(`L ${bBR.x} ${bBR.y}`);
-    if ((rc.BR?.mode||'square')==='radius'){ const r=tBR/Math.tan(Math.PI/4)||0; dParts.push(arc(r, aBR)); } else if ((rc.BR?.mode||'square')==='clip'){ dParts.push(`L ${aBR.x} ${aBR.y}`); }
-    // Bottom right return to inner right bottom corner
-    dParts.push(`L ${xiR} ${yTop + brPx}`);
-    // Up inner right to start of iTR arc
-    dParts.push(`L ${ibTR.x} ${ibTR.y}`);
-    if ((ic.iTR?.mode||'square')==='radius'){ const r=itTR/Math.tan(Math.PI/4)||0; dParts.push(arcI(r, iaTR)); } else if ((ic.iTR?.mode||'square')==='clip'){ dParts.push(`L ${iaTR.x} ${iaTR.y}`); }
-    // Inner top across to just before iTL
-    dParts.push(`L ${iaTL.x} ${iaTL.y}`);
-    if ((ic.iTL?.mode||'square')==='radius'){ const r=itTL/Math.tan(Math.PI/4)||0; dParts.push(arcI(r, ibTL)); } else if ((ic.iTL?.mode||'square')==='clip'){ dParts.push(`L ${ibTL.x} ${ibTL.y}`); }
-    // Down inner left to bottom of left leg
-    dParts.push(`L ${xiL} ${yTop + blPx}`);
-    // Bottom left return to before BL
-    dParts.push(`L ${bBL.x} ${bBL.y}`);
-    if ((rc.BL?.mode||'square')==='radius'){ const r=tBL/Math.tan(Math.PI/4)||0; dParts.push(arc(r, aBL)); } else if ((rc.BL?.mode||'square')==='clip'){ dParts.push(`L ${aBL.x} ${aBL.y}`); }
-    // Up left outer to before TL and close
-    dParts.push(`L ${bTL.x} ${bTL.y}`);
-    if ((rc.TL?.mode||'square')==='radius'){ const r=tTL/Math.tan(Math.PI/4)||0; dParts.push(arc(r, aTL)); } else if ((rc.TL?.mode||'square')==='clip'){ dParts.push(`L ${aTL.x} ${aTL.y}`); }
-    dParts.push('Z');
-    uPath.setAttribute('d', dParts.join(' '));
-    uPath.setAttribute('fill', fillColor);
-    uPath.setAttribute('stroke', 'none');
-    rotG.appendChild(uPath);
+          // Build U boundary as a single path (no inner rectangle). Outer corners support radius/clip; inner-top corners support iTL/iTR.
+          const uPath = document.createElementNS(ns, "path");
+          const x0 = x,
+            y0 = yTop,
+            x1 = x + a; // outer extents horizontally; verticals per leg
+          // Render-time geometric clamp for rcCorners (U) using per-edge available spans
+          try {
+            const widthIn = Number(aIn || 0);
+            // Height available per corner varies; clamp conservatively using leg depths
+            const hTL = Number(blIn || 0),
+              hTR = Number(brIn || 0);
+            const hBL = Number(blIn || 0),
+              hBR = Number(brIn || 0);
+            if (!cur.rcCorners)
+              cur.rcCorners = {
+                TL: { mode: "square", value: 0 },
+                TR: { mode: "square", value: 0 },
+                BR: { mode: "square", value: 0 },
+                BL: { mode: "square", value: 0 },
+              };
+            let TLv = Math.max(0, Number(cur.rcCorners.TL?.value || 0));
+            let TRv = Math.max(0, Number(cur.rcCorners.TR?.value || 0));
+            let BRv = Math.max(0, Number(cur.rcCorners.BR?.value || 0));
+            let BLv = Math.max(0, Number(cur.rcCorners.BL?.value || 0));
+            // Clamp against per-side available runs
+            TLv = Math.min(TLv, Math.max(0, widthIn), Math.max(0, hTL));
+            TRv = Math.min(TRv, Math.max(0, widthIn), Math.max(0, hTR));
+            BRv = Math.min(BRv, Math.max(0, hTR));
+            BLv = Math.min(BLv, Math.max(0, hBL));
+            cur.rcCorners = {
+              TL: { mode: cur.rcCorners.TL?.mode || "square", value: TLv },
+              TR: { mode: cur.rcCorners.TR?.mode || "square", value: TRv },
+              BR: { mode: cur.rcCorners.BR?.mode || "square", value: BRv },
+              BL: { mode: cur.rcCorners.BL?.mode || "square", value: BLv },
+            };
+            // Immediate input sync for rcCorners (U)
+            try {
+              ["TL", "TR", "BR", "BL"].forEach((k) => {
+                const vEl = sel(`[data-ct-rc-corner-val="${k}"]`, root);
+                if (vEl) vEl.value = String(cur.rcCorners[k]?.value || 0);
+                const mEl = sel(`[data-ct-rc-corner-mode="${k}"]`, root);
+                if (mEl) mEl.value = cur.rcCorners[k]?.mode || "square";
+              });
+            } catch (e) {}
+          } catch (e) {}
+          const rc = cur.rcCorners || {};
+          const valIn = (k) => Math.max(0, Number(rc[k]?.value || 0));
+          const ePx = px(eLocal),
+            hPx = px(hLocal);
+          const tTL = Math.min(valIn("TL") * 2, a, blPx);
+          const tTR = Math.min(valIn("TR") * 2, a, brPx);
+          const tBR = Math.min(valIn("BR") * 2, hPx, brPx);
+          const tBL = Math.min(valIn("BL") * 2, ePx, blPx);
+          const arc = (r, to) => `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
+          // Outer top corner helper points
+          const aTL = { x: x0 + tTL, y: y0 };
+          const bTR = { x: x1 - tTR, y: y0 };
+          const aTR = { x: x1, y: y0 + tTR };
+          // Right edge down to before BR
+          const bBR = { x: x1, y: yTop + brPx - tBR };
+          const aBR = { x: x1 - tBR, y: yTop + brPx };
+          // Bottom left side before BL
+          const bBL = { x: x0 + tBL, y: yTop + blPx };
+          const aBL = { x: x0, y: yTop + blPx - tBL };
+          const bTL = { x: x0, y: y0 + tTL };
+          // Inner top corner helpers (only TL/TR)
+          const ic = cur.icCorners || {};
+          const itTL = Math.max(
+            0,
+            Math.min(
+              Number(ic.iTL?.value || 0) * 2,
+              xiR - xiL,
+              yBotL - yInnerTop
+            )
+          );
+          const itTR = Math.max(
+            0,
+            Math.min(
+              Number(ic.iTR?.value || 0) * 2,
+              xiR - xiL,
+              yBotR - yInnerTop
+            )
+          );
+          const iaTR = { x: xiR - itTR, y: yInnerTop };
+          const ibTR = { x: xiR, y: yInnerTop + itTR };
+          const iaTL = { x: xiL + itTL, y: yInnerTop };
+          const ibTL = { x: xiL, y: yInnerTop + itTL };
+          const arcI = (r, to) => `A ${r} ${r} 0 0 1 ${to.x} ${to.y}`;
+          const dParts = [];
+          // Top run with TL/TR
+          dParts.push(`M ${aTL.x} ${aTL.y}`);
+          dParts.push(`L ${bTR.x} ${bTR.y}`);
+          if ((rc.TR?.mode || "square") === "radius") {
+            const r = tTR / Math.tan(Math.PI / 4) || 0;
+            dParts.push(arc(r, aTR));
+          } else if ((rc.TR?.mode || "square") === "clip") {
+            dParts.push(`L ${aTR.x} ${aTR.y}`);
+          }
+          // Right outer down to before BR
+          dParts.push(`L ${bBR.x} ${bBR.y}`);
+          if ((rc.BR?.mode || "square") === "radius") {
+            const r = tBR / Math.tan(Math.PI / 4) || 0;
+            dParts.push(arc(r, aBR));
+          } else if ((rc.BR?.mode || "square") === "clip") {
+            dParts.push(`L ${aBR.x} ${aBR.y}`);
+          }
+          // Bottom right return to inner right bottom corner
+          dParts.push(`L ${xiR} ${yTop + brPx}`);
+          // Up inner right to start of iTR arc
+          dParts.push(`L ${ibTR.x} ${ibTR.y}`);
+          if ((ic.iTR?.mode || "square") === "radius") {
+            const r = itTR / Math.tan(Math.PI / 4) || 0;
+            dParts.push(arcI(r, iaTR));
+          } else if ((ic.iTR?.mode || "square") === "clip") {
+            dParts.push(`L ${iaTR.x} ${iaTR.y}`);
+          }
+          // Inner top across to just before iTL
+          dParts.push(`L ${iaTL.x} ${iaTL.y}`);
+          if ((ic.iTL?.mode || "square") === "radius") {
+            const r = itTL / Math.tan(Math.PI / 4) || 0;
+            dParts.push(arcI(r, ibTL));
+          } else if ((ic.iTL?.mode || "square") === "clip") {
+            dParts.push(`L ${ibTL.x} ${ibTL.y}`);
+          }
+          // Down inner left to bottom of left leg
+          dParts.push(`L ${xiL} ${yTop + blPx}`);
+          // Bottom left return to before BL
+          dParts.push(`L ${bBL.x} ${bBL.y}`);
+          if ((rc.BL?.mode || "square") === "radius") {
+            const r = tBL / Math.tan(Math.PI / 4) || 0;
+            dParts.push(arc(r, aBL));
+          } else if ((rc.BL?.mode || "square") === "clip") {
+            dParts.push(`L ${aBL.x} ${aBL.y}`);
+          }
+          // Up left outer to before TL and close
+          dParts.push(`L ${bTL.x} ${bTL.y}`);
+          if ((rc.TL?.mode || "square") === "radius") {
+            const r = tTL / Math.tan(Math.PI / 4) || 0;
+            dParts.push(arc(r, aTL));
+          } else if ((rc.TL?.mode || "square") === "clip") {
+            dParts.push(`L ${aTL.x} ${aTL.y}`);
+          }
+          dParts.push("Z");
+          uPath.setAttribute("d", dParts.join(" "));
+          uPath.setAttribute("fill", fillColor);
+          uPath.setAttribute("stroke", "none");
+          rotG.appendChild(uPath);
 
           // backsplash along U edges (render above countertop)
-          { const aBox=a; const bh = px(Number(opts.bsHeight||0)); if (opts.bsOn && bh>0){
-            const addRect=(x,y,w,h,labX1,labY1,labX2,labY2)=>{ const r=document.createElementNS(ns,'rect'); r.setAttribute('x', String(x)); r.setAttribute('y', String(y)); r.setAttribute('width', String(w)); r.setAttribute('height', String(h)); r.setAttribute('fill','#e6f2ff'); r.setAttribute('stroke','#7fb3ff'); r.setAttribute('stroke-width','1'); rotG.appendChild(r); if (labX1!=null) drawBsLabel(rotG, labX1, labY1, labX2, labY2, 'Backsplash'); };
-            if (cur.bs.A){ addRect(centerX - aBox/2, yTop - bh, aBox, bh, centerX - aBox/2, yTop - bh, centerX + aBox/2, yTop - bh); }
-            if (cur.bs.BL){ addRect(centerX - aBox/2 - bh, yTop, bh, blPx, centerX - aBox/2 - bh, yTop, centerX - aBox/2 - bh, yTop + blPx); }
-            if (cur.bs.BR){ addRect(centerX + aBox/2, yTop, bh, brPx, centerX + aBox/2 + bh, yTop, centerX + aBox/2 + bh, yTop + brPx); }
-            if (cur.bs.C){ addRect(xiL, yInnerTop, (xiR - xiL), bh, xiL, yInnerTop + bh, xiR, yInnerTop + bh); }
-            // Inner vertical backsplash for D (two strips into opening)
-            if (cur.bs.D && yInnerTop > yTop){
-              // left inner
-              addRect(xiL - bh, yTop, bh, (yInnerTop - yTop), xiL - bh, yTop, xiL - bh, yInnerTop);
-              // right inner
-              addRect(xiR, yTop, bh, (yInnerTop - yTop), xiR + bh, yTop, xiR + bh, yInnerTop);
+          {
+            const aBox = a;
+            const bh = px(Number(opts.bsHeight || 0));
+            if (opts.bsOn && bh > 0) {
+              const addRect = (x, y, w, h, labX1, labY1, labX2, labY2) => {
+                const r = document.createElementNS(ns, "rect");
+                r.setAttribute("x", String(x));
+                r.setAttribute("y", String(y));
+                r.setAttribute("width", String(w));
+                r.setAttribute("height", String(h));
+                r.setAttribute("fill", "#e6f2ff");
+                r.setAttribute("stroke", "#7fb3ff");
+                r.setAttribute("stroke-width", "1");
+                rotG.appendChild(r);
+                if (labX1 != null)
+                  drawBsLabel(rotG, labX1, labY1, labX2, labY2, "Backsplash");
+              };
+              if (cur.bs.A) {
+                addRect(
+                  centerX - aBox / 2,
+                  yTop - bh,
+                  aBox,
+                  bh,
+                  centerX - aBox / 2,
+                  yTop - bh,
+                  centerX + aBox / 2,
+                  yTop - bh
+                );
+              }
+              if (cur.bs.BL) {
+                addRect(
+                  centerX - aBox / 2 - bh,
+                  yTop,
+                  bh,
+                  blPx,
+                  centerX - aBox / 2 - bh,
+                  yTop,
+                  centerX - aBox / 2 - bh,
+                  yTop + blPx
+                );
+              }
+              if (cur.bs.BR) {
+                addRect(
+                  centerX + aBox / 2,
+                  yTop,
+                  bh,
+                  brPx,
+                  centerX + aBox / 2 + bh,
+                  yTop,
+                  centerX + aBox / 2 + bh,
+                  yTop + brPx
+                );
+              }
+              if (cur.bs.C) {
+                addRect(
+                  xiL,
+                  yInnerTop,
+                  xiR - xiL,
+                  bh,
+                  xiL,
+                  yInnerTop + bh,
+                  xiR,
+                  yInnerTop + bh
+                );
+              }
+              // Inner vertical backsplash for D (two strips into opening)
+              if (cur.bs.D && yInnerTop > yTop) {
+                // left inner
+                addRect(
+                  xiL - bh,
+                  yTop,
+                  bh,
+                  yInnerTop - yTop,
+                  xiL - bh,
+                  yTop,
+                  xiL - bh,
+                  yInnerTop
+                );
+                // right inner
+                addRect(
+                  xiR,
+                  yTop,
+                  bh,
+                  yInnerTop - yTop,
+                  xiR + bh,
+                  yTop,
+                  xiR + bh,
+                  yInnerTop
+                );
+              }
+              if (cur.bs && (cur.bs.E || cur.bs.H)) {
+                const eLen = px(Math.max(0, Number(len.E || 0)));
+                const hLen = px(Math.max(0, Number(len.H || 0)));
+                if (cur.bs.E && eLen > 0) {
+                  addRect(
+                    centerX - a / 2,
+                    yTop + blPx,
+                    eLen,
+                    bh,
+                    centerX - a / 2,
+                    yTop + blPx + bh,
+                    centerX - a / 2 + eLen,
+                    yTop + blPx + bh
+                  );
+                }
+                if (cur.bs.H && hLen > 0) {
+                  addRect(
+                    centerX + a / 2 - hLen,
+                    yTop + brPx,
+                    hLen,
+                    bh,
+                    centerX + a / 2 - hLen,
+                    yTop + brPx + bh,
+                    centerX + a / 2,
+                    yTop + brPx + bh
+                  );
+                }
+              }
             }
-            if (cur.bs && (cur.bs.E || cur.bs.H)){
-              const eLen = px(Math.max(0, Number(len.E||0)));
-              const hLen = px(Math.max(0, Number(len.H||0)));
-              if (cur.bs.E && eLen>0){ addRect(centerX - a/2, yTop + blPx, eLen, bh, centerX - a/2, yTop + blPx + bh, centerX - a/2 + eLen, yTop + blPx + bh); }
-              if (cur.bs.H && hLen>0){ addRect(centerX + a/2 - hLen, yTop + brPx, hLen, bh, centerX + a/2 - hLen, yTop + brPx + bh, centerX + a/2, yTop + brPx + bh); }
-            }
-          } }
+          }
 
           // wall sides as black lines — independent toggles (A, BL, BR, C, D, E, H)
-          const sideColor = '#000';
-          const mkLine = (x1,y1,x2,y2)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke', sideColor); l.setAttribute('stroke-width','3'); return l; };
+          const sideColor = "#000";
+          const mkLine = (x1, y1, x2, y2) => {
+            const l = document.createElementNS(ns, "line");
+            l.setAttribute("x1", x1);
+            l.setAttribute("y1", y1);
+            l.setAttribute("x2", x2);
+            l.setAttribute("y2", y2);
+            l.setAttribute("stroke", sideColor);
+            l.setAttribute("stroke-width", "3");
+            return l;
+          };
           // A: outer top
-          if (cur.wall.A) rotG.appendChild(mkLine(centerX - a/2, yTop, centerX + a/2, yTop));
+          if (cur.wall.A)
+            rotG.appendChild(
+              mkLine(centerX - a / 2, yTop, centerX + a / 2, yTop)
+            );
           // BL: outer left vertical
-          if (cur.wall.BL) rotG.appendChild(mkLine(centerX - a/2, yTop, centerX - a/2, yTop + blPx));
+          if (cur.wall.BL)
+            rotG.appendChild(
+              mkLine(centerX - a / 2, yTop, centerX - a / 2, yTop + blPx)
+            );
           // BR: outer right vertical
-          if (cur.wall.BR) rotG.appendChild(mkLine(centerX + a/2, yTop, centerX + a/2, yTop + brPx));
+          if (cur.wall.BR)
+            rotG.appendChild(
+              mkLine(centerX + a / 2, yTop, centerX + a / 2, yTop + brPx)
+            );
           // C: inner top
-          if (cur.wall.C && xiR > xiL) rotG.appendChild(mkLine(xiL, yInnerTop, xiR, yInnerTop));
+          if (cur.wall.C && xiR > xiL)
+            rotG.appendChild(mkLine(xiL, yInnerTop, xiR, yInnerTop));
           // D: inner verticals (two)
-          if (cur.wall.D && yInnerTop > yTop){
+          if (cur.wall.D && yInnerTop > yTop) {
             rotG.appendChild(mkLine(xiL, yTop, xiL, yInnerTop));
             rotG.appendChild(mkLine(xiR, yTop, xiR, yInnerTop));
           }
           // E: bottom left return along outer bottom up to inner left
-          if (cur.wall.E) rotG.appendChild(mkLine(centerX - a/2, yTop + blPx, xiL, yTop + blPx));
+          if (cur.wall.E)
+            rotG.appendChild(
+              mkLine(centerX - a / 2, yTop + blPx, xiL, yTop + blPx)
+            );
           // H: bottom right return along outer bottom from inner right to outer right
-          if (cur.wall.H) rotG.appendChild(mkLine(xiR, yTop + brPx, centerX + a/2, yTop + brPx));
+          if (cur.wall.H)
+            rotG.appendChild(
+              mkLine(xiR, yTop + brPx, centerX + a / 2, yTop + brPx)
+            );
 
-          if (idx===active){
-            const hi = document.createElementNS(ns,'rect');
-            hi.setAttribute('x', String(centerX - a/2 - 4));
-            hi.setAttribute('y', String(yTop - 4));
-            hi.setAttribute('width', String(a + 8));
-            hi.setAttribute('height', String(hMax + 8));
-            hi.setAttribute('fill','none'); hi.setAttribute('stroke','#4f6bd8'); hi.setAttribute('stroke-width','2'); hi.setAttribute('stroke-dasharray','6 4');
+          if (idx === active) {
+            const hi = document.createElementNS(ns, "rect");
+            hi.setAttribute("x", String(centerX - a / 2 - 4));
+            hi.setAttribute("y", String(yTop - 4));
+            hi.setAttribute("width", String(a + 8));
+            hi.setAttribute("height", String(hMax + 8));
+            hi.setAttribute("fill", "none");
+            hi.setAttribute("stroke", "#4f6bd8");
+            hi.setAttribute("stroke-width", "2");
+            hi.setAttribute("stroke-dasharray", "6 4");
             rotG.appendChild(hi);
           }
 
           // U-guides for A–H (with BL/BR)
-          if (opts.showGuides){
-            const m=18;
+          if (opts.showGuides) {
+            const m = 18;
             // A: top outer width
-            drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX + a/2 - m, yTop + m, 'A');
+            drawGuideLine(
+              rotG,
+              centerX - a / 2 + m,
+              yTop + m,
+              centerX + a / 2 - m,
+              yTop + m,
+              "A"
+            );
             // B: Right depth (BR)
-            drawGuideLine(rotG, centerX + a/2 - m, yTop + m, centerX + a/2 - m, yTop + brPx - m, 'B');
+            drawGuideLine(
+              rotG,
+              centerX + a / 2 - m,
+              yTop + m,
+              centerX + a / 2 - m,
+              yTop + brPx - m,
+              "B"
+            );
             // D: Left depth (BL)
-            drawGuideLine(rotG, centerX - a/2 + m, yTop + m, centerX - a/2 + m, yTop + blPx - m, 'D');
+            drawGuideLine(
+              rotG,
+              centerX - a / 2 + m,
+              yTop + m,
+              centerX - a / 2 + m,
+              yTop + blPx - m,
+              "D"
+            );
             // C: Inner top span
-            drawGuideLine(rotG, xiL + m, yInnerTop + m, xiR - m, yInnerTop + m, 'C');
+            drawGuideLine(
+              rotG,
+              xiL + m,
+              yInnerTop + m,
+              xiR - m,
+              yInnerTop + m,
+              "C"
+            );
             // F: Inner setback vertical
-            drawGuideLine(rotG, (xiL+xiR)/2, yTop + m, (xiL+xiR)/2, yInnerTop - m, 'F');
+            drawGuideLine(
+              rotG,
+              (xiL + xiR) / 2,
+              yTop + m,
+              (xiL + xiR) / 2,
+              yInnerTop - m,
+              "F"
+            );
             // E: Bottom left return
-            drawGuideLine(rotG, centerX - a/2 + m, yTop + blPx - m, xiL - m, yTop + blPx - m, 'E');
+            drawGuideLine(
+              rotG,
+              centerX - a / 2 + m,
+              yTop + blPx - m,
+              xiL - m,
+              yTop + blPx - m,
+              "E"
+            );
             // H: Bottom right return
-            drawGuideLine(rotG, xiR + m, yTop + brPx - m, centerX + a/2 - m, yTop + brPx - m, 'H');
+            drawGuideLine(
+              rotG,
+              xiR + m,
+              yTop + brPx - m,
+              centerX + a / 2 - m,
+              yTop + brPx - m,
+              "H"
+            );
           }
           gRoot.appendChild(rotG);
           // Label: set within the top rail (between top and inner-top)
-          const uLabelY = yTop + Math.max(12, px(dIn)/2);
-          drawShapeName(centerX, uLabelY, cur.name || `Shape ${idx+1}`);
-          if (opts.showGuides){ labelNumbers(rotG, centerX, centerY, cur, {A:aIn,BL:blIn,BR:brIn,C:cIn,D:dIn}); }
-          hitAreas.push({ idx, cx:centerX, cy:centerY, w:a, h:Math.max(blPx, brPx), rot:rotation });
-          if (idx===active){
+          const uLabelY = yTop + Math.max(12, px(dIn) / 2);
+          drawShapeName(centerX, uLabelY, cur.name || `Shape ${idx + 1}`);
+          if (opts.showGuides) {
+            labelNumbers(rotG, centerX, centerY, cur, {
+              A: aIn,
+              BL: blIn,
+              BR: brIn,
+              C: cIn,
+              D: dIn,
+            });
+          }
+          hitAreas.push({
+            idx,
+            cx: centerX,
+            cy: centerY,
+            w: a,
+            h: Math.max(blPx, brPx),
+            rot: rotation,
+          });
+          if (idx === active) {
             // outer A/B like rect using local anchors
             // top handle remains for panning vertically (no resize)
-            addHandle(idx, toWorld(a/2, 0).x, toWorld(a/2, 0).y, 0, 'A-right');
-            addHandle(idx, toWorld(-a/2, 0).x, toWorld(-a/2, 0).y, 0, 'A-left');
+            addHandle(
+              idx,
+              toWorld(a / 2, 0).x,
+              toWorld(a / 2, 0).y,
+              0,
+              "A-right"
+            );
+            addHandle(
+              idx,
+              toWorld(-a / 2, 0).x,
+              toWorld(-a / 2, 0).y,
+              0,
+              "A-left"
+            );
             // independent side-depth handles at each side bottom midpoint
-            const wBL = toWorld(-a/2, (-hMax/2) + blPx);
-            const wBR = toWorld(a/2, (-hMax/2) + brPx);
-            addHandle(idx, wBL.x, wBL.y, 0, 'BL');
-            addHandle(idx, wBR.x, wBR.y, 0, 'BR');
+            const wBL = toWorld(-a / 2, -hMax / 2 + blPx);
+            const wBR = toWorld(a / 2, -hMax / 2 + brPx);
+            addHandle(idx, wBL.x, wBL.y, 0, "BL");
+            addHandle(idx, wBR.x, wBR.y, 0, "BR");
             // inner spans in local coords
-            const xiLhLocal = -a/2 + px(eIn);
-            const xiRhLocal =  a/2 - px(hIn);
-            const yiLocal = -hMax/2 + px(dIn);
-            const midXLocal = (xiLhLocal + xiRhLocal)/2;
+            const xiLhLocal = -a / 2 + px(eIn);
+            const xiRhLocal = a / 2 - px(hIn);
+            const yiLocal = -hMax / 2 + px(dIn);
+            const midXLocal = (xiLhLocal + xiRhLocal) / 2;
             const pC = toWorld(midXLocal, yiLocal);
-            addHandle(idx, pC.x, pC.y, 0, 'C');
+            addHandle(idx, pC.x, pC.y, 0, "C");
             // D handle: place on left inner vertical midpoint to avoid overlap
-            const pD = toWorld(xiLhLocal, (-hMax/2) + (px(dIn)/2));
-            addHandle(idx, pD.x, pD.y, 0, 'D');
+            const pD = toWorld(xiLhLocal, -hMax / 2 + px(dIn) / 2);
+            addHandle(idx, pD.x, pD.y, 0, "D");
             // E and H: midpoints of bottom returns
-            const pE = toWorld(-a/2 + px(eIn)/2, hMax/2);
-            const pH = toWorld( a/2 - px(hIn)/2, hMax/2);
-            addHandle(idx, pE.x, pE.y, 0, 'E');
-            addHandle(idx, pH.x, pH.y, 0, 'H');
+            const pE = toWorld(-a / 2 + px(eIn) / 2, hMax / 2);
+            const pH = toWorld(a / 2 - px(hIn) / 2, hMax / 2);
+            addHandle(idx, pE.x, pE.y, 0, "E");
+            addHandle(idx, pH.x, pH.y, 0, "H");
             // Corner size handles for U (outer box corners)
-            const rc = cur.rcCorners || {TL:{value:0},TR:{value:0},BR:{value:0},BL:{value:0}};
-            const tpx=(k)=> Math.max(0, Number(rc[k]?.value||0))*2;
-            const TLm = toWorld(-a/2 + tpx('TL')/2, -hMax/2 + tpx('TL')/2);
-            const TRm = toWorld( a/2 - tpx('TR')/2, -hMax/2 + tpx('TR')/2);
-            const BRm = toWorld( a/2 - tpx('BR')/2,  hMax/2 - tpx('BR')/2);
-            const BLm = toWorld(-a/2 + tpx('BL')/2,  hMax/2 - tpx('BL')/2);
-            addHandle(idx, TLm.x, TLm.y, 0, 'RC-TL');
-            addHandle(idx, TRm.x, TRm.y, 0, 'RC-TR');
-            addHandle(idx, BRm.x, BRm.y, 0, 'RC-BR');
-            addHandle(idx, BLm.x, BLm.y, 0, 'RC-BL');
+            const rc = cur.rcCorners || {
+              TL: { value: 0 },
+              TR: { value: 0 },
+              BR: { value: 0 },
+              BL: { value: 0 },
+            };
+            const tpx = (k) => Math.max(0, Number(rc[k]?.value || 0)) * 2;
+            const TLm = toWorld(
+              -a / 2 + tpx("TL") / 2,
+              -hMax / 2 + tpx("TL") / 2
+            );
+            const TRm = toWorld(
+              a / 2 - tpx("TR") / 2,
+              -hMax / 2 + tpx("TR") / 2
+            );
+            const BRm = toWorld(
+              a / 2 - tpx("BR") / 2,
+              hMax / 2 - tpx("BR") / 2
+            );
+            const BLm = toWorld(
+              -a / 2 + tpx("BL") / 2,
+              hMax / 2 - tpx("BL") / 2
+            );
+            addHandle(idx, TLm.x, TLm.y, 0, "RC-TL");
+            addHandle(idx, TRm.x, TRm.y, 0, "RC-TR");
+            addHandle(idx, BRm.x, BRm.y, 0, "RC-BR");
+            addHandle(idx, BLm.x, BLm.y, 0, "RC-BL");
             // Inside-corner handles for U: only iTL and iTR (no inner-bottom corners)
-            const icC = cur.icCorners || { iTL:{value:0}, iTR:{value:0} };
-            const itpx=(k)=> Math.max(0, Number(icC[k]?.value||0))*2;
-            const yInnerTopLocal = (-hMax/2) + px(dIn);
-            const iTLm = toWorld(-a/2 + px(eIn) + itpx('iTL')/2, yInnerTopLocal + itpx('iTL')/2);
-            const iTRm = toWorld( a/2 - px(hIn) - itpx('iTR')/2, yInnerTopLocal + itpx('iTR')/2);
-            addHandle(idx, iTLm.x, iTLm.y, 0, 'IC-TL');
-            addHandle(idx, iTRm.x, iTRm.y, 0, 'IC-TR');
+            const icC = cur.icCorners || {
+              iTL: { value: 0 },
+              iTR: { value: 0 },
+            };
+            const itpx = (k) => Math.max(0, Number(icC[k]?.value || 0)) * 2;
+            const yInnerTopLocal = -hMax / 2 + px(dIn);
+            const iTLm = toWorld(
+              -a / 2 + px(eIn) + itpx("iTL") / 2,
+              yInnerTopLocal + itpx("iTL") / 2
+            );
+            const iTRm = toWorld(
+              a / 2 - px(hIn) - itpx("iTR") / 2,
+              yInnerTopLocal + itpx("iTR") / 2
+            );
+            addHandle(idx, iTLm.x, iTLm.y, 0, "IC-TL");
+            addHandle(idx, iTRm.x, iTRm.y, 0, "IC-TR");
           }
-        } else if (shape==='poly'){
-          const fillActive = '#f8c4a0';
-          const fillInactive = '#cfd8dc';
-          const fillColor = (idx===active) ? fillActive : fillInactive;
+        } else if (shape === "poly") {
+          const fillActive = "#f8c4a0";
+          const fillInactive = "#cfd8dc";
+          const fillColor = idx === active ? fillActive : fillInactive;
           // Custom polygon defined by local-inch points: [{x,y}, ...] in inches
-          const ptsIn = Array.isArray(cur.points) && cur.points.length>=3 ? cur.points : [
-            {x:-40,y:-30},{x:40,y:-30},{x:60,y:0},{x:10,y:40},{x:-30,y:20}
-          ];
+          const ptsIn =
+            Array.isArray(cur.points) && cur.points.length >= 3
+              ? cur.points
+              : [
+                  { x: -40, y: -30 },
+                  { x: 40, y: -30 },
+                  { x: 60, y: 0 },
+                  { x: 10, y: 40 },
+                  { x: -30, y: 20 },
+                ];
           // ensure bsPoly exists and matches edges count
-          if (!Array.isArray(cur.bsPoly)) cur.bsPoly = new Array(ptsIn.length).fill(false);
-          if (cur.bsPoly.length !== ptsIn.length){
+          if (!Array.isArray(cur.bsPoly))
+            cur.bsPoly = new Array(ptsIn.length).fill(false);
+          if (cur.bsPoly.length !== ptsIn.length) {
             const old = cur.bsPoly.slice(0);
             const next = new Array(ptsIn.length).fill(false);
-            for (let i=0;i<Math.min(old.length, next.length);i++){ next[i] = !!old[i]; }
+            for (let i = 0; i < Math.min(old.length, next.length); i++) {
+              next[i] = !!old[i];
+            }
             cur.bsPoly = next;
           }
           // local inches -> viewBox units
-          const toWorld = (lx,ly)=>{
-            const rad = (rotation||0) * Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad);
-            const x = centerX + (lx*2)*cos - (ly*2)*sin; // 2 px per inch
-            const y = centerY + (lx*2)*sin + (ly*2)*cos;
-            return {x,y};
+          const toWorld = (lx, ly) => {
+            const rad = ((rotation || 0) * Math.PI) / 180;
+            const cos = Math.cos(rad),
+              sin = Math.sin(rad);
+            const x = centerX + lx * 2 * cos - ly * 2 * sin; // 2 px per inch
+            const y = centerY + lx * 2 * sin + ly * 2 * cos;
+            return { x, y };
           };
           // build path with corner operations (clip/radius)
-          const polyPath = document.createElementNS(ns, 'path');
+          const polyPath = document.createElementNS(ns, "path");
           // Determine orientation once for outside arc sweep
-          let orientArea=0; for (let i=0;i<ptsIn.length;i++){ const a=ptsIn[i], b=ptsIn[(i+1)%ptsIn.length]; orientArea += (a.x*b.y - b.x*a.y); }
+          let orientArea = 0;
+          for (let i = 0; i < ptsIn.length; i++) {
+            const a = ptsIn[i],
+              b = ptsIn[(i + 1) % ptsIn.length];
+            orientArea += a.x * b.y - b.x * a.y;
+          }
           const isCCW = orientArea > 0;
-          let dStr='';
+          let dStr = "";
           const nPts = ptsIn.length;
-          const getCorner = (i)=>{ const s=cur; if (!Array.isArray(s.corners)) return {mode:'square', value:0}; const c=s.corners[i]; return c||{mode:'square', value:0}; };
-          const toW=(p)=> toWorld(p.x,p.y);
-          const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t});
-          for (let i=0;i<nPts;i++){
-            const p0 = ptsIn[(i-1+nPts)%nPts];
+          const getCorner = (i) => {
+            const s = cur;
+            if (!Array.isArray(s.corners)) return { mode: "square", value: 0 };
+            const c = s.corners[i];
+            return c || { mode: "square", value: 0 };
+          };
+          const toW = (p) => toWorld(p.x, p.y);
+          const lerp = (a, b, t) => ({
+            x: a.x + (b.x - a.x) * t,
+            y: a.y + (b.y - a.y) * t,
+          });
+          for (let i = 0; i < nPts; i++) {
+            const p0 = ptsIn[(i - 1 + nPts) % nPts];
             const p1 = ptsIn[i];
-            const p2 = ptsIn[(i+1)%nPts];
+            const p2 = ptsIn[(i + 1) % nPts];
             const c = getCorner(i);
             const w1 = toW(p1);
-            if (!c || c.mode==='square' || !c.value){
-              if (i===0){ dStr += `M ${w1.x} ${w1.y}`; } else { dStr += ` L ${w1.x} ${w1.y}`; }
+            if (!c || c.mode === "square" || !c.value) {
+              if (i === 0) {
+                dStr += `M ${w1.x} ${w1.y}`;
+              } else {
+                dStr += ` L ${w1.x} ${w1.y}`;
+              }
               continue;
             }
-            const sz = Math.max(0, Number(c.value||0));
+            const sz = Math.max(0, Number(c.value || 0));
             // compute points along edges from p1 towards p0 and p2 by sz inches
             const v10 = { x: p0.x - p1.x, y: p0.y - p1.y };
             const v12 = { x: p2.x - p1.x, y: p2.y - p1.y };
-            const l10 = Math.hypot(v10.x, v10.y)||1; const l12=Math.hypot(v12.x, v12.y)||1;
-            const a = { x: p1.x + v10.x*(sz/l10), y: p1.y + v10.y*(sz/l10) };
-            const b = { x: p1.x + v12.x*(sz/l12), y: p1.y + v12.y*(sz/l12) };
-            const aW = toW(a), bW=toW(b);
-            if (i===0){ dStr += `M ${aW.x} ${aW.y}`; } else { dStr += ` L ${aW.x} ${aW.y}`; }
-            if (c.mode==='clip'){
+            const l10 = Math.hypot(v10.x, v10.y) || 1;
+            const l12 = Math.hypot(v12.x, v12.y) || 1;
+            const a = {
+              x: p1.x + v10.x * (sz / l10),
+              y: p1.y + v10.y * (sz / l10),
+            };
+            const b = {
+              x: p1.x + v12.x * (sz / l12),
+              y: p1.y + v12.y * (sz / l12),
+            };
+            const aW = toW(a),
+              bW = toW(b);
+            if (i === 0) {
+              dStr += `M ${aW.x} ${aW.y}`;
+            } else {
+              dStr += ` L ${aW.x} ${aW.y}`;
+            }
+            if (c.mode === "clip") {
               dStr += ` L ${bW.x} ${bW.y}`;
-            } else if (c.mode==='radius'){
+            } else if (c.mode === "radius") {
               // precise fillet radius: r = t / tan(phi/2), where t=offset along edges
               const tOff = sz;
               // unit vectors along incoming and outgoing edges
-              const u_in = { x: (p1.x - p0.x), y: (p1.y - p0.y) };
-              const u_out = { x: (p2.x - p1.x), y: (p2.y - p1.y) };
-              const uin_len = Math.hypot(u_in.x,u_in.y)||1; const uout_len=Math.hypot(u_out.x,u_out.y)||1;
-              const vin = { x: u_in.x/uin_len, y: u_in.y/uin_len };
-              const vout = { x: u_out.x/uout_len, y: u_out.y/uout_len };
-              let dot = vin.x*vout.x + vin.y*vout.y; if (dot>1) dot=1; if (dot<-1) dot=-1;
+              const u_in = { x: p1.x - p0.x, y: p1.y - p0.y };
+              const u_out = { x: p2.x - p1.x, y: p2.y - p1.y };
+              const uin_len = Math.hypot(u_in.x, u_in.y) || 1;
+              const uout_len = Math.hypot(u_out.x, u_out.y) || 1;
+              const vin = { x: u_in.x / uin_len, y: u_in.y / uin_len };
+              const vout = { x: u_out.x / uout_len, y: u_out.y / uout_len };
+              let dot = vin.x * vout.x + vin.y * vout.y;
+              if (dot > 1) dot = 1;
+              if (dot < -1) dot = -1;
               const phi = Math.acos(dot);
-              const tanHalf = Math.tan(phi/2) || 1;
+              const tanHalf = Math.tan(phi / 2) || 1;
               const rPx = (tOff / tanHalf) * 2; // inches to px
-              const large=0;
+              const large = 0;
               // outside radius sweep: CW=1, CCW=0
               const sweep = isCCW ? 0 : 1;
               dStr += ` A ${rPx} ${rPx} 0 ${large} ${sweep} ${bW.x} ${bW.y}`;
             }
           }
-          dStr += ' Z';
-          polyPath.setAttribute('d', dStr);
-          polyPath.setAttribute('fill', fillColor);
-          polyPath.setAttribute('stroke', 'none');
+          dStr += " Z";
+          polyPath.setAttribute("d", dStr);
+          polyPath.setAttribute("fill", fillColor);
+          polyPath.setAttribute("stroke", "none");
           gRoot.appendChild(polyPath);
 
           // backsplash along selected polygon edges (render above countertop)
           {
-            const bhPx = Number(opts.bsHeight||0) * 2; // pixels
-            if (opts.bsOn && bhPx>0 && Array.isArray(cur.bsPoly)){
+            const bhPx = Number(opts.bsHeight || 0) * 2; // pixels
+            if (opts.bsOn && bhPx > 0 && Array.isArray(cur.bsPoly)) {
               // orientation via signed area (local inches)
-              let area=0; for (let i=0;i<ptsIn.length;i++){ const a=ptsIn[i], b=ptsIn[(i+1)%ptsIn.length]; area += (a.x*b.y - b.x*a.y); }
+              let area = 0;
+              for (let i = 0; i < ptsIn.length; i++) {
+                const a = ptsIn[i],
+                  b = ptsIn[(i + 1) % ptsIn.length];
+                area += a.x * b.y - b.x * a.y;
+              }
               const isCCW = area > 0;
-              for (let i=0;i<ptsIn.length;i++){
+              for (let i = 0; i < ptsIn.length; i++) {
                 if (!cur.bsPoly[i]) continue;
-                const aL = ptsIn[i], bL = ptsIn[(i+1)%ptsIn.length];
-                const aW = toWorld(aL.x, aL.y), bW = toWorld(bL.x, bL.y);
-                const dx = bW.x - aW.x, dy = bW.y - aW.y; const len = Math.hypot(dx,dy)||1;
+                const aL = ptsIn[i],
+                  bL = ptsIn[(i + 1) % ptsIn.length];
+                const aW = toWorld(aL.x, aL.y),
+                  bW = toWorld(bL.x, bL.y);
+                const dx = bW.x - aW.x,
+                  dy = bW.y - aW.y;
+                const len = Math.hypot(dx, dy) || 1;
                 // outward normal: right side for CCW, left for CW
-                const nx = isCCW ? (dy/len) : (-dy/len);
-                const ny = isCCW ? (-dx/len) : (dx/len);
-                const p0x = aW.x, p0y = aW.y;
-                const p1x = bW.x, p1y = bW.y;
-                const q1x = p1x + nx*bhPx, q1y = p1y + ny*bhPx;
-                const q0x = p0x + nx*bhPx, q0y = p0y + ny*bhPx;
-                const bp = document.createElementNS(ns,'path');
-                bp.setAttribute('d', `M ${p0x} ${p0y} L ${p1x} ${p1y} L ${q1x} ${q1y} L ${q0x} ${q0y} Z`);
-                bp.setAttribute('fill', '#e6f2ff');
-                bp.setAttribute('stroke', '#4d8fe8');
-                bp.setAttribute('stroke-width', '1.25');
+                const nx = isCCW ? dy / len : -dy / len;
+                const ny = isCCW ? -dx / len : dx / len;
+                const p0x = aW.x,
+                  p0y = aW.y;
+                const p1x = bW.x,
+                  p1y = bW.y;
+                const q1x = p1x + nx * bhPx,
+                  q1y = p1y + ny * bhPx;
+                const q0x = p0x + nx * bhPx,
+                  q0y = p0y + ny * bhPx;
+                const bp = document.createElementNS(ns, "path");
+                bp.setAttribute(
+                  "d",
+                  `M ${p0x} ${p0y} L ${p1x} ${p1y} L ${q1x} ${q1y} L ${q0x} ${q0y} Z`
+                );
+                bp.setAttribute("fill", "#e6f2ff");
+                bp.setAttribute("stroke", "#4d8fe8");
+                bp.setAttribute("stroke-width", "1.25");
                 gRoot.appendChild(bp);
                 // Label along the original edge
-                drawBsLabel(gRoot, p0x, p0y, p1x, p1y, 'Backsplash');
+                drawBsLabel(gRoot, p0x, p0y, p1x, p1y, "Backsplash");
               }
             }
           }
 
           // labels and guides for polygon edges (toggleable)
-          if (opts.showGuides){
-            const labelEdge=(x1,y1,x2,y2,txt)=>{ const mx=(x1+x2)/2, my=(y1+y2)/2 - 6; const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI; const t=document.createElementNS(ns,'text'); t.setAttribute('x', String(mx)); t.setAttribute('y', String(my)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','700'); t.setAttribute('fill','#2d4a7a'); t.textContent=txt; t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`); gRoot.appendChild(t); };
-            const m=10; let letterCode=65; // 'A'
-            const drawGuide=(x1,y1,x2,y2,letTxt)=>{ const l=document.createElementNS(ns,'line'); l.setAttribute('x1',String(x1)); l.setAttribute('y1',String(y1)); l.setAttribute('x2',String(x2)); l.setAttribute('y2',String(y2)); l.setAttribute('stroke','#bdc6da'); l.setAttribute('stroke-width','2'); gRoot.appendChild(l); const mx=(x1+x2)/2, my=(y1+y2)/2 - 6; const ang=Math.atan2(y2-y1, x2-x1)*180/Math.PI; const t=document.createElementNS(ns,'text'); t.setAttribute('x', String(mx)); t.setAttribute('y', String(my)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=letTxt; t.setAttribute('transform', `rotate(${ang} ${mx} ${my})`); gRoot.appendChild(t); };
-            for (let i=0;i<ptsIn.length;i++){
-              const aP = ptsIn[i]; const bP = ptsIn[(i+1)%ptsIn.length];
+          if (opts.showGuides) {
+            const labelEdge = (x1, y1, x2, y2, txt) => {
+              const mx = (x1 + x2) / 2,
+                my = (y1 + y2) / 2 - 6;
+              const ang = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
+              const t = document.createElementNS(ns, "text");
+              t.setAttribute("x", String(mx));
+              t.setAttribute("y", String(my));
+              t.setAttribute("text-anchor", "middle");
+              t.setAttribute("font-size", "12");
+              t.setAttribute("font-weight", "700");
+              t.setAttribute("fill", "#2d4a7a");
+              t.textContent = txt;
+              t.setAttribute("transform", `rotate(${ang} ${mx} ${my})`);
+              gRoot.appendChild(t);
+            };
+            const m = 10;
+            let letterCode = 65; // 'A'
+            const drawGuide = (x1, y1, x2, y2, letTxt) => {
+              const l = document.createElementNS(ns, "line");
+              l.setAttribute("x1", String(x1));
+              l.setAttribute("y1", String(y1));
+              l.setAttribute("x2", String(x2));
+              l.setAttribute("y2", String(y2));
+              l.setAttribute("stroke", "#bdc6da");
+              l.setAttribute("stroke-width", "2");
+              gRoot.appendChild(l);
+              const mx = (x1 + x2) / 2,
+                my = (y1 + y2) / 2 - 6;
+              const ang = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
+              const t = document.createElementNS(ns, "text");
+              t.setAttribute("x", String(mx));
+              t.setAttribute("y", String(my));
+              t.setAttribute("text-anchor", "middle");
+              t.setAttribute("font-size", "12");
+              t.setAttribute("font-weight", "600");
+              t.textContent = letTxt;
+              t.setAttribute("transform", `rotate(${ang} ${mx} ${my})`);
+              gRoot.appendChild(t);
+            };
+            for (let i = 0; i < ptsIn.length; i++) {
+              const aP = ptsIn[i];
+              const bP = ptsIn[(i + 1) % ptsIn.length];
               const lenIn = Math.round(Math.hypot(bP.x - aP.x, bP.y - aP.y));
-              const w1 = toWorld(aP.x, aP.y); const w2 = toWorld(bP.x, bP.y);
-              labelEdge(w1.x,w1.y,w2.x,w2.y, `${lenIn}\\"`);
-              drawGuide(w1.x, w1.y, w2.x, w2.y, String.fromCharCode(letterCode));
+              const w1 = toWorld(aP.x, aP.y);
+              const w2 = toWorld(bP.x, bP.y);
+              labelEdge(w1.x, w1.y, w2.x, w2.y, `${lenIn}\\"`);
+              drawGuide(
+                w1.x,
+                w1.y,
+                w2.x,
+                w2.y,
+                String.fromCharCode(letterCode)
+              );
               letterCode++;
             }
           }
 
           // active highlight: draw small handles at vertices
-          if (idx===active){
-            ptsIn.forEach((p,i)=>{ const w = toWorld(p.x, p.y); addHandle(idx, w.x, w.y, 0, `V-${i}`); });
+          if (idx === active) {
+            ptsIn.forEach((p, i) => {
+              const w = toWorld(p.x, p.y);
+              addHandle(idx, w.x, w.y, 0, `V-${i}`);
+            });
             // also midpoint handles per edge for resizing length
-            for (let i=0;i<ptsIn.length;i++){
-              const aP = ptsIn[i], bP = ptsIn[(i+1)%ptsIn.length];
-              const mid={ x:(aP.x+bP.x)/2, y:(aP.y+bP.y)/2 };
-              const w = toWorld(mid.x, mid.y); addHandle(idx, w.x, w.y, 0, `P-${i}`);
+            for (let i = 0; i < ptsIn.length; i++) {
+              const aP = ptsIn[i],
+                bP = ptsIn[(i + 1) % ptsIn.length];
+              const mid = { x: (aP.x + bP.x) / 2, y: (aP.y + bP.y) / 2 };
+              const w = toWorld(mid.x, mid.y);
+              addHandle(idx, w.x, w.y, 0, `P-${i}`);
             }
             // Corner size handles (midpoint between the two offset points per corner)
-            const getCorner = (i)=>{ const s=cur; if (!Array.isArray(s.corners)) return {mode:'square', value:0}; const c=s.corners[i]; return c||{mode:'square', value:0}; };
-            for (let i=0;i<ptsIn.length;i++){
-              const p0 = ptsIn[(i-1+ptsIn.length)%ptsIn.length];
+            const getCorner = (i) => {
+              const s = cur;
+              if (!Array.isArray(s.corners))
+                return { mode: "square", value: 0 };
+              const c = s.corners[i];
+              return c || { mode: "square", value: 0 };
+            };
+            for (let i = 0; i < ptsIn.length; i++) {
+              const p0 = ptsIn[(i - 1 + ptsIn.length) % ptsIn.length];
               const p1 = ptsIn[i];
-              const p2 = ptsIn[(i+1)%ptsIn.length];
+              const p2 = ptsIn[(i + 1) % ptsIn.length];
               const c = getCorner(i);
-              const tIn = Math.max(0, Number(c.value||0));
+              const tIn = Math.max(0, Number(c.value || 0));
               const v10 = { x: p0.x - p1.x, y: p0.y - p1.y };
               const v12 = { x: p2.x - p1.x, y: p2.y - p1.y };
-              const l10 = Math.hypot(v10.x, v10.y)||1; const l12=Math.hypot(v12.x, v12.y)||1;
-              const a = { x: p1.x + v10.x*(tIn/l10), y: p1.y + v10.y*(tIn/l10) };
-              const b = { x: p1.x + v12.x*(tIn/l12), y: p1.y + v12.y*(tIn/l12) };
-              const m = { x: (a.x+b.x)/2, y: (a.y+b.y)/2 };
+              const l10 = Math.hypot(v10.x, v10.y) || 1;
+              const l12 = Math.hypot(v12.x, v12.y) || 1;
+              const a = {
+                x: p1.x + v10.x * (tIn / l10),
+                y: p1.y + v10.y * (tIn / l10),
+              };
+              const b = {
+                x: p1.x + v12.x * (tIn / l12),
+                y: p1.y + v12.y * (tIn / l12),
+              };
+              const m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
               const w = toWorld(m.x, m.y);
               addHandle(idx, w.x, w.y, 0, `RC-P-${i}`);
             }
           }
 
           // hit area: bounding box in local inches -> px, rotated like others
-          let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity; ptsIn.forEach(p=>{ if(p.x<minX) minX=p.x; if(p.y<minY) minY=p.y; if(p.x>maxX) maxX=p.x; if(p.y>maxY) maxY=p.y; });
-          const w = (maxX - minX) * 2, h = (maxY - minY) * 2; // px
-          hitAreas.push({ idx, cx:centerX, cy:centerY, w, h, rot:rotation||0 });
+          let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
+          ptsIn.forEach((p) => {
+            if (p.x < minX) minX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y > maxY) maxY = p.y;
+          });
+          const w = (maxX - minX) * 2,
+            h = (maxY - minY) * 2; // px
+          hitAreas.push({
+            idx,
+            cx: centerX,
+            cy: centerY,
+            w,
+            h,
+            rot: rotation || 0,
+          });
           // Label: at polygon center
-          drawShapeName(centerX, centerY, cur.name || `Shape ${idx+1}`);
+          drawShapeName(centerX, centerY, cur.name || `Shape ${idx + 1}`);
         }
 
         // end forEach
       });
 
-  // Draw hover highlight if any
-      if (hover >= 0){
-        const ha = hitAreas.find(h=> h.idx===hover);
-        if (ha){
-          const rotG = document.createElementNS(ns, 'g');
-          rotG.setAttribute('transform', `rotate(${ha.rot} ${ha.cx} ${ha.cy})`);
-          const hi = document.createElementNS(ns,'rect');
-          hi.setAttribute('x', String(ha.cx - ha.w/2 - 6));
-          hi.setAttribute('y', String(ha.cy - ha.h/2 - 6));
-          hi.setAttribute('width', String(ha.w + 12));
-          hi.setAttribute('height', String(ha.h + 12));
-          hi.setAttribute('fill','none'); hi.setAttribute('stroke','#8aa3ff'); hi.setAttribute('stroke-width','2'); hi.setAttribute('stroke-dasharray','4 4'); hi.setAttribute('opacity','0.8');
+      // Draw hover highlight if any
+      if (hover >= 0) {
+        const ha = hitAreas.find((h) => h.idx === hover);
+        if (ha) {
+          const rotG = document.createElementNS(ns, "g");
+          rotG.setAttribute("transform", `rotate(${ha.rot} ${ha.cx} ${ha.cy})`);
+          const hi = document.createElementNS(ns, "rect");
+          hi.setAttribute("x", String(ha.cx - ha.w / 2 - 6));
+          hi.setAttribute("y", String(ha.cy - ha.h / 2 - 6));
+          hi.setAttribute("width", String(ha.w + 12));
+          hi.setAttribute("height", String(ha.h + 12));
+          hi.setAttribute("fill", "none");
+          hi.setAttribute("stroke", "#8aa3ff");
+          hi.setAttribute("stroke-width", "2");
+          hi.setAttribute("stroke-dasharray", "4 4");
+          hi.setAttribute("opacity", "0.8");
           rotG.appendChild(hi);
           gRoot.appendChild(rotG);
         }
-  }
-  // After drawing vectors, sync inline numeric inputs
-  renderInlineInputs();
+      }
+      // After drawing vectors, sync inline numeric inputs
+      renderInlineInputs();
       // Hover value badge in Resize mode
-      if (toolMode==='resize' && hoverHandle && handles.length>0){
-        const hh = hoverHandle.h; const s = shapes[hoverHandle.idx];
-        if (s && hh){
-          const keyStr = String(hh.key||'');
-          const fmt = (v)=> `${Math.max(0, Math.round(Number(v||0)))}"`;
-          let txt = '';
-          if (keyStr==='A-right' || keyStr==='A-left') txt = fmt(s.len?.A||0);
-          else if (keyStr==='B-top' || keyStr==='B-bottom') txt = fmt(s.len?.B||0);
-          else if (keyStr==='C') txt = fmt(s.len?.C||0);
-          else if (keyStr==='D') txt = fmt(s.len?.D||0);
-          else if (keyStr==='BL') { const v=(s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25); txt = fmt(v); }
-          else if (keyStr==='BR') { const v=(s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25); txt = fmt(v); }
-          else if (keyStr==='E') txt = fmt(s.len?.E||0);
-          else if (keyStr==='H') txt = fmt(s.len?.H||0);
-          else if (keyStr.startsWith('P-')){
-            const i = parseInt(keyStr.split('-')[1]||'-1',10);
-            if (Array.isArray(s.points) && i>=0){ const a=s.points[i], b=s.points[(i+1)%s.points.length]; txt = fmt(Math.hypot((b.x-a.x),(b.y-a.y))); }
-          } else if (keyStr.startsWith('RC-')){
-            if (s.type==='poly'){
-              const i = parseInt(keyStr.split('-')[2]||'-1',10);
-              const v = (Array.isArray(s.corners) && s.corners[i]) ? s.corners[i].value : 0; txt = fmt(v);
-            } else {
-              const map = { 'RC-TL':'TL','RC-TR':'TR','RC-BR':'BR','RC-BL':'BL' };
-              const k = map[keyStr]||'TL'; const v = s.rcCorners?.[k]?.value || 0; txt = fmt(v);
+      if (toolMode === "resize" && hoverHandle && handles.length > 0) {
+        const hh = hoverHandle.h;
+        const s = shapes[hoverHandle.idx];
+        if (s && hh) {
+          const keyStr = String(hh.key || "");
+          const fmt = (v) => `${Math.max(0, Math.round(Number(v || 0)))}"`;
+          let txt = "";
+          if (keyStr === "A-right" || keyStr === "A-left")
+            txt = fmt(s.len?.A || 0);
+          else if (keyStr === "B-top" || keyStr === "B-bottom")
+            txt = fmt(s.len?.B || 0);
+          else if (keyStr === "C") txt = fmt(s.len?.C || 0);
+          else if (keyStr === "D") txt = fmt(s.len?.D || 0);
+          else if (keyStr === "BL") {
+            const v =
+              s.len?.BL != null ? s.len.BL : s.len?.B != null ? s.len.B : 25;
+            txt = fmt(v);
+          } else if (keyStr === "BR") {
+            const v =
+              s.len?.BR != null ? s.len.BR : s.len?.B != null ? s.len.B : 25;
+            txt = fmt(v);
+          } else if (keyStr === "E") txt = fmt(s.len?.E || 0);
+          else if (keyStr === "H") txt = fmt(s.len?.H || 0);
+          else if (keyStr.startsWith("P-")) {
+            const i = parseInt(keyStr.split("-")[1] || "-1", 10);
+            if (Array.isArray(s.points) && i >= 0) {
+              const a = s.points[i],
+                b = s.points[(i + 1) % s.points.length];
+              txt = fmt(Math.hypot(b.x - a.x, b.y - a.y));
             }
-          } else if (keyStr.startsWith('IC-')){
-            const map = { 'IC-TL':'iTL','IC-TR':'iTR','IC-BR':'iBR','IC-BL':'iBL' };
-            const k = map[keyStr]||'iTL'; const v = s.icCorners?.[k]?.value || 0; txt = fmt(v);
+          } else if (keyStr.startsWith("RC-")) {
+            if (s.type === "poly") {
+              const i = parseInt(keyStr.split("-")[2] || "-1", 10);
+              const v =
+                Array.isArray(s.corners) && s.corners[i]
+                  ? s.corners[i].value
+                  : 0;
+              txt = fmt(v);
+            } else {
+              const map = {
+                "RC-TL": "TL",
+                "RC-TR": "TR",
+                "RC-BR": "BR",
+                "RC-BL": "BL",
+              };
+              const k = map[keyStr] || "TL";
+              const v = s.rcCorners?.[k]?.value || 0;
+              txt = fmt(v);
+            }
+          } else if (keyStr.startsWith("IC-")) {
+            const map = {
+              "IC-TL": "iTL",
+              "IC-TR": "iTR",
+              "IC-BR": "iBR",
+              "IC-BL": "iBL",
+            };
+            const k = map[keyStr] || "iTL";
+            const v = s.icCorners?.[k]?.value || 0;
+            txt = fmt(v);
           }
-          if (txt){
-            const padX=12, padY=14;
-            const t=document.createElementNS(ns,'text');
-            t.setAttribute('x', String(hh.cx + padX));
-            t.setAttribute('y', String(hh.cy - padY));
-            t.setAttribute('font-size','12');
-            t.setAttribute('font-weight','800');
-            t.setAttribute('fill','#0f172a');
-            t.setAttribute('class','kc-hval');
+          if (txt) {
+            const padX = 12,
+              padY = 14;
+            const t = document.createElementNS(ns, "text");
+            t.setAttribute("x", String(hh.cx + padX));
+            t.setAttribute("y", String(hh.cy - padY));
+            t.setAttribute("font-size", "12");
+            t.setAttribute("font-weight", "800");
+            t.setAttribute("fill", "#0f172a");
+            t.setAttribute("class", "kc-hval");
             t.textContent = txt;
             gRoot.appendChild(t);
           }
@@ -1376,366 +2634,723 @@
       }
     }
     // Tool mode and panels (left palette)
-    root.querySelectorAll('[data-ct-tool-mode]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        mode = btn.getAttribute('data-ct-tool-mode') || 'move';
+    root.querySelectorAll("[data-ct-tool-mode]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        mode = btn.getAttribute("data-ct-tool-mode") || "move";
         // keep toolbar toolMode in sync so resize works regardless of control used
         toolMode = mode;
-        root.querySelectorAll('[data-ct-tool-mode]').forEach(b=> b.classList.remove('is-active'));
-        btn.classList.add('is-active');
+        root
+          .querySelectorAll("[data-ct-tool-mode]")
+          .forEach((b) => b.classList.remove("is-active"));
+        btn.classList.add("is-active");
         // mirror active state to toolbar buttons
-        root.querySelectorAll('.kc-ct-toolbar [data-ct-tool]').forEach(b=>{
-          const name = b.getAttribute('data-ct-tool') || 'move';
-          b.classList.toggle('is-active', name === toolMode);
+        root.querySelectorAll(".kc-ct-toolbar [data-ct-tool]").forEach((b) => {
+          const name = b.getAttribute("data-ct-tool") || "move";
+          b.classList.toggle("is-active", name === toolMode);
         });
-  // Open Measurements panel when choosing resize from left tiles
-  if (toolMode==='resize'){ const mbtn = sel('[data-ct-panel="measure"]', root); if (mbtn) mbtn.click(); }
+        // Open Measurements panel when choosing resize from left tiles
+        if (toolMode === "resize") {
+          const mbtn = sel('[data-ct-panel="measure"]', root);
+          if (mbtn) mbtn.click();
+        }
         // redraw to reflect handle visibility for the new mode
         draw();
       });
     });
-    root.querySelectorAll('[data-ct-panel]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const p = btn.getAttribute('data-ct-panel');
-        root.querySelectorAll('.kc-panel').forEach(panel=> panel.hidden = true);
-        const pane = sel('.kc-panel-' + p, root); if (pane) pane.hidden = false;
+    root.querySelectorAll("[data-ct-panel]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const p = btn.getAttribute("data-ct-panel");
+        root
+          .querySelectorAll(".kc-panel")
+          .forEach((panel) => (panel.hidden = true));
+        const pane = sel(".kc-panel-" + p, root);
+        if (pane) pane.hidden = false;
         // When switching to Measurements, refresh constraint hints
-        if (p==='measure'){ try{ updateConstraintsUI(); }catch(e){} }
+        if (p === "measure") {
+          try {
+            updateConstraintsUI();
+          } catch (e) {}
+        }
       });
     });
 
     // Create shapes from panel
-  root.querySelectorAll('[data-ct-shape]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
+    root.querySelectorAll("[data-ct-shape]").forEach((btn) => {
+      btn.addEventListener("click", () => {
         pushHistory();
-  const type = btn.getAttribute('data-ct-shape')||'rect';
-  const a = parseInt(btn.getAttribute('data-ct-len-a')||'60',10);
-  const b = parseInt(btn.getAttribute('data-ct-len-b')||'25',10);
-  const c = parseInt(btn.getAttribute('data-ct-len-c')|| (type==='rect'?'0':'20'),10);
-  const d = parseInt(btn.getAttribute('data-ct-len-d')|| (type==='rect'?'0':'10'),10);
-        const id='s'+(shapes.length+1);
-        if (type==='poly'){
-          const pts=[{x:-40,y:-30},{x:40,y:-30},{x:60,y:0},{x:10,y:40},{x:-30,y:20}];
+        const type = btn.getAttribute("data-ct-shape") || "rect";
+        const a = parseInt(btn.getAttribute("data-ct-len-a") || "60", 10);
+        const b = parseInt(btn.getAttribute("data-ct-len-b") || "25", 10);
+        const c = parseInt(
+          btn.getAttribute("data-ct-len-c") || (type === "rect" ? "0" : "20"),
+          10
+        );
+        const d = parseInt(
+          btn.getAttribute("data-ct-len-d") || (type === "rect" ? "0" : "10"),
+          10
+        );
+        const id = "s" + (shapes.length + 1);
+        if (type === "poly") {
+          const pts = [
+            { x: -40, y: -30 },
+            { x: 40, y: -30 },
+            { x: 60, y: 0 },
+            { x: 10, y: 40 },
+            { x: -30, y: 20 },
+          ];
           const bsPoly = new Array(pts.length).fill(true);
-          shapes.push({ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:pts, bsPoly, len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] });
+          shapes.push({
+            id,
+            name: "Shape " + (shapes.length + 1),
+            type: "poly",
+            rot: 0,
+            pos: { x: 300, y: 300 },
+            points: pts,
+            bsPoly,
+            len: { A: 0, B: 0, C: 0, D: 0 },
+            wall: { A: false, B: false, C: false, D: false },
+            bs: { A: false, B: false, C: false, D: false },
+            seams: [],
+          });
         } else {
-  const baseLen = {A:a,B:b,C:c,D:d};
-  if (type==='u'){
-    baseLen.E = Math.round((a - c)/2); baseLen.H = Math.round((a - c)/2);
-    baseLen.BL = (baseLen.B!=null) ? baseLen.B : 25;
-    baseLen.BR = (baseLen.B!=null) ? baseLen.B : 25;
-  }
-      const newShape = { id, name:'Shape '+(shapes.length+1), type, rot:0, pos:{x:300,y:300}, len:baseLen, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] };
-      shapes.push(normalizeShape(newShape));
+          const baseLen = { A: a, B: b, C: c, D: d };
+          if (type === "u") {
+            baseLen.E = Math.round((a - c) / 2);
+            baseLen.H = Math.round((a - c) / 2);
+            baseLen.BL = baseLen.B != null ? baseLen.B : 25;
+            baseLen.BR = baseLen.B != null ? baseLen.B : 25;
+          }
+          const newShape = {
+            id,
+            name: "Shape " + (shapes.length + 1),
+            type,
+            rot: 0,
+            pos: { x: 300, y: 300 },
+            len: baseLen,
+            wall: { A: false, B: false, C: false, D: false },
+            bs: { A: false, B: false, C: false, D: false },
+            seams: [],
+          };
+          shapes.push(normalizeShape(newShape));
         }
-        active = shapes.length-1; shapeLabel.textContent = shapes[active].name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
+        active = shapes.length - 1;
+        shapeLabel.textContent = shapes[active].name;
+        renderTabs();
+        syncInputs();
+        draw();
+        updateOversize();
+        updateActionStates();
+        updateSummary();
       });
     });
 
     // Free draw: click the tile to start adding vertices on canvas until Enter or double-click to finish
-    root.querySelectorAll('[data-ct-poly="free"]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-          pushHistory();
-        const id='s'+(shapes.length+1);
-  const s={ id, name:'Shape '+(shapes.length+1), type:'poly', rot:0, pos:{x:300,y:300}, points:[], bsPoly:[], len:{A:0,B:0,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] };
-        shapes.push(s); active=shapes.length-1; drawingPoly=true; drawingIdx=active; shapeLabel.textContent=s.name; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
+    root.querySelectorAll('[data-ct-poly="free"]').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        pushHistory();
+        const id = "s" + (shapes.length + 1);
+        const s = {
+          id,
+          name: "Shape " + (shapes.length + 1),
+          type: "poly",
+          rot: 0,
+          pos: { x: 300, y: 300 },
+          points: [],
+          bsPoly: [],
+          len: { A: 0, B: 0, C: 0, D: 0 },
+          wall: { A: false, B: false, C: false, D: false },
+          bs: { A: false, B: false, C: false, D: false },
+          seams: [],
+        };
+        shapes.push(s);
+        active = shapes.length - 1;
+        drawingPoly = true;
+        drawingIdx = active;
+        shapeLabel.textContent = s.name;
+        renderTabs();
+        syncInputs();
+        draw();
+        updateOversize();
+        updateActionStates();
+        updateSummary();
       });
     });
 
     // Layout presets
-    root.querySelectorAll('[data-ct-layout]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-          pushHistory();
-        const layout = btn.getAttribute('data-ct-layout');
-        const add = (type,len,pos)=>{ const id='s'+(shapes.length+1); shapes.push({ id, name:'Shape '+(shapes.length+1), type, rot:0, pos:pos||{x:300,y:300}, len, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false}, seams:[] }); active=shapes.length-1; };
-        if (layout==='straight'){
-          add('rect', {A:96,B:25,C:0,D:0}, {x:300,y:280});
-        } else if (layout==='galley-island'){
-          add('rect', {A:120,B:25,C:0,D:0}, {x:300,y:240});
-          add('rect', {A:72,B:36,C:0,D:0}, {x:300,y:360});
-        } else if (layout==='l-standard'){
-          add('l', {A:144,B:96,C:48,D:26}, {x:310,y:300});
-        } else if (layout==='l-island'){
-          add('l', {A:144,B:96,C:48,D:26}, {x:280,y:280});
-          add('rect', {A:60,B:36,C:0,D:0}, {x:420,y:360});
-        } else if (layout==='u-standard'){
-          add('u', {A:180,BL:100,BR:100,C:84,D:26,E:48,H:48}, {x:300,y:300});
-        } else if (layout==='peninsula'){
-          add('rect', {A:96,B:25,C:0,D:0}, {x:280,y:260});
-          add('rect', {A:60,B:25,C:0,D:0}, {x:360,y:340});
+    root.querySelectorAll("[data-ct-layout]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        pushHistory();
+        const layout = btn.getAttribute("data-ct-layout");
+        const add = (type, len, pos) => {
+          const id = "s" + (shapes.length + 1);
+          shapes.push({
+            id,
+            name: "Shape " + (shapes.length + 1),
+            type,
+            rot: 0,
+            pos: pos || { x: 300, y: 300 },
+            len,
+            wall: { A: false, B: false, C: false, D: false },
+            bs: { A: false, B: false, C: false, D: false },
+            seams: [],
+          });
+          active = shapes.length - 1;
+        };
+        if (layout === "straight") {
+          add("rect", { A: 96, B: 25, C: 0, D: 0 }, { x: 300, y: 280 });
+        } else if (layout === "galley-island") {
+          add("rect", { A: 120, B: 25, C: 0, D: 0 }, { x: 300, y: 240 });
+          add("rect", { A: 72, B: 36, C: 0, D: 0 }, { x: 300, y: 360 });
+        } else if (layout === "l-standard") {
+          add("l", { A: 144, B: 96, C: 48, D: 26 }, { x: 310, y: 300 });
+        } else if (layout === "l-island") {
+          add("l", { A: 144, B: 96, C: 48, D: 26 }, { x: 280, y: 280 });
+          add("rect", { A: 60, B: 36, C: 0, D: 0 }, { x: 420, y: 360 });
+        } else if (layout === "u-standard") {
+          add(
+            "u",
+            { A: 180, BL: 100, BR: 100, C: 84, D: 26, E: 48, H: 48 },
+            { x: 300, y: 300 }
+          );
+        } else if (layout === "peninsula") {
+          add("rect", { A: 96, B: 25, C: 0, D: 0 }, { x: 280, y: 260 });
+          add("rect", { A: 60, B: 25, C: 0, D: 0 }, { x: 360, y: 340 });
         }
-        shapeLabel.textContent = shapes[active]?.name || 'Shape'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary();
+        shapeLabel.textContent = shapes[active]?.name || "Shape";
+        renderTabs();
+        syncInputs();
+        draw();
+        updateOversize();
+        updateActionStates();
+        updateSummary();
       });
     });
 
     // Duplicate handler (reused for toolbar + sidebar)
-    const onDuplicate = ()=>{
-      if (active<0) return;
+    const onDuplicate = () => {
+      if (active < 0) return;
       pushHistory();
-      const s=shapes[active];
-      const copy=JSON.parse(JSON.stringify(s));
-      copy.id='s'+(shapes.length+1);
-      copy.name='Shape '+(shapes.length+1);
-      copy.pos={x:s.pos.x+20,y:s.pos.y+20};
-      shapes.push(copy); active=shapes.length-1;
-      shapeLabel.textContent=copy.name; renderTabs(); draw(); updateSummary(); save();
+      const s = shapes[active];
+      const copy = JSON.parse(JSON.stringify(s));
+      copy.id = "s" + (shapes.length + 1);
+      copy.name = "Shape " + (shapes.length + 1);
+      copy.pos = { x: s.pos.x + 20, y: s.pos.y + 20 };
+      shapes.push(copy);
+      active = shapes.length - 1;
+      shapeLabel.textContent = copy.name;
+      renderTabs();
+      draw();
+      updateSummary();
+      save();
     };
-    all('[data-ct-duplicate]', root).forEach(el=> el.addEventListener('click', onDuplicate));
+    all("[data-ct-duplicate]", root).forEach((el) =>
+      el.addEventListener("click", onDuplicate)
+    );
 
     // Measurement side letters A/B/C/D anchored to actual side centers with rotation
-    function labelDims(parent, cx, cy, A, B, rotDeg){
-      const ns='http://www.w3.org/2000/svg';
-      const px=(v)=> v*2; const w=px(Number(A||0)), h=px(Number(B||0));
-  const m=22; // outward offset (parent group handles rotation)
-      const label=(x,y,txt)=>{ const t=document.createElementNS(ns,'text'); t.setAttribute('x',String(x)); t.setAttribute('y',String(y)); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','12'); t.setAttribute('font-weight','600'); t.textContent=txt; parent.appendChild(t); };
+    function labelDims(parent, cx, cy, A, B, rotDeg) {
+      const ns = "http://www.w3.org/2000/svg";
+      const px = (v) => v * 2;
+      const w = px(Number(A || 0)),
+        h = px(Number(B || 0));
+      const m = 22; // outward offset (parent group handles rotation)
+      const label = (x, y, txt) => {
+        const t = document.createElementNS(ns, "text");
+        t.setAttribute("x", String(x));
+        t.setAttribute("y", String(y));
+        t.setAttribute("text-anchor", "middle");
+        t.setAttribute("font-size", "12");
+        t.setAttribute("font-weight", "600");
+        t.textContent = txt;
+        parent.appendChild(t);
+      };
       // A top
-      label(cx + 0, cy - h/2 - m, 'A');
+      label(cx + 0, cy - h / 2 - m, "A");
       // B left
-      label(cx - w/2 - m, cy + 0, 'B');
+      label(cx - w / 2 - m, cy + 0, "B");
       // C bottom
-      label(cx + 0, cy + h/2 + m, 'C');
+      label(cx + 0, cy + h / 2 + m, "C");
       // D right
-      label(cx + w/2 + m, cy + 0, 'D');
+      label(cx + w / 2 + m, cy + 0, "D");
     }
 
-  // (shape selection handled below in a single place)
+    // (shape selection handled below in a single place)
 
-  // Bind rotate controls across toolbar/sidebar
-  all('[data-ct-rotate-left]', root).forEach(el=> el.addEventListener('click', ()=>{ if(active<0) return; pushHistory(); shapes[active].rot = (shapes[active].rot + 270)%360; draw(); }));
-  all('[data-ct-rotate-right]', root).forEach(el=> el.addEventListener('click', ()=>{ if(active<0) return; pushHistory(); shapes[active].rot = (shapes[active].rot + 90)%360; draw(); }));
-  // Mirror (horizontal) control
-  all('[data-ct-mirror]', root).forEach(el=> el.addEventListener('click', ()=>{
-    if (active<0) return; const cur = shapes[active];
-    pushHistory();
-    if (cur.type==='l'){
-      cur.flipX = !cur.flipX;
-    } else if (cur.type==='u'){
-  // Mirror U: swap BL/BR depths, swap return lengths E/H, and swap backsplash flags E/H
-  if (cur.len){ const tmpBL = cur.len.BL; cur.len.BL = cur.len.BR; cur.len.BR = tmpBL; }
-  const eVal = Number(cur.len?.E||0), hVal = Number(cur.len?.H||0);
-  if (!cur.len) cur.len = {};
-  cur.len.E = hVal; cur.len.H = eVal;
-  if (cur.bs){
-    // swap E/H backsplash flags
-    const tmpEH = cur.bs.E; cur.bs.E = cur.bs.H; cur.bs.H = tmpEH;
-    // swap BL/BR backsplash flags
-    const tmpB = cur.bs.BL; cur.bs.BL = cur.bs.BR; cur.bs.BR = tmpB;
-  }
-  // swap wall flags for left/right sides and returns
-  if (cur.wall){
-    const tmpWLR = cur.wall.BL; cur.wall.BL = cur.wall.BR; cur.wall.BR = tmpWLR;
-    const tmpWEH = cur.wall.E; cur.wall.E = cur.wall.H; cur.wall.H = tmpWEH;
-  }
-  // swap outside corners TL<->TR and BL<->BR
-  if (!cur.rcCorners) cur.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
-  { const rc = cur.rcCorners; const t1 = rc.TL; rc.TL = rc.TR; rc.TR = t1; const t2 = rc.BL; rc.BL = rc.BR; rc.BR = t2; }
-  // swap inside top corners iTL <-> iTR
-  if (!cur.icCorners) cur.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-  { const ic = cur.icCorners; const t = ic.iTL; ic.iTL = ic.iTR; ic.iTR = t; ic.iBL = {mode:'square',value:0}; ic.iBR = {mode:'square',value:0}; }
-    } // rect/poly: no-op for now
-    draw(); updateConstraintsUI(); save();
-  }));
+    // Bind rotate controls across toolbar/sidebar
+    all("[data-ct-rotate-left]", root).forEach((el) =>
+      el.addEventListener("click", () => {
+        if (active < 0) return;
+        pushHistory();
+        shapes[active].rot = (shapes[active].rot + 270) % 360;
+        draw();
+      })
+    );
+    all("[data-ct-rotate-right]", root).forEach((el) =>
+      el.addEventListener("click", () => {
+        if (active < 0) return;
+        pushHistory();
+        shapes[active].rot = (shapes[active].rot + 90) % 360;
+        draw();
+      })
+    );
+    // Mirror (horizontal) control
+    all("[data-ct-mirror]", root).forEach((el) =>
+      el.addEventListener("click", () => {
+        if (active < 0) return;
+        const cur = shapes[active];
+        pushHistory();
+        if (cur.type === "l") {
+          cur.flipX = !cur.flipX;
+        } else if (cur.type === "u") {
+          // Mirror U: swap BL/BR depths, swap return lengths E/H, and swap backsplash flags E/H
+          if (cur.len) {
+            const tmpBL = cur.len.BL;
+            cur.len.BL = cur.len.BR;
+            cur.len.BR = tmpBL;
+          }
+          const eVal = Number(cur.len?.E || 0),
+            hVal = Number(cur.len?.H || 0);
+          if (!cur.len) cur.len = {};
+          cur.len.E = hVal;
+          cur.len.H = eVal;
+          if (cur.bs) {
+            // swap E/H backsplash flags
+            const tmpEH = cur.bs.E;
+            cur.bs.E = cur.bs.H;
+            cur.bs.H = tmpEH;
+            // swap BL/BR backsplash flags
+            const tmpB = cur.bs.BL;
+            cur.bs.BL = cur.bs.BR;
+            cur.bs.BR = tmpB;
+          }
+          // swap wall flags for left/right sides and returns
+          if (cur.wall) {
+            const tmpWLR = cur.wall.BL;
+            cur.wall.BL = cur.wall.BR;
+            cur.wall.BR = tmpWLR;
+            const tmpWEH = cur.wall.E;
+            cur.wall.E = cur.wall.H;
+            cur.wall.H = tmpWEH;
+          }
+          // swap outside corners TL<->TR and BL<->BR
+          if (!cur.rcCorners)
+            cur.rcCorners = {
+              TL: { mode: "square", value: 0 },
+              TR: { mode: "square", value: 0 },
+              BR: { mode: "square", value: 0 },
+              BL: { mode: "square", value: 0 },
+            };
+          {
+            const rc = cur.rcCorners;
+            const t1 = rc.TL;
+            rc.TL = rc.TR;
+            rc.TR = t1;
+            const t2 = rc.BL;
+            rc.BL = rc.BR;
+            rc.BR = t2;
+          }
+          // swap inside top corners iTL <-> iTR
+          if (!cur.icCorners)
+            cur.icCorners = {
+              iTL: { mode: "square", value: 0 },
+              iTR: { mode: "square", value: 0 },
+              iBR: { mode: "square", value: 0 },
+              iBL: { mode: "square", value: 0 },
+            };
+          {
+            const ic = cur.icCorners;
+            const t = ic.iTL;
+            ic.iTL = ic.iTR;
+            ic.iTR = t;
+            ic.iBL = { mode: "square", value: 0 };
+            ic.iBR = { mode: "square", value: 0 };
+          }
+        } // rect/poly: no-op for now
+        draw();
+        updateConstraintsUI();
+        save();
+      })
+    );
 
     // Delegated input handling for dynamic measurement fields
-  root.addEventListener('input', (ev)=>{
+    root.addEventListener("input", (ev) => {
       const inp = ev.target;
       if (!(inp instanceof HTMLElement)) return;
-      if (!inp.matches('[data-ct-len]')) return;
-      if (active<0) return;
+      if (!inp.matches("[data-ct-len]")) return;
+      if (active < 0) return;
       // Allow clearing field before new number is typed
-      if ((inp).value === ''){ return; }
+      if (inp.value === "") {
+        return;
+      }
       // Debounce history: record once per burst of input changes
-      if (!lenEditTimer){ pushHistory(); }
-  if (lenEditTimer) clearTimeout(lenEditTimer);
-  lenEditTimer = setTimeout(()=>{ lenEditTimer = null; }, 500);
+      if (!lenEditTimer) {
+        pushHistory();
+      }
+      if (lenEditTimer) clearTimeout(lenEditTimer);
+      lenEditTimer = setTimeout(() => {
+        lenEditTimer = null;
+      }, 500);
       const s = shapes[active];
-  const k = inp.getAttribute('data-ct-len');
-      let v = parseInt(inp.value||'0',10); if(!isFinite(v)||v<0) v=0;
-      if (s.type==='rect' && (k==='C' || k==='D')){
+      const k = inp.getAttribute("data-ct-len");
+      let v = parseInt(inp.value || "0", 10);
+      if (!isFinite(v) || v < 0) v = 0;
+      if (s.type === "rect" && (k === "C" || k === "D")) {
         // mirror to A/B
-        if (k==='C') s.len.A = v; else s.len.B = v;
-      } else if (s.type==='poly' && k && k.startsWith('P')){
-        const idx = parseInt(k.slice(1)||'0',10);
-        const pts = Array.isArray(s.points)? s.points: [];
-        if (idx>=0 && pts.length>=2){
-          const n = pts.length; const a = pts[idx]; const b = pts[(idx+1)%n];
-          const vx = (b.x - a.x); const vy = (b.y - a.y); const cur = Math.hypot(vx,vy)||1; const ux = vx/cur; const uy = vy/cur;
+        if (k === "C") s.len.A = v;
+        else s.len.B = v;
+      } else if (s.type === "poly" && k && k.startsWith("P")) {
+        const idx = parseInt(k.slice(1) || "0", 10);
+        const pts = Array.isArray(s.points) ? s.points : [];
+        if (idx >= 0 && pts.length >= 2) {
+          const n = pts.length;
+          const a = pts[idx];
+          const b = pts[(idx + 1) % n];
+          const vx = b.x - a.x;
+          const vy = b.y - a.y;
+          const cur = Math.hypot(vx, vy) || 1;
+          const ux = vx / cur;
+          const uy = vy / cur;
           // set new B along A-> dir with length v
-          pts[(idx+1)%n] = { x: Math.round(a.x + ux * v), y: Math.round(a.y + uy * v) };
+          pts[(idx + 1) % n] = {
+            x: Math.round(a.x + ux * v),
+            y: Math.round(a.y + uy * v),
+          };
         }
       } else {
         // Default assignment, then shape-specific clamps
-          const applyUVirtual=(virt, val)=>{
-          if (virt==='UA'){ // A -> outer top width (A)
+        const applyUVirtual = (virt, val) => {
+          if (virt === "UA") {
+            // A -> outer top width (A)
             s.len.A = Math.max(1, val);
             // Clamp E/H first so inner width >= 1
-            const A = s.len.A||0;
-            s.len.E = Math.max(0, Math.min(s.len.E||0, Math.max(0, A-1 - Math.max(0,s.len.H||0))));
-            s.len.H = Math.max(0, Math.min(s.len.H||0, Math.max(0, A-1 - Math.max(0,s.len.E||0))));
+            const A = s.len.A || 0;
+            s.len.E = Math.max(
+              0,
+              Math.min(
+                s.len.E || 0,
+                Math.max(0, A - 1 - Math.max(0, s.len.H || 0))
+              )
+            );
+            s.len.H = Math.max(
+              0,
+              Math.min(
+                s.len.H || 0,
+                Math.max(0, A - 1 - Math.max(0, s.len.E || 0))
+              )
+            );
             // recompute C from (A - E - H)
-            s.len.C = Math.max(1, A - Math.max(0,s.len.E||0) - Math.max(0,s.len.H||0));
+            s.len.C = Math.max(
+              1,
+              A - Math.max(0, s.len.E || 0) - Math.max(0, s.len.H || 0)
+            );
             return true;
           }
-          if (virt==='UB'){ // B -> BR (right depth)
+          if (virt === "UB") {
+            // B -> BR (right depth)
             s.len.BR = Math.max(1, val);
-            const m = Math.max(0, Math.min(Number(s.len.BL|| (s.len.B||25)), Number(s.len.BR)));
-            s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, m-1)));
+            const m = Math.max(
+              0,
+              Math.min(Number(s.len.BL || s.len.B || 25), Number(s.len.BR))
+            );
+            s.len.D = Math.max(
+              0,
+              Math.min(Number(s.len.D || 0), Math.max(0, m - 1))
+            );
             return true;
           }
-          if (virt==='UC'){ // C -> inner top span (C)
-            const A = Number(s.len.A||0);
+          if (virt === "UC") {
+            // C -> inner top span (C)
+            const A = Number(s.len.A || 0);
             // keep E/H proportionally centered when C changes
-            const newC = Math.max(1, Math.min(val, Math.max(1, A-1)));
+            const newC = Math.max(1, Math.min(val, Math.max(1, A - 1)));
             const spare = Math.max(0, A - newC);
-            const e = Math.floor(spare/2), h = spare - e;
-            s.len.C = newC; s.len.E = e; s.len.H = h;
+            const e = Math.floor(spare / 2),
+              h = spare - e;
+            s.len.C = newC;
+            s.len.E = e;
+            s.len.H = h;
             return true;
           }
-          if (virt==='UD'){ // D -> BL (left depth)
+          if (virt === "UD") {
+            // D -> BL (left depth)
             s.len.BL = Math.max(1, val);
-            const m = Math.max(0, Math.min(Number(s.len.BL), Number(s.len.BR|| (s.len.B||25))));
-            s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, m-1)));
+            const m = Math.max(
+              0,
+              Math.min(Number(s.len.BL), Number(s.len.BR || s.len.B || 25))
+            );
+            s.len.D = Math.max(
+              0,
+              Math.min(Number(s.len.D || 0), Math.max(0, m - 1))
+            );
             return true;
           }
-          if (virt==='UE'){ // E -> E (bottom left return)
-            s.len.E = Math.max(0, Math.min(val, Math.max(0, (s.len.A||0) - 1 - (s.len.H||0))));
-            s.len.C = Math.max(1, (s.len.A||0) - Math.max(0,s.len.E||0) - Math.max(0,s.len.H||0));
+          if (virt === "UE") {
+            // E -> E (bottom left return)
+            s.len.E = Math.max(
+              0,
+              Math.min(val, Math.max(0, (s.len.A || 0) - 1 - (s.len.H || 0)))
+            );
+            s.len.C = Math.max(
+              1,
+              (s.len.A || 0) -
+                Math.max(0, s.len.E || 0) -
+                Math.max(0, s.len.H || 0)
+            );
             return true;
           }
-          if (virt==='UF'){ // F -> inner setback (D)
-            const BL = Number((s.len.BL!=null)?s.len.BL:((s.len.B!=null)?s.len.B:25));
-            const BR = Number((s.len.BR!=null)?s.len.BR:((s.len.B!=null)?s.len.B:25));
+          if (virt === "UF") {
+            // F -> inner setback (D)
+            const BL = Number(
+              s.len.BL != null ? s.len.BL : s.len.B != null ? s.len.B : 25
+            );
+            const BR = Number(
+              s.len.BR != null ? s.len.BR : s.len.B != null ? s.len.B : 25
+            );
             const minSide = Math.max(0, Math.min(BL, BR));
-            s.len.D = Math.max(0, Math.min(val, Math.max(0, minSide-1)));
+            s.len.D = Math.max(0, Math.min(val, Math.max(0, minSide - 1)));
             return true;
           }
           return false;
         };
-        if (s.type==='u' && k && k.startsWith('U')){
+        if (s.type === "u" && k && k.startsWith("U")) {
           applyUVirtual(k, v);
         } else {
           s.len[k] = v;
         }
-        if (s.type==='u'){
-          const A = Number(s.len.A||0);
-          const BL = Number((s.len.BL!=null)?s.len.BL:(s.len.B!=null?s.len.B:25));
-          const BR = Number((s.len.BR!=null)?s.len.BR:(s.len.B!=null?s.len.B:25));
+        if (s.type === "u") {
+          const A = Number(s.len.A || 0);
+          const BL = Number(
+            s.len.BL != null ? s.len.BL : s.len.B != null ? s.len.B : 25
+          );
+          const BR = Number(
+            s.len.BR != null ? s.len.BR : s.len.B != null ? s.len.B : 25
+          );
           const minSide = Math.max(0, Math.min(BL, BR));
-          if (k==='E' || k==='H'){
-            if (k==='E'){ s.len.E = Math.max(0, Math.min(v, Math.max(0, A - 1 - (s.len.H||0)))); }
-            if (k==='H'){ s.len.H = Math.max(0, Math.min(v, Math.max(0, A - 1 - (s.len.E||0)))); }
-            s.len.C = Math.max(1, A - Math.max(0, (s.len.E||0)) - Math.max(0, (s.len.H||0)));
-          } else if (k==='D'){
-            s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, minSide-1)));
-          } else if (k==='C'){
+          if (k === "E" || k === "H") {
+            if (k === "E") {
+              s.len.E = Math.max(
+                0,
+                Math.min(v, Math.max(0, A - 1 - (s.len.H || 0)))
+              );
+            }
+            if (k === "H") {
+              s.len.H = Math.max(
+                0,
+                Math.min(v, Math.max(0, A - 1 - (s.len.E || 0)))
+              );
+            }
+            s.len.C = Math.max(
+              1,
+              A - Math.max(0, s.len.E || 0) - Math.max(0, s.len.H || 0)
+            );
+          } else if (k === "D") {
+            s.len.D = Math.max(
+              0,
+              Math.min(Number(s.len.D || 0), Math.max(0, minSide - 1))
+            );
+          } else if (k === "C") {
             // Update C by rebalancing E/H symmetrically to keep notch centered
-            const newC = Math.max(1, Math.min(v, Math.max(1, A-1)));
+            const newC = Math.max(1, Math.min(v, Math.max(1, A - 1)));
             const spare = Math.max(0, A - newC);
-            const e = Math.floor(spare/2), h = spare - e;
-            s.len.C = newC; s.len.E = e; s.len.H = h;
-          } else if (k==='BL' || k==='BR'){
+            const e = Math.floor(spare / 2),
+              h = spare - e;
+            s.len.C = newC;
+            s.len.E = e;
+            s.len.H = h;
+          } else if (k === "BL" || k === "BR") {
             // Clamp D to the new shallower side - 1
-            const nBL = Number((k==='BL'?v:(s.len.BL!=null?s.len.BL:(s.len.B!=null?s.len.B:25))));
-            const nBR = Number((k==='BR'?v:(s.len.BR!=null?s.len.BR:(s.len.B!=null?s.len.B:25))));
+            const nBL = Number(
+              k === "BL"
+                ? v
+                : s.len.BL != null
+                ? s.len.BL
+                : s.len.B != null
+                ? s.len.B
+                : 25
+            );
+            const nBR = Number(
+              k === "BR"
+                ? v
+                : s.len.BR != null
+                ? s.len.BR
+                : s.len.B != null
+                ? s.len.B
+                : 25
+            );
             const m = Math.max(0, Math.min(nBL, nBR));
-            s.len.D = Math.max(0, Math.min(Number(s.len.D||0), Math.max(0, m-1)));
+            s.len.D = Math.max(
+              0,
+              Math.min(Number(s.len.D || 0), Math.max(0, m - 1))
+            );
           }
         }
       }
-      draw(); updateOversize(); updateSummary(); updateConstraintsUI(); save();
+      draw();
+      updateOversize();
+      updateSummary();
+      updateConstraintsUI();
+      save();
     });
 
-    function updateOversize(){
+    function updateOversize() {
       // Any piece with any side over 120 inches triggers the alert
       const limit = 120;
-      const over = shapes.some(s=>{
-        const len = s.len||{};
-        const base = (Number(len.A||0)>limit) || (Number(len.B||0)>limit) || (Number(len.C||0)>limit) || (Number(len.D||0)>limit);
-        if (s.type==='u'){
-          const BL = Number((len.BL!=null)?len.BL:((len.B!=null)?len.B:0));
-          const BR = Number((len.BR!=null)?len.BR:((len.B!=null)?len.B:0));
-          return base || BL>limit || BR>limit;
+      const over = shapes.some((s) => {
+        const len = s.len || {};
+        const base =
+          Number(len.A || 0) > limit ||
+          Number(len.B || 0) > limit ||
+          Number(len.C || 0) > limit ||
+          Number(len.D || 0) > limit;
+        if (s.type === "u") {
+          const BL = Number(
+            len.BL != null ? len.BL : len.B != null ? len.B : 0
+          );
+          const BR = Number(
+            len.BR != null ? len.BR : len.B != null ? len.B : 0
+          );
+          return base || BL > limit || BR > limit;
         }
         return base;
       });
-  const alertEl = sel('[data-ct-alert]', root);
+      const alertEl = sel("[data-ct-alert]", root);
       if (alertEl) alertEl.hidden = !over;
     }
 
-  function updateActionStates(){
-  const del = sel('[data-ct-delete]', root);
-  const rst = sel('[data-ct-reset]', root);
-  if (del) del.disabled = shapes.length <= 0;
-  if (rst) rst.disabled = (active<0);
-  // Undo/Redo availability
-  const u = sel('[data-ct-undo]', root);
-  const r = sel('[data-ct-redo]', root);
-  const lock = !!isGestureActive;
-  if (u) u.disabled = lock || (_past.length <= 0);
-  if (r) r.disabled = lock || (_future.length <= 0);
-  // Gesture hint
-  const gh = sel('[data-ct-gesture-hint]', root);
-  if (gh) gh.hidden = !lock;
+    function updateActionStates() {
+      const del = sel("[data-ct-delete]", root);
+      const rst = sel("[data-ct-reset]", root);
+      if (del) del.disabled = shapes.length <= 0;
+      if (rst) rst.disabled = active < 0;
+      // Undo/Redo availability
+      const u = sel("[data-ct-undo]", root);
+      const r = sel("[data-ct-redo]", root);
+      const lock = !!isGestureActive;
+      if (u) u.disabled = lock || _past.length <= 0;
+      if (r) r.disabled = lock || _future.length <= 0;
+      // Gesture hint
+      const gh = sel("[data-ct-gesture-hint]", root);
+      if (gh) gh.hidden = !lock;
     }
 
     // Tabs handling
-    const tabsWrap = sel('[data-ct-tabs]', root);
-    function renderTabs(){
-      tabsWrap.innerHTML = '';
-    shapes.forEach((sh, idx)=>{
-  const b=document.createElement('button'); b.className='kc-ct-tab' + (idx===active?' is-active':''); b.type='button'; b.textContent=sh.name; b.addEventListener('click', ()=>{ active=idx; shapeLabel.textContent=sh.name; syncInputs(); draw(); updateOversize(); renderTabs(); }); tabsWrap.appendChild(b);
+    const tabsWrap = sel("[data-ct-tabs]", root);
+    function renderTabs() {
+      tabsWrap.innerHTML = "";
+      shapes.forEach((sh, idx) => {
+        const b = document.createElement("button");
+        b.className = "kc-ct-tab" + (idx === active ? " is-active" : "");
+        b.type = "button";
+        b.textContent = sh.name;
+        b.addEventListener("click", () => {
+          active = idx;
+          shapeLabel.textContent = sh.name;
+          syncInputs();
+          draw();
+          updateOversize();
+          renderTabs();
+        });
+        tabsWrap.appendChild(b);
       });
-  const add=document.createElement('button'); add.className='kc-ct-tab add'; add.type='button'; add.textContent='Add A Shape'; add.addEventListener('click', ()=>{ const panelBtn = sel('[data-ct-panel="shapes"]', root); if (panelBtn) panelBtn.click(); }); tabsWrap.appendChild(add);
+      const add = document.createElement("button");
+      add.className = "kc-ct-tab add";
+      add.type = "button";
+      add.textContent = "Add A Shape";
+      add.addEventListener("click", () => {
+        const panelBtn = sel('[data-ct-panel="shapes"]', root);
+        if (panelBtn) panelBtn.click();
+      });
+      tabsWrap.appendChild(add);
       updateActionStates();
     }
 
-  function syncInputs(){
+    function syncInputs() {
       const cur = shapes[active];
-      if (active<0 || !cur){
-        all('[data-ct-len]', root).forEach(inp=>{ inp.value = '0'; inp.disabled = true; });
-        all('[data-ct-wall]', root).forEach(inp=>{ inp.checked = false; inp.disabled = true; });
+      if (active < 0 || !cur) {
+        all("[data-ct-len]", root).forEach((inp) => {
+          inp.value = "0";
+          inp.disabled = true;
+        });
+        all("[data-ct-wall]", root).forEach((inp) => {
+          inp.checked = false;
+          inp.disabled = true;
+        });
         // clear dynamic backsplash list
-        const bsList = sel('[data-ct-bs-list]', root); if (bsList) bsList.innerHTML = '';
-        all('[data-ct-shape]', root).forEach(btn=> btn.classList.remove('is-active'));
-  const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
-  if (rowC) rowC.style.display='none'; if (rowD) rowD.style.display='none';
-  const flipWrap = sel('[data-ct-l-flip-wrap]', root); if (flipWrap) flipWrap.hidden = true;
-    const list = sel('[data-ct-meas-list]', root); if (list) list.innerHTML='';
+        const bsList = sel("[data-ct-bs-list]", root);
+        if (bsList) bsList.innerHTML = "";
+        all("[data-ct-shape]", root).forEach((btn) =>
+          btn.classList.remove("is-active")
+        );
+        const rowC = sel("[data-row-c]", root);
+        const rowD = sel("[data-row-d]", root);
+        if (rowC) rowC.style.display = "none";
+        if (rowD) rowD.style.display = "none";
+        const flipWrap = sel("[data-ct-l-flip-wrap]", root);
+        if (flipWrap) flipWrap.hidden = true;
+        const list = sel("[data-ct-meas-list]", root);
+        if (list) list.innerHTML = "";
       } else {
         // Build dynamic per-side inputs
-        const list = sel('[data-ct-meas-list]', root);
-        if (list){
-          list.innerHTML = '';
-          const addRow=(label,key)=>{
-            const row=document.createElement('div'); row.className='row';
-            if (opts.simpleUI){
+        const list = sel("[data-ct-meas-list]", root);
+        if (list) {
+          list.innerHTML = "";
+          const addRow = (label, key) => {
+            const row = document.createElement("div");
+            row.className = "row";
+            if (opts.simpleUI) {
               // Determine if this key supports wall or backsplash
-              const hasWall = !!(shapes[active] && shapes[active].wall && (key in shapes[active].wall));
-              const hasBS = !!(shapes[active] && shapes[active].bs && (key in shapes[active].bs));
+              const hasWall = !!(
+                shapes[active] &&
+                shapes[active].wall &&
+                key in shapes[active].wall
+              );
+              const hasBS = !!(
+                shapes[active] &&
+                shapes[active].bs &&
+                key in shapes[active].bs
+              );
               const wallChecked = hasWall ? !!shapes[active].wall[key] : false;
               const bsChecked = hasBS ? !!shapes[active].bs[key] : false;
-              const wallCtl = hasWall ? `<label class="opt"><input type="checkbox" data-ct-wall-inline="${key}" ${wallChecked? 'checked':''}/> Side against wall</label>` : '';
-              const bsCtl = hasBS ? `<label class="opt"><input type="checkbox" data-ct-backsplash-inline="${key}" ${bsChecked? 'checked':''}/> Add same-material backsplash</label>` : '';
+              const wallCtl = hasWall
+                ? `<label class="opt"><input type="checkbox" data-ct-wall-inline="${key}" ${
+                    wallChecked ? "checked" : ""
+                  }/> Side against wall</label>`
+                : "";
+              const bsCtl = hasBS
+                ? `<label class="opt"><input type="checkbox" data-ct-backsplash-inline="${key}" ${
+                    bsChecked ? "checked" : ""
+                  }/> Add same-material backsplash</label>`
+                : "";
               row.innerHTML = `<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="${key}" /></label><div class="opts">${wallCtl} ${bsCtl}</div>`;
             } else {
-              row.innerHTML=`<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="${key}" /></label>`;
+              row.innerHTML = `<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="${key}" /></label>`;
             }
             list.appendChild(row);
           };
-          if (cur.type==='rect'){
-            addRow('Top (A)','A'); addRow('Left (B)','B'); addRow('Bottom (C)','C'); addRow('Right (D)','D');
+          if (cur.type === "rect") {
+            addRow("Top (A)", "A");
+            addRow("Left (B)", "B");
+            addRow("Bottom (C)", "C");
+            addRow("Right (D)", "D");
             // Corner controls (outside corners)
-            if (!opts.simpleUI){
-            const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners'; list.appendChild(cornersHdr);
-            // Apply to all (Rect)
-            const allRowR=document.createElement('div'); allRowR.className='row';
-            allRowR.innerHTML = `<label><span>Apply to all</span>
+            if (!opts.simpleUI) {
+              const cornersHdr = document.createElement("div");
+              cornersHdr.className = "kc-subtle";
+              cornersHdr.textContent = "Corners";
+              list.appendChild(cornersHdr);
+              // Apply to all (Rect)
+              const allRowR = document.createElement("div");
+              allRowR.className = "row";
+              allRowR.innerHTML = `<label><span>Apply to all</span>
               <select data-ct-rc-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
               <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-all-val placeholder="size (in)" />
               <button type="button" class="kc-mini" data-ct-rc-corner-apply-all>Apply</button>
             </label>`;
-            list.appendChild(allRowR);
-            const mkC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+              list.appendChild(allRowR);
+              const mkC = (key, label) => {
+                const row = document.createElement("div");
+                row.className = "row";
+                row.innerHTML = `<label><span>${label}</span>
               <select data-ct-rc-corner-mode="${key}" title="Corner mode">
                 <option value="square">Square</option>
                 <option value="radius">Radius</option>
@@ -1748,21 +3363,36 @@
                 <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="1">1"</button>
                 <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="2">2"</button>
               </span>
-            </label>`; list.appendChild(row); };
-            mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
+            </label>`;
+                list.appendChild(row);
+              };
+              mkC("TL", "Corner TL");
+              mkC("TR", "Corner TR");
+              mkC("BR", "Corner BR");
+              mkC("BL", "Corner BL");
             }
-  } else if (cur.type==='l'){
-            addRow('Top (A)','A'); addRow('Left (B)','B'); addRow('Inner bottom run (C)','C'); addRow('Inner vertical (D)','D');
-            if (!opts.simpleUI){
-              const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners (outside)'; list.appendChild(cornersHdr);
-              const allRowL=document.createElement('div'); allRowL.className='row';
+          } else if (cur.type === "l") {
+            addRow("Top (A)", "A");
+            addRow("Left (B)", "B");
+            addRow("Inner bottom run (C)", "C");
+            addRow("Inner vertical (D)", "D");
+            if (!opts.simpleUI) {
+              const cornersHdr = document.createElement("div");
+              cornersHdr.className = "kc-subtle";
+              cornersHdr.textContent = "Corners (outside)";
+              list.appendChild(cornersHdr);
+              const allRowL = document.createElement("div");
+              allRowL.className = "row";
               allRowL.innerHTML = `<label><span>Apply to all</span>
                 <select data-ct-rc-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
                 <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-all-val placeholder="size (in)" />
                 <button type="button" class="kc-mini" data-ct-rc-corner-apply-all>Apply</button>
               </label>`;
               list.appendChild(allRowL);
-              const mkC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+              const mkC = (key, label) => {
+                const row = document.createElement("div");
+                row.className = "row";
+                row.innerHTML = `<label><span>${label}</span>
                 <select data-ct-rc-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
                 <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-val="${key}" placeholder="size (in)" />
                 <span class="kc-mini-btns">
@@ -1771,18 +3401,30 @@
                   <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="1">1"</button>
                   <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="2">2"</button>
                 </span>
-              </label>`; list.appendChild(row); };
-              mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
+              </label>`;
+                list.appendChild(row);
+              };
+              mkC("TL", "Corner TL");
+              mkC("TR", "Corner TR");
+              mkC("BR", "Corner BR");
+              mkC("BL", "Corner BL");
               // Inside corners for L (iTL, iBR)
-              const iHdr=document.createElement('div'); iHdr.className='kc-subtle'; iHdr.textContent='Inside Corners'; list.appendChild(iHdr);
-              const allRowLI=document.createElement('div'); allRowLI.className='row';
+              const iHdr = document.createElement("div");
+              iHdr.className = "kc-subtle";
+              iHdr.textContent = "Inside Corners";
+              list.appendChild(iHdr);
+              const allRowLI = document.createElement("div");
+              allRowLI.className = "row";
               allRowLI.innerHTML = `<label><span>Apply to both</span>
                 <select data-ct-ic-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
                 <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-all-val placeholder="size (in)" />
                 <button type="button" class="kc-mini" data-ct-ic-corner-apply-all>Apply</button>
               </label>`;
               list.appendChild(allRowLI);
-              const mkIC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+              const mkIC = (key, label) => {
+                const row = document.createElement("div");
+                row.className = "row";
+                row.innerHTML = `<label><span>${label}</span>
                 <select data-ct-ic-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
                 <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-val="${key}" placeholder="size (in)" />
                 <span class="kc-mini-btns">
@@ -1791,45 +3433,71 @@
                   <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="1">1"</button>
                   <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="2">2"</button>
                 </span>
-              </label>`; list.appendChild(row); };
-              mkIC('iTL','Inside TL'); mkIC('iBR','Inside BR');
+              </label>`;
+                list.appendChild(row);
+              };
+              mkIC("iTL", "Inside TL");
+              mkIC("iBR", "Inside BR");
             }
-          } else if (cur.type==='u'){
+          } else if (cur.type === "u") {
             // Present U as A–F like the legacy screenshot
-            const addURow=(label, virt)=>{
-              const row=document.createElement('div'); row.className='row';
-              if (opts.simpleUI){
+            const addURow = (label, virt) => {
+              const row = document.createElement("div");
+              row.className = "row";
+              if (opts.simpleUI) {
                 // Map legacy letters to internal wall/backsplash keys and initial checked state
-                const mapKey = { A:'H', B:'BR', C:'A', D:'BL', E:'E', F:'D' };
-                const wKey = (virt==='F') ? null : mapKey[virt];
-                const bKey = (virt==='F') ? null : mapKey[virt];
+                const mapKey = {
+                  A: "H",
+                  B: "BR",
+                  C: "A",
+                  D: "BL",
+                  E: "E",
+                  F: "D",
+                };
+                const wKey = virt === "F" ? null : mapKey[virt];
+                const bKey = virt === "F" ? null : mapKey[virt];
                 const wChecked = wKey ? !!(cur.wall && cur.wall[wKey]) : false;
                 const bChecked = bKey ? !!(cur.bs && cur.bs[bKey]) : false;
-                const wallCtl = wKey ? `<label class="opt"><input type="checkbox" data-ct-wall-inline="U-${virt}" ${wChecked?'checked':''}/> Side against wall</label>` : '';
-                const bsCtl = bKey ? `<label class="opt"><input type="checkbox" data-ct-backsplash-inline="U-${virt}" ${bChecked?'checked':''}/> Add same-material backsplash</label>` : '';
+                const wallCtl = wKey
+                  ? `<label class="opt"><input type="checkbox" data-ct-wall-inline="U-${virt}" ${
+                      wChecked ? "checked" : ""
+                    }/> Side against wall</label>`
+                  : "";
+                const bsCtl = bKey
+                  ? `<label class="opt"><input type="checkbox" data-ct-backsplash-inline="U-${virt}" ${
+                      bChecked ? "checked" : ""
+                    }/> Add same-material backsplash</label>`
+                  : "";
                 row.innerHTML = `<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="U${virt}" /></label><div class="opts">${wallCtl} ${bsCtl}</div>`;
               } else {
                 row.innerHTML = `<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="U${virt}" /></label>`;
               }
               list.appendChild(row);
             };
-            addURow('A','A'); // bottom right return (maps to H)
-            addURow('B','B'); // right depth (BR)
-            addURow('C','C'); // outer top width (A)
-            addURow('D','D'); // left depth (BL)
-            addURow('E','E'); // bottom left return (E)
-            addURow('F','F'); // inner setback (D)
-            if (!opts.simpleUI){
+            addURow("A", "A"); // bottom right return (maps to H)
+            addURow("B", "B"); // right depth (BR)
+            addURow("C", "C"); // outer top width (A)
+            addURow("D", "D"); // left depth (BL)
+            addURow("E", "E"); // bottom left return (E)
+            addURow("F", "F"); // inner setback (D)
+            if (!opts.simpleUI) {
               // Outside corner controls for U
-              const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners (outside)'; list.appendChild(cornersHdr);
-              const allRowU=document.createElement('div'); allRowU.className='row';
+              const cornersHdr = document.createElement("div");
+              cornersHdr.className = "kc-subtle";
+              cornersHdr.textContent = "Corners (outside)";
+              list.appendChild(cornersHdr);
+              const allRowU = document.createElement("div");
+              allRowU.className = "row";
               allRowU.innerHTML = `<label><span>Apply to all</span>
                 <select data-ct-rc-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
                 <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-all-val placeholder="size (in)" />
                 <button type="button" class="kc-mini" data-ct-rc-corner-apply-all>Apply</button>
               </label>`;
               list.appendChild(allRowU);
-              const mkC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+              const mkC = (key, label) => {
+                const row = document.createElement("div");
+                row.className = "row";
+                row.innerHTML = `<label><span>${label}</span>
                 <select data-ct-rc-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
                 <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-rc-corner-val="${key}" placeholder="size (in)" />
                 <span class="kc-mini-btns">
@@ -1838,18 +3506,30 @@
                   <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="1">1"</button>
                   <button type="button" class="kc-mini" data-ct-rc-corner-preset data-key="${key}" data-value="2">2"</button>
                 </span>
-              </label>`; list.appendChild(row); };
-              mkC('TL','Corner TL'); mkC('TR','Corner TR'); mkC('BR','Corner BR'); mkC('BL','Corner BL');
+              </label>`;
+                list.appendChild(row);
+              };
+              mkC("TL", "Corner TL");
+              mkC("TR", "Corner TR");
+              mkC("BR", "Corner BR");
+              mkC("BL", "Corner BL");
               // Inside corners for U: only the inner top corners exist (no inner-bottom span)
-              const iHdr=document.createElement('div'); iHdr.className='kc-subtle'; iHdr.textContent='Inside Corners (top only)'; list.appendChild(iHdr);
-              const allRowUI=document.createElement('div'); allRowUI.className='row';
+              const iHdr = document.createElement("div");
+              iHdr.className = "kc-subtle";
+              iHdr.textContent = "Inside Corners (top only)";
+              list.appendChild(iHdr);
+              const allRowUI = document.createElement("div");
+              allRowUI.className = "row";
               allRowUI.innerHTML = `<label><span>Apply to both</span>
                 <select data-ct-ic-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
                 <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-all-val placeholder="size (in)" />
                 <button type="button" class="kc-mini" data-ct-ic-corner-apply-all>Apply</button>
               </label>`;
               list.appendChild(allRowUI);
-              const mkIC=(key,label)=>{ const row=document.createElement('div'); row.className='row'; row.innerHTML=`<label><span>${label}</span>
+              const mkIC = (key, label) => {
+                const row = document.createElement("div");
+                row.className = "row";
+                row.innerHTML = `<label><span>${label}</span>
                 <select data-ct-ic-corner-mode="${key}"><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
                 <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-ic-corner-val="${key}" placeholder="size (in)" />
                 <span class="kc-mini-btns">
@@ -1858,26 +3538,38 @@
                   <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="1">1"</button>
                   <button type="button" class="kc-mini" data-ct-ic-corner-preset data-key="${key}" data-value="2">2"</button>
                 </span>
-              </label>`; list.appendChild(row); };
-              mkIC('iTL','Inside TL'); mkIC('iTR','Inside TR');
+              </label>`;
+                list.appendChild(row);
+              };
+              mkIC("iTL", "Inside TL");
+              mkIC("iTR", "Inside TR");
             }
-          } else if (cur.type==='poly'){
-            const n = (Array.isArray(cur.points)?cur.points.length:0); for(let i=0;i<n;i++){ const letter=String.fromCharCode(65+i); addRow(`Side ${letter}`, `P${i}`); }
+          } else if (cur.type === "poly") {
+            const n = Array.isArray(cur.points) ? cur.points.length : 0;
+            for (let i = 0; i < n; i++) {
+              const letter = String.fromCharCode(65 + i);
+              addRow(`Side ${letter}`, `P${i}`);
+            }
             // Corner controls for polygon
-            if (!opts.simpleUI){
-            const cornersHdr=document.createElement('div'); cornersHdr.className='kc-subtle'; cornersHdr.textContent='Corners'; list.appendChild(cornersHdr);
-            // Apply to all (Poly)
-            const allRowP=document.createElement('div'); allRowP.className='row';
-            allRowP.innerHTML = `<label><span>Apply to all</span>
+            if (!opts.simpleUI) {
+              const cornersHdr = document.createElement("div");
+              cornersHdr.className = "kc-subtle";
+              cornersHdr.textContent = "Corners";
+              list.appendChild(cornersHdr);
+              // Apply to all (Poly)
+              const allRowP = document.createElement("div");
+              allRowP.className = "row";
+              allRowP.innerHTML = `<label><span>Apply to all</span>
               <select data-ct-corner-all-mode><option value="square">Square</option><option value="radius">Radius</option><option value="clip">Clip</option></select>
               <input type="number" min="0" step="0.25" class="kc-input-small" data-ct-corner-all-val placeholder="size (in)" />
               <button type="button" class="kc-mini" data-ct-corner-apply-all>Apply</button>
             </label>`;
-            list.appendChild(allRowP);
-            const mkCorner=(i)=>{
-              const letter=String.fromCharCode(65+i);
-              const row=document.createElement('div'); row.className='row';
-              row.innerHTML = `<label><span>Corner ${letter}</span>
+              list.appendChild(allRowP);
+              const mkCorner = (i) => {
+                const letter = String.fromCharCode(65 + i);
+                const row = document.createElement("div");
+                row.className = "row";
+                row.innerHTML = `<label><span>Corner ${letter}</span>
                 <select data-ct-corner-mode="${i}" title="Corner mode: Square keeps sharp; Radius adds an arc; Clip cuts corner straight">
                   <option value="square">Square</option>
                   <option value="radius">Radius</option>
@@ -1891,1139 +3583,2239 @@
                   <button type="button" class="kc-mini" data-ct-corner-preset data-index="${i}" data-value="2" title="Set 2 inches">2"</button>
                 </span>
               </label>`;
-              list.appendChild(row);
-            };
-            for (let i=0;i<n;i++){ mkCorner(i); }
+                list.appendChild(row);
+              };
+              for (let i = 0; i < n; i++) {
+                mkCorner(i);
+              }
             }
           }
         }
         // Build dynamic backsplash options per shape (hidden in simple UI; handled inline per row)
-        const bsList = sel('[data-ct-bs-list]', root);
-        if (bsList){
-          if (opts.simpleUI){ bsList.innerHTML = ''; }
-          else {
-          bsList.innerHTML = '';
-          const mk = (key, label)=>{
-            const lab = document.createElement('label'); lab.className='kc-meas opt';
-            const id = `bs_${key}`;
-            lab.innerHTML = `<input type="checkbox" id="${id}" data-ct-backsplash="${key}" /> ${label}`;
-            bsList.appendChild(lab);
-            const inp = lab.querySelector('input'); if (inp){ inp.checked = !!(cur.bs && cur.bs[key]); inp.disabled = false; }
-          };
-          if (cur.type==='rect' || cur.type==='l'){
-            ['A','B','C','D'].forEach(s=> mk(s, sideLabel(s)));
-          } else if (cur.type==='u'){
-            // migrate and ensure keys: use BL/BR instead of legacy B; omit D for U backsplash
-            if (!cur.bs) cur.bs = {A:false,BL:false,BR:false,C:false,E:false,H:false};
-            // Legacy migration: if B existed, apply to both BL and BR (do not render B anymore)
-            if (cur.bs.B!=null){
-              if (cur.bs.BL==null) cur.bs.BL = !!cur.bs.B;
-              if (cur.bs.BR==null) cur.bs.BR = !!cur.bs.B;
-            }
-            if (cur.bs.BL==null) cur.bs.BL=false; if (cur.bs.BR==null) cur.bs.BR=false;
-            if (cur.bs.E==null) cur.bs.E=false; if (cur.bs.H==null) cur.bs.H=false;
-            ['A','BL','BR','C','D','E','H'].forEach(s=> mk(s, sideLabel(s)));
-          } else if (cur.type==='poly'){
-            const n = Array.isArray(cur.points) ? cur.points.length : 0;
-            if (!Array.isArray(cur.bsPoly)) cur.bsPoly = new Array(n).fill(false);
-            if (cur.bsPoly.length !== n){
-              const old = cur.bsPoly.slice(0);
-              const next = new Array(n).fill(false);
-              for (let i=0;i<Math.min(old.length, next.length);i++){ next[i] = !!old[i]; }
-              cur.bsPoly = next;
-            }
-            // Ensure corners array matches vertices
-            if (!Array.isArray(cur.corners)) cur.corners = new Array(n).fill(null);
-            if (cur.corners.length !== n){
-              const old = cur.corners.slice(0);
-              const next = new Array(n).fill(null);
-              for (let i=0;i<Math.min(old.length, next.length);i++){ next[i] = old[i]; }
-              cur.corners = next;
-            }
-            for (let i=0;i<n;i++){
-              const letter = String.fromCharCode(65+i);
-              const key = `P${i}`;
-              const lab = document.createElement('label'); lab.className='kc-meas opt';
-              const id = `bs_${key}`;
-              lab.innerHTML = `<input type="checkbox" id="${id}" data-ct-backsplash="${key}" /> Side ${letter}`;
-              bsList.appendChild(lab);
-              const inp = lab.querySelector('input'); if (inp){ inp.checked = !!cur.bsPoly[i]; inp.disabled = false; }
-            }
+        const bsList = sel("[data-ct-bs-list]", root);
+        if (bsList) {
+          if (opts.simpleUI) {
+            bsList.innerHTML = "";
           } else {
-            // default to A-D if unknown
-            ['A','B','C','D'].forEach(s=> mk(s, sideLabel(s)));
-          }
+            bsList.innerHTML = "";
+            const mk = (key, label) => {
+              const lab = document.createElement("label");
+              lab.className = "kc-meas opt";
+              const id = `bs_${key}`;
+              lab.innerHTML = `<input type="checkbox" id="${id}" data-ct-backsplash="${key}" /> ${label}`;
+              bsList.appendChild(lab);
+              const inp = lab.querySelector("input");
+              if (inp) {
+                inp.checked = !!(cur.bs && cur.bs[key]);
+                inp.disabled = false;
+              }
+            };
+            if (cur.type === "rect" || cur.type === "l") {
+              ["A", "B", "C", "D"].forEach((s) => mk(s, sideLabel(s)));
+            } else if (cur.type === "u") {
+              // migrate and ensure keys: use BL/BR instead of legacy B; omit D for U backsplash
+              if (!cur.bs)
+                cur.bs = {
+                  A: false,
+                  BL: false,
+                  BR: false,
+                  C: false,
+                  E: false,
+                  H: false,
+                };
+              // Legacy migration: if B existed, apply to both BL and BR (do not render B anymore)
+              if (cur.bs.B != null) {
+                if (cur.bs.BL == null) cur.bs.BL = !!cur.bs.B;
+                if (cur.bs.BR == null) cur.bs.BR = !!cur.bs.B;
+              }
+              if (cur.bs.BL == null) cur.bs.BL = false;
+              if (cur.bs.BR == null) cur.bs.BR = false;
+              if (cur.bs.E == null) cur.bs.E = false;
+              if (cur.bs.H == null) cur.bs.H = false;
+              ["A", "BL", "BR", "C", "D", "E", "H"].forEach((s) =>
+                mk(s, sideLabel(s))
+              );
+            } else if (cur.type === "poly") {
+              const n = Array.isArray(cur.points) ? cur.points.length : 0;
+              if (!Array.isArray(cur.bsPoly))
+                cur.bsPoly = new Array(n).fill(false);
+              if (cur.bsPoly.length !== n) {
+                const old = cur.bsPoly.slice(0);
+                const next = new Array(n).fill(false);
+                for (let i = 0; i < Math.min(old.length, next.length); i++) {
+                  next[i] = !!old[i];
+                }
+                cur.bsPoly = next;
+              }
+              // Ensure corners array matches vertices
+              if (!Array.isArray(cur.corners))
+                cur.corners = new Array(n).fill(null);
+              if (cur.corners.length !== n) {
+                const old = cur.corners.slice(0);
+                const next = new Array(n).fill(null);
+                for (let i = 0; i < Math.min(old.length, next.length); i++) {
+                  next[i] = old[i];
+                }
+                cur.corners = next;
+              }
+              for (let i = 0; i < n; i++) {
+                const letter = String.fromCharCode(65 + i);
+                const key = `P${i}`;
+                const lab = document.createElement("label");
+                lab.className = "kc-meas opt";
+                const id = `bs_${key}`;
+                lab.innerHTML = `<input type="checkbox" id="${id}" data-ct-backsplash="${key}" /> Side ${letter}`;
+                bsList.appendChild(lab);
+                const inp = lab.querySelector("input");
+                if (inp) {
+                  inp.checked = !!cur.bsPoly[i];
+                  inp.disabled = false;
+                }
+              }
+            } else {
+              // default to A-D if unknown
+              ["A", "B", "C", "D"].forEach((s) => mk(s, sideLabel(s)));
+            }
           }
         }
-    // Show L flip control for L shapes
-    const flipWrap = sel('[data-ct-l-flip-wrap]', root);
-    const flipInp = sel('[data-ct-l-flip]', root);
-    if (flipWrap && flipInp){ flipWrap.hidden = cur.type!=='l'; flipInp.checked = !!cur.flipX; }
-  all('[data-ct-len]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-len'); let v=0; if (cur.type==='poly' && k && k.startsWith('P')){ const idx=parseInt(k.slice(1)||'0',10); const pts=cur.points||[]; if (pts.length>=2){ const a=pts[idx], b=pts[(idx+1)%pts.length]; v=Math.round(Math.hypot((b.x-a.x),(b.y-a.y))); } } else if (cur.type==='u' && k && k.startsWith('U')){ const mapVal=(virt)=>{ if (virt==='UA') return Number(cur.len?.A||0); if (virt==='UB') return Number((cur.len?.BR!=null)?cur.len.BR:((cur.len?.B!=null)?cur.len.B:25)); if (virt==='UC') return Number(cur.len?.C||0); if (virt==='UD') return Number((cur.len?.BL!=null)?cur.len.BL:((cur.len?.B!=null)?cur.len.B:25)); if (virt==='UE') return Number(cur.len?.E||0); if (virt==='UF') return Number(cur.len?.D||0); return 0; }; v = mapVal(k); } else { if (cur.type==='u' && (k==='BL' || k==='BR')){ if (k==='BL'){ v = (cur.len && cur.len.BL!=null) ? cur.len.BL : (cur.len && cur.len.B!=null ? cur.len.B : 25); } else { v = (cur.len && cur.len.BR!=null) ? cur.len.BR : (cur.len && cur.len.B!=null ? cur.len.B : 25); } } else { v = (cur.len && k in cur.len) ? cur.len[k] : 0; } } const activeEl=document.activeElement; inp.value = String(v||0); if (activeEl===inp) inp.focus(); });
-  all('[data-ct-wall]', root).forEach(inp=>{ inp.disabled=false; const k=inp.getAttribute('data-ct-wall'); inp.checked = !!cur.wall[k]; });
-        all('[data-ct-shape]', root).forEach(btn=> btn.classList.toggle('is-active', btn.getAttribute('data-ct-shape')===cur.type));
-    const rowC = sel('[data-row-c]', root); const rowD = sel('[data-row-d]', root);
-  if (rowC) rowC.style.display='none'; if (rowD) rowD.style.display='none';
+        // Show L flip control for L shapes
+        const flipWrap = sel("[data-ct-l-flip-wrap]", root);
+        const flipInp = sel("[data-ct-l-flip]", root);
+        if (flipWrap && flipInp) {
+          flipWrap.hidden = cur.type !== "l";
+          flipInp.checked = !!cur.flipX;
+        }
+        all("[data-ct-len]", root).forEach((inp) => {
+          inp.disabled = false;
+          const k = inp.getAttribute("data-ct-len");
+          let v = 0;
+          if (cur.type === "poly" && k && k.startsWith("P")) {
+            const idx = parseInt(k.slice(1) || "0", 10);
+            const pts = cur.points || [];
+            if (pts.length >= 2) {
+              const a = pts[idx],
+                b = pts[(idx + 1) % pts.length];
+              v = Math.round(Math.hypot(b.x - a.x, b.y - a.y));
+            }
+          } else if (cur.type === "u" && k && k.startsWith("U")) {
+            const mapVal = (virt) => {
+              if (virt === "UA") return Number(cur.len?.A || 0);
+              if (virt === "UB")
+                return Number(
+                  cur.len?.BR != null
+                    ? cur.len.BR
+                    : cur.len?.B != null
+                    ? cur.len.B
+                    : 25
+                );
+              if (virt === "UC") return Number(cur.len?.C || 0);
+              if (virt === "UD")
+                return Number(
+                  cur.len?.BL != null
+                    ? cur.len.BL
+                    : cur.len?.B != null
+                    ? cur.len.B
+                    : 25
+                );
+              if (virt === "UE") return Number(cur.len?.E || 0);
+              if (virt === "UF") return Number(cur.len?.D || 0);
+              return 0;
+            };
+            v = mapVal(k);
+          } else {
+            if (cur.type === "u" && (k === "BL" || k === "BR")) {
+              if (k === "BL") {
+                v =
+                  cur.len && cur.len.BL != null
+                    ? cur.len.BL
+                    : cur.len && cur.len.B != null
+                    ? cur.len.B
+                    : 25;
+              } else {
+                v =
+                  cur.len && cur.len.BR != null
+                    ? cur.len.BR
+                    : cur.len && cur.len.B != null
+                    ? cur.len.B
+                    : 25;
+              }
+            } else {
+              v = cur.len && k in cur.len ? cur.len[k] : 0;
+            }
+          }
+          const activeEl = document.activeElement;
+          inp.value = String(v || 0);
+          if (activeEl === inp) inp.focus();
+        });
+        all("[data-ct-wall]", root).forEach((inp) => {
+          inp.disabled = false;
+          const k = inp.getAttribute("data-ct-wall");
+          inp.checked = !!cur.wall[k];
+        });
+        all("[data-ct-shape]", root).forEach((btn) =>
+          btn.classList.toggle(
+            "is-active",
+            btn.getAttribute("data-ct-shape") === cur.type
+          )
+        );
+        const rowC = sel("[data-row-c]", root);
+        const rowD = sel("[data-row-d]", root);
+        if (rowC) rowC.style.display = "none";
+        if (rowD) rowD.style.display = "none";
         // Update constraint hints for current selection
-        try{ updateConstraintsUI(); }catch(e){}
+        try {
+          updateConstraintsUI();
+        } catch (e) {}
       }
-      const bsH = sel('[data-ct-bs-height]', root); if (bsH) bsH.value = String(opts.bsHeight||0);
+      const bsH = sel("[data-ct-bs-height]", root);
+      if (bsH) bsH.value = String(opts.bsHeight || 0);
       // Sync Rect/L/U outside corner controls
-      if (cur && (cur.type==='rect' || cur.type==='l' || cur.type==='u')){
-        if (!cur.rcCorners) cur.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
-        ['TL','TR','BR','BL'].forEach(k=>{
+      if (
+        cur &&
+        (cur.type === "rect" || cur.type === "l" || cur.type === "u")
+      ) {
+        if (!cur.rcCorners)
+          cur.rcCorners = {
+            TL: { mode: "square", value: 0 },
+            TR: { mode: "square", value: 0 },
+            BR: { mode: "square", value: 0 },
+            BL: { mode: "square", value: 0 },
+          };
+        ["TL", "TR", "BR", "BL"].forEach((k) => {
           const selEl = sel(`[data-ct-rc-corner-mode="${k}"]`, root);
           const valEl = sel(`[data-ct-rc-corner-val="${k}"]`, root);
-          const c = cur.rcCorners[k]||{mode:'square',value:0};
-          if (selEl) selEl.value = c.mode||'square';
-          if (valEl) valEl.value = String(c.value||0);
+          const c = cur.rcCorners[k] || { mode: "square", value: 0 };
+          if (selEl) selEl.value = c.mode || "square";
+          if (valEl) valEl.value = String(c.value || 0);
         });
-        if (cur.type==='l' || cur.type==='u'){
-          if (!cur.icCorners) cur.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-          const keys = (cur.type==='u') ? ['iTL','iTR'] : ['iTL','iTR','iBR','iBL'];
-          keys.forEach(k=>{
+        if (cur.type === "l" || cur.type === "u") {
+          if (!cur.icCorners)
+            cur.icCorners = {
+              iTL: { mode: "square", value: 0 },
+              iTR: { mode: "square", value: 0 },
+              iBR: { mode: "square", value: 0 },
+              iBL: { mode: "square", value: 0 },
+            };
+          const keys =
+            cur.type === "u" ? ["iTL", "iTR"] : ["iTL", "iTR", "iBR", "iBL"];
+          keys.forEach((k) => {
             const selEl = sel(`[data-ct-ic-corner-mode="${k}"]`, root);
             const valEl = sel(`[data-ct-ic-corner-val="${k}"]`, root);
-            const c = cur.icCorners[k]||{mode:'square',value:0};
-            if (selEl) selEl.value = c.mode||'square';
-            if (valEl) valEl.value = String(c.value||0);
+            const c = cur.icCorners[k] || { mode: "square", value: 0 };
+            if (selEl) selEl.value = c.mode || "square";
+            if (valEl) valEl.value = String(c.value || 0);
           });
         }
       }
       // Sync polygon corner controls
-      if (cur && cur.type==='poly'){
-        const n = Array.isArray(cur.points)?cur.points.length:0;
+      if (cur && cur.type === "poly") {
+        const n = Array.isArray(cur.points) ? cur.points.length : 0;
         if (!Array.isArray(cur.corners)) cur.corners = new Array(n).fill(null);
-        for (let i=0;i<n;i++){
+        for (let i = 0; i < n; i++) {
           const selEl = sel(`[data-ct-corner-mode="${i}"]`, root);
           const valEl = sel(`[data-ct-corner-val="${i}"]`, root);
-          const c = cur.corners[i] || {mode:'square', value:0};
-          if (selEl) selEl.value = c.mode || 'square';
-          if (valEl) valEl.value = String(c.value||0);
+          const c = cur.corners[i] || { mode: "square", value: 0 };
+          if (selEl) selEl.value = c.mode || "square";
+          if (valEl) valEl.value = String(c.value || 0);
         }
       }
     }
 
     // Show light constraint hints in the Measurements panel
-    function updateConstraintsUI(){
-      const box = sel('[data-ct-constraints]', root);
-      if (!box){ return; }
-      if (active<0 || !shapes[active]){ box.hidden = true; box.textContent = ''; return; }
+    function updateConstraintsUI() {
+      const box = sel("[data-ct-constraints]", root);
+      if (!box) {
+        return;
+      }
+      if (active < 0 || !shapes[active]) {
+        box.hidden = true;
+        box.textContent = "";
+        return;
+      }
       const s = shapes[active];
-      if (s.type==='u'){
-        const A = Number(s.len?.A||0);
-        const BL = Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25));
-        const BR = Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25));
-        const C = Number(s.len?.C||0);
+      if (s.type === "u") {
+        const A = Number(s.len?.A || 0);
+        const BL = Number(
+          s.len?.BL != null ? s.len.BL : s.len?.B != null ? s.len.B : 25
+        );
+        const BR = Number(
+          s.len?.BR != null ? s.len.BR : s.len?.B != null ? s.len.B : 25
+        );
+        const C = Number(s.len?.C || 0);
         const minSide = Math.max(0, Math.min(BL, BR));
         const dMax = Math.max(0, minSide - 1);
-        box.innerHTML = `D ≤ min(BL, BR) − 1 = <strong>${dMax}</strong>. E + H = A − C = <strong>${Math.max(0, A - C)}</strong>`;
+        box.innerHTML = `D ≤ min(BL, BR) − 1 = <strong>${dMax}</strong>. E + H = A − C = <strong>${Math.max(
+          0,
+          A - C
+        )}</strong>`;
         box.hidden = false;
-      } else if (s.type==='l'){
-        const B = Number(s.len?.B||0);
-        box.innerHTML = `D ≤ B − 1 = <strong>${Math.max(0, B-1)}</strong>. C ≤ A − 1`;
+      } else if (s.type === "l") {
+        const B = Number(s.len?.B || 0);
+        box.innerHTML = `D ≤ B − 1 = <strong>${Math.max(
+          0,
+          B - 1
+        )}</strong>. C ≤ A − 1`;
         box.hidden = false;
       } else {
-        box.hidden = true; box.textContent = '';
+        box.hidden = true;
+        box.textContent = "";
       }
     }
 
-    function sideLabel(s){
-      if (s==='A') return 'Top (A)';
-  if (s==='B') return 'Left (B)';
-  if (s==='BL') return 'Left (B-L)';
-  if (s==='BR') return 'Right (B-R)';
-  if (s==='C') return 'Inner top (C)';
-  if (s==='D') return 'Inner verticals (D)';
-  if (s==='E') return 'Bottom left return (E)';
-  if (s==='H') return 'Bottom right return (H)';
+    function sideLabel(s) {
+      if (s === "A") return "Top (A)";
+      if (s === "B") return "Left (B)";
+      if (s === "BL") return "Left (B-L)";
+      if (s === "BR") return "Right (B-R)";
+      if (s === "C") return "Inner top (C)";
+      if (s === "D") return "Inner verticals (D)";
+      if (s === "E") return "Bottom left return (E)";
+      if (s === "H") return "Bottom right return (H)";
       return s;
     }
 
     // Shape picker updates current
-  all('[data-ct-shape]', root).forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        all('.kc-shape', root).forEach(b=> b.classList.remove('is-active'));
-        btn.classList.add('is-active');
+    all("[data-ct-shape]", root).forEach((btn) => {
+      btn.addEventListener("click", () => {
+        all(".kc-shape", root).forEach((b) => b.classList.remove("is-active"));
+        btn.classList.add("is-active");
         // avoid converting to poly via this older handler (poly creation handled above)
-        const btnType = btn.getAttribute('data-ct-shape')||'rect';
-        if (btnType==='poly') return;
-        if (active<0){
-          const id='s'+(shapes.length+1);
-          shapes.push({ id, name:'Shape '+(shapes.length+1), type:btnType, rot:0, pos:{x:300,y:300}, len:{A:60,B:25,C:0,D:0}, wall:{A:false,B:false,C:false,D:false}, bs:{A:false,B:false,C:false,D:false} });
-          active = shapes.length-1;
+        const btnType = btn.getAttribute("data-ct-shape") || "rect";
+        if (btnType === "poly") return;
+        if (active < 0) {
+          const id = "s" + (shapes.length + 1);
+          shapes.push({
+            id,
+            name: "Shape " + (shapes.length + 1),
+            type: btnType,
+            rot: 0,
+            pos: { x: 300, y: 300 },
+            len: { A: 60, B: 25, C: 0, D: 0 },
+            wall: { A: false, B: false, C: false, D: false },
+            bs: { A: false, B: false, C: false, D: false },
+          });
+          active = shapes.length - 1;
           shapeLabel.textContent = shapes[active].name;
           renderTabs();
         } else {
           shapes[active].type = btnType;
         }
-        draw(); updateOversize();
+        draw();
+        updateOversize();
       });
     });
 
     // Wall / backsplash bindings
-    all('[data-ct-wall]', root).forEach(inp=>{
-      inp.addEventListener('change', ()=>{
-          pushHistory();
-        const k = inp.getAttribute('data-ct-wall');
+    all("[data-ct-wall]", root).forEach((inp) => {
+      inp.addEventListener("change", () => {
+        pushHistory();
+        const k = inp.getAttribute("data-ct-wall");
         shapes[active].wall[k] = !!inp.checked;
-        updateSummary(); save(); draw();
+        updateSummary();
+        save();
+        draw();
       });
     });
     // Delegated inline wall/backsplash toggles for simple UI
-    root.addEventListener('change', (ev)=>{
-      const el = ev.target; if (!(el instanceof HTMLElement)) return;
-      if (active<0) return;
-      if (el.matches('[data-ct-wall-inline]')){
+    root.addEventListener("change", (ev) => {
+      const el = ev.target;
+      if (!(el instanceof HTMLElement)) return;
+      if (active < 0) return;
+      if (el.matches("[data-ct-wall-inline]")) {
         pushHistory();
-        let key = el.getAttribute('data-ct-wall-inline');
+        let key = el.getAttribute("data-ct-wall-inline");
         const s = shapes[active];
-        if (s && s.type==='u' && key && key.startsWith('U-')){
+        if (s && s.type === "u" && key && key.startsWith("U-")) {
           const letter = key.slice(2);
           // Map UI letters to internal boolean flags
-          const set = (k)=>{ if (s.wall) s.wall[k] = (el).checked; };
-          if (letter==='A') set('A');
-          else if (letter==='B') set('BR');
-          else if (letter==='C') set('C');
-          else if (letter==='D') set('BL');
-          else if (letter==='E') set('E');
+          const set = (k) => {
+            if (s.wall) s.wall[k] = el.checked;
+          };
+          if (letter === "A") set("A");
+          else if (letter === "B") set("BR");
+          else if (letter === "C") set("C");
+          else if (letter === "D") set("BL");
+          else if (letter === "E") set("E");
           // Ignore F: no wall option for inner setback
-          else if (letter==='F') {/* no-op */}
-        } else if (s && s.wall && (key in s.wall)) {
-          s.wall[key] = (el).checked;
+          else if (letter === "F") {
+            /* no-op */
+          }
+        } else if (s && s.wall && key in s.wall) {
+          s.wall[key] = el.checked;
         }
-        updateSummary(); save(); draw();
-      } else if (el.matches('[data-ct-backsplash-inline]')){
+        updateSummary();
+        save();
+        draw();
+      } else if (el.matches("[data-ct-backsplash-inline]")) {
         pushHistory();
-        let key = el.getAttribute('data-ct-backsplash-inline');
+        let key = el.getAttribute("data-ct-backsplash-inline");
         const s = shapes[active];
-        if (s){
+        if (s) {
           if (!s.bs) s.bs = {};
-          if (s.type==='u' && key && key.startsWith('U-')){
+          if (s.type === "u" && key && key.startsWith("U-")) {
             const letter = key.slice(2);
-            const set=(k)=>{ s.bs[k] = (el).checked; };
-            if (letter==='A') set('A');
-            else if (letter==='B') set('BR');
-            else if (letter==='C') set('C');
-            else if (letter==='D') set('BL');
-            else if (letter==='E') set('E');
+            const set = (k) => {
+              s.bs[k] = el.checked;
+            };
+            if (letter === "A") set("A");
+            else if (letter === "B") set("BR");
+            else if (letter === "C") set("C");
+            else if (letter === "D") set("BL");
+            else if (letter === "E") set("E");
             // Ignore F: no backsplash option for inner setback
-            else if (letter==='F') { /* no-op */ }
+            else if (letter === "F") {
+              /* no-op */
+            }
           } else {
-            s.bs[key] = (el).checked;
+            s.bs[key] = el.checked;
           }
         }
-        updateSummary(); save(); draw();
+        updateSummary();
+        save();
+        draw();
       }
     });
     // Per-side backsplash controls (delegated for dynamic checkboxes)
-    root.addEventListener('change', (ev)=>{
+    root.addEventListener("change", (ev) => {
       const inp = ev.target;
       if (!(inp instanceof HTMLElement)) return;
-      if (!inp.matches('[data-ct-backsplash]')) return;
-      if (active<0) return;
-        pushHistory();
-      const k = inp.getAttribute('data-ct-backsplash'); if (!k) return;
+      if (!inp.matches("[data-ct-backsplash]")) return;
+      if (active < 0) return;
+      pushHistory();
+      const k = inp.getAttribute("data-ct-backsplash");
+      if (!k) return;
       const s = shapes[active];
-      const checked = (inp.tagName === 'INPUT') ? (inp).checked : !!inp.getAttribute('checked');
-      if (s.type==='poly' && /^P\d+$/.test(k)){
-        const idx = parseInt(k.slice(1),10);
+      const checked =
+        inp.tagName === "INPUT" ? inp.checked : !!inp.getAttribute("checked");
+      if (s.type === "poly" && /^P\d+$/.test(k)) {
+        const idx = parseInt(k.slice(1), 10);
         const n = Array.isArray(s.points) ? s.points.length : 0;
         if (!Array.isArray(s.bsPoly)) s.bsPoly = new Array(n).fill(false);
-        if (s.bsPoly.length !== n){
+        if (s.bsPoly.length !== n) {
           const old = s.bsPoly.slice(0);
           const next = new Array(n).fill(false);
-          for (let i=0;i<Math.min(old.length, next.length);i++){ next[i] = !!old[i]; }
+          for (let i = 0; i < Math.min(old.length, next.length); i++) {
+            next[i] = !!old[i];
+          }
           s.bsPoly = next;
         }
-        if (idx>=0 && idx<n) s.bsPoly[idx] = !!checked;
+        if (idx >= 0 && idx < n) s.bsPoly[idx] = !!checked;
       } else {
         if (!s.bs) s.bs = {};
         s.bs[k] = !!checked;
       }
-      updateSummary(); save(); draw();
+      updateSummary();
+      save();
+      draw();
     });
     // Polygon corner mode change
-    root.addEventListener('change', (ev)=>{
+    root.addEventListener("change", (ev) => {
       const el = ev.target;
       if (!(el instanceof HTMLElement)) return;
-      if (!el.matches('[data-ct-corner-mode]')) return;
-      if (active<0) return; const s = shapes[active]; if (s.type!=='poly') return;
+      if (!el.matches("[data-ct-corner-mode]")) return;
+      if (active < 0) return;
+      const s = shapes[active];
+      if (s.type !== "poly") return;
       pushHistory();
-      const idx = parseInt(el.getAttribute('data-ct-corner-mode')||'0',10);
-      const n = Array.isArray(s.points)?s.points.length:0; if (idx<0||idx>=n) return;
+      const idx = parseInt(el.getAttribute("data-ct-corner-mode") || "0", 10);
+      const n = Array.isArray(s.points) ? s.points.length : 0;
+      if (idx < 0 || idx >= n) return;
       if (!Array.isArray(s.corners)) s.corners = new Array(n).fill(null);
-      const cur = s.corners[idx] || {mode:'square', value:0};
-      const mode = (el).value || 'square';
-      s.corners[idx] = { mode, value: Number(cur.value||0) };
-      updateSummary(); save(); draw();
+      const cur = s.corners[idx] || { mode: "square", value: 0 };
+      const mode = el.value || "square";
+      s.corners[idx] = { mode, value: Number(cur.value || 0) };
+      updateSummary();
+      save();
+      draw();
     });
     // Rect/L/U corner mode change
-    root.addEventListener('change', (ev)=>{
-      const el = ev.target; if (!(el instanceof HTMLElement)) return;
-      if (!el.matches('[data-ct-rc-corner-mode]')) return; if (active<0) return;
-      const s=shapes[active]; if (!(s.type==='rect' || s.type==='l' || s.type==='u')) return; pushHistory();
-      if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
-      const key = el.getAttribute('data-ct-rc-corner-mode'); const mode=(el).value||'square';
-      const prev = s.rcCorners[key]||{mode:'square',value:0}; s.rcCorners[key]={mode, value:Number(prev.value||0)}; updateSummary(); save(); draw();
-    });
-    // Polygon corner value edit
-    root.addEventListener('input', (ev)=>{
+    root.addEventListener("change", (ev) => {
       const el = ev.target;
       if (!(el instanceof HTMLElement)) return;
-      if (!el.matches('[data-ct-corner-val]')) return;
-      if (active<0) return; const s = shapes[active]; if (s.type!=='poly') return;
-      if ((el).value==='') return;
-      if (!lenEditTimer){ pushHistory(); }
+      if (!el.matches("[data-ct-rc-corner-mode]")) return;
+      if (active < 0) return;
+      const s = shapes[active];
+      if (!(s.type === "rect" || s.type === "l" || s.type === "u")) return;
+      pushHistory();
+      if (!s.rcCorners)
+        s.rcCorners = {
+          TL: { mode: "square", value: 0 },
+          TR: { mode: "square", value: 0 },
+          BR: { mode: "square", value: 0 },
+          BL: { mode: "square", value: 0 },
+        };
+      const key = el.getAttribute("data-ct-rc-corner-mode");
+      const mode = el.value || "square";
+      const prev = s.rcCorners[key] || { mode: "square", value: 0 };
+      s.rcCorners[key] = { mode, value: Number(prev.value || 0) };
+      updateSummary();
+      save();
+      draw();
+    });
+    // Polygon corner value edit
+    root.addEventListener("input", (ev) => {
+      const el = ev.target;
+      if (!(el instanceof HTMLElement)) return;
+      if (!el.matches("[data-ct-corner-val]")) return;
+      if (active < 0) return;
+      const s = shapes[active];
+      if (s.type !== "poly") return;
+      if (el.value === "") return;
+      if (!lenEditTimer) {
+        pushHistory();
+      }
       if (lenEditTimer) clearTimeout(lenEditTimer);
-      lenEditTimer = setTimeout(()=>{ lenEditTimer=null; }, 500);
-      const idx = parseInt(el.getAttribute('data-ct-corner-val')||'0',10);
-      const n = Array.isArray(s.points)?s.points.length:0; if (idx<0||idx>=n) return;
+      lenEditTimer = setTimeout(() => {
+        lenEditTimer = null;
+      }, 500);
+      const idx = parseInt(el.getAttribute("data-ct-corner-val") || "0", 10);
+      const n = Array.isArray(s.points) ? s.points.length : 0;
+      if (idx < 0 || idx >= n) return;
       if (!Array.isArray(s.corners)) s.corners = new Array(n).fill(null);
-      const mode = (s.corners[idx]?.mode)||'square';
-      let v = parseInt((el).value||'0',10); if (!isFinite(v)||v<0) v=0; if (v>48) v=48;
+      const mode = s.corners[idx]?.mode || "square";
+      let v = parseInt(el.value || "0", 10);
+      if (!isFinite(v) || v < 0) v = 0;
+      if (v > 48) v = 48;
       s.corners[idx] = { mode, value: v };
-      updateSummary(); save(); draw();
+      updateSummary();
+      save();
+      draw();
     });
     // Rect/L/U corner value edit
-    root.addEventListener('input', (ev)=>{
-      const el = ev.target; if (!(el instanceof HTMLElement)) return;
-      if (!el.matches('[data-ct-rc-corner-val]')) return; if (active<0) return;
-      const s=shapes[active]; if (!(s.type==='rect' || s.type==='l' || s.type==='u')) return;
-      if ((el).value==='') return; if (!lenEditTimer){ pushHistory(); } if (lenEditTimer) clearTimeout(lenEditTimer); lenEditTimer=setTimeout(()=>{ lenEditTimer=null; }, 500);
-      if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
-      const key = el.getAttribute('data-ct-rc-corner-val'); let v=parseFloat((el).value||'0'); if(!isFinite(v)||v<0)v=0; if(v>12)v=12;
-      // Geometric clamp vs current neighbors on same edges
-      const widthIn = Number(s.len?.A||0);
-      const heightIn = (s.type==='u') ? Math.max(Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25)), Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25))) : Number(s.len?.B||0);
-      const rc = s.rcCorners || {};
-      const valOf = (k)=> Math.max(0, Number(rc[k]?.value||0));
-      if (key==='TL'){
-        v = Math.min(v, Math.max(0, widthIn - valOf('TR')));
-        v = Math.min(v, Math.max(0, heightIn - valOf('BL')));
-      } else if (key==='TR'){
-        v = Math.min(v, Math.max(0, widthIn - valOf('TL')));
-        v = Math.min(v, Math.max(0, heightIn - valOf('BR')));
-      } else if (key==='BR'){
-        v = Math.min(v, Math.max(0, widthIn - valOf('BL')));
-        v = Math.min(v, Math.max(0, heightIn - valOf('TR')));
-      } else if (key==='BL'){
-        v = Math.min(v, Math.max(0, widthIn - valOf('BR')));
-        v = Math.min(v, Math.max(0, heightIn - valOf('TL')));
+    root.addEventListener("input", (ev) => {
+      const el = ev.target;
+      if (!(el instanceof HTMLElement)) return;
+      if (!el.matches("[data-ct-rc-corner-val]")) return;
+      if (active < 0) return;
+      const s = shapes[active];
+      if (!(s.type === "rect" || s.type === "l" || s.type === "u")) return;
+      if (el.value === "") return;
+      if (!lenEditTimer) {
+        pushHistory();
       }
-      const mode = s.rcCorners[key]?.mode || 'square'; s.rcCorners[key]={mode, value:v}; updateSummary(); save(); draw();
+      if (lenEditTimer) clearTimeout(lenEditTimer);
+      lenEditTimer = setTimeout(() => {
+        lenEditTimer = null;
+      }, 500);
+      if (!s.rcCorners)
+        s.rcCorners = {
+          TL: { mode: "square", value: 0 },
+          TR: { mode: "square", value: 0 },
+          BR: { mode: "square", value: 0 },
+          BL: { mode: "square", value: 0 },
+        };
+      const key = el.getAttribute("data-ct-rc-corner-val");
+      let v = parseFloat(el.value || "0");
+      if (!isFinite(v) || v < 0) v = 0;
+      if (v > 12) v = 12;
+      // Geometric clamp vs current neighbors on same edges
+      const widthIn = Number(s.len?.A || 0);
+      const heightIn =
+        s.type === "u"
+          ? Math.max(
+              Number(
+                s.len?.BL != null ? s.len.BL : s.len?.B != null ? s.len.B : 25
+              ),
+              Number(
+                s.len?.BR != null ? s.len.BR : s.len?.B != null ? s.len.B : 25
+              )
+            )
+          : Number(s.len?.B || 0);
+      const rc = s.rcCorners || {};
+      const valOf = (k) => Math.max(0, Number(rc[k]?.value || 0));
+      if (key === "TL") {
+        v = Math.min(v, Math.max(0, widthIn - valOf("TR")));
+        v = Math.min(v, Math.max(0, heightIn - valOf("BL")));
+      } else if (key === "TR") {
+        v = Math.min(v, Math.max(0, widthIn - valOf("TL")));
+        v = Math.min(v, Math.max(0, heightIn - valOf("BR")));
+      } else if (key === "BR") {
+        v = Math.min(v, Math.max(0, widthIn - valOf("BL")));
+        v = Math.min(v, Math.max(0, heightIn - valOf("TR")));
+      } else if (key === "BL") {
+        v = Math.min(v, Math.max(0, widthIn - valOf("BR")));
+        v = Math.min(v, Math.max(0, heightIn - valOf("TL")));
+      }
+      const mode = s.rcCorners[key]?.mode || "square";
+      s.rcCorners[key] = { mode, value: v };
+      updateSummary();
+      save();
+      draw();
     });
     // Rect/L/U corner presets
-    root.addEventListener('click', (ev)=>{
-      const btn = ev.target; if (!(btn instanceof HTMLElement)) return;
-      if (!btn.matches('[data-ct-rc-corner-preset]')) return; if (active<0) return;
-      const s=shapes[active]; if (!(s.type==='rect' || s.type==='l' || s.type==='u')) return; ev.preventDefault(); pushHistory();
-      if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
-      const key=btn.getAttribute('data-key'); let v=Math.max(0, Math.min(12, parseFloat(btn.getAttribute('data-value')||'0')));
+    root.addEventListener("click", (ev) => {
+      const btn = ev.target;
+      if (!(btn instanceof HTMLElement)) return;
+      if (!btn.matches("[data-ct-rc-corner-preset]")) return;
+      if (active < 0) return;
+      const s = shapes[active];
+      if (!(s.type === "rect" || s.type === "l" || s.type === "u")) return;
+      ev.preventDefault();
+      pushHistory();
+      if (!s.rcCorners)
+        s.rcCorners = {
+          TL: { mode: "square", value: 0 },
+          TR: { mode: "square", value: 0 },
+          BR: { mode: "square", value: 0 },
+          BL: { mode: "square", value: 0 },
+        };
+      const key = btn.getAttribute("data-key");
+      let v = Math.max(
+        0,
+        Math.min(12, parseFloat(btn.getAttribute("data-value") || "0"))
+      );
       // Geometric clamp vs current neighbors
-      const widthIn = Number(s.len?.A||0);
-      const heightIn = (s.type==='u') ? Math.max(Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25)), Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25))) : Number(s.len?.B||0);
+      const widthIn = Number(s.len?.A || 0);
+      const heightIn =
+        s.type === "u"
+          ? Math.max(
+              Number(
+                s.len?.BL != null ? s.len.BL : s.len?.B != null ? s.len.B : 25
+              ),
+              Number(
+                s.len?.BR != null ? s.len.BR : s.len?.B != null ? s.len.B : 25
+              )
+            )
+          : Number(s.len?.B || 0);
       const rc = s.rcCorners || {};
-      const valOf = (k)=> Math.max(0, Number(rc[k]?.value||0));
-      if (key==='TL'){
-        v = Math.min(v, Math.max(0, widthIn - valOf('TR')));
-        v = Math.min(v, Math.max(0, heightIn - valOf('BL')));
-      } else if (key==='TR'){
-        v = Math.min(v, Math.max(0, widthIn - valOf('TL')));
-        v = Math.min(v, Math.max(0, heightIn - valOf('BR')));
-      } else if (key==='BR'){
-        v = Math.min(v, Math.max(0, widthIn - valOf('BL')));
-        v = Math.min(v, Math.max(0, heightIn - valOf('TR')));
-      } else if (key==='BL'){
-        v = Math.min(v, Math.max(0, widthIn - valOf('BR')));
-        v = Math.min(v, Math.max(0, heightIn - valOf('TL')));
+      const valOf = (k) => Math.max(0, Number(rc[k]?.value || 0));
+      if (key === "TL") {
+        v = Math.min(v, Math.max(0, widthIn - valOf("TR")));
+        v = Math.min(v, Math.max(0, heightIn - valOf("BL")));
+      } else if (key === "TR") {
+        v = Math.min(v, Math.max(0, widthIn - valOf("TL")));
+        v = Math.min(v, Math.max(0, heightIn - valOf("BR")));
+      } else if (key === "BR") {
+        v = Math.min(v, Math.max(0, widthIn - valOf("BL")));
+        v = Math.min(v, Math.max(0, heightIn - valOf("TR")));
+      } else if (key === "BL") {
+        v = Math.min(v, Math.max(0, widthIn - valOf("BR")));
+        v = Math.min(v, Math.max(0, heightIn - valOf("TL")));
       }
-      const mode = s.rcCorners[key]?.mode || 'radius'; s.rcCorners[key]={mode, value:v};
-      const valEl = sel(`[data-ct-rc-corner-val="${key}"]`, root); if (valEl) valEl.value=String(v);
-      const selEl = sel(`[data-ct-rc-corner-mode="${key}"]`, root); if (selEl && selEl.value==='square') selEl.value='radius';
-      updateSummary(); save(); draw();
+      const mode = s.rcCorners[key]?.mode || "radius";
+      s.rcCorners[key] = { mode, value: v };
+      const valEl = sel(`[data-ct-rc-corner-val="${key}"]`, root);
+      if (valEl) valEl.value = String(v);
+      const selEl = sel(`[data-ct-rc-corner-mode="${key}"]`, root);
+      if (selEl && selEl.value === "square") selEl.value = "radius";
+      updateSummary();
+      save();
+      draw();
     });
 
     // Inside-corner mode change (L/U)
-    root.addEventListener('change', (ev)=>{
-      const el = ev.target; if (!(el instanceof HTMLElement)) return;
-      if (!el.matches('[data-ct-ic-corner-mode]')) return; if (active<0) return;
-      const s=shapes[active]; if (!(s.type==='l' || s.type==='u')) return; pushHistory();
-      if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-      const key = el.getAttribute('data-ct-ic-corner-mode'); const mode=(el).value||'square';
-      const prev = s.icCorners[key]||{mode:'square',value:0}; s.icCorners[key]={mode, value:Number(prev.value||0)}; updateSummary(); save(); draw();
+    root.addEventListener("change", (ev) => {
+      const el = ev.target;
+      if (!(el instanceof HTMLElement)) return;
+      if (!el.matches("[data-ct-ic-corner-mode]")) return;
+      if (active < 0) return;
+      const s = shapes[active];
+      if (!(s.type === "l" || s.type === "u")) return;
+      pushHistory();
+      if (!s.icCorners)
+        s.icCorners = {
+          iTL: { mode: "square", value: 0 },
+          iTR: { mode: "square", value: 0 },
+          iBR: { mode: "square", value: 0 },
+          iBL: { mode: "square", value: 0 },
+        };
+      const key = el.getAttribute("data-ct-ic-corner-mode");
+      const mode = el.value || "square";
+      const prev = s.icCorners[key] || { mode: "square", value: 0 };
+      s.icCorners[key] = { mode, value: Number(prev.value || 0) };
+      updateSummary();
+      save();
+      draw();
     });
     // Inside-corner value edit (L/U)
-    root.addEventListener('input', (ev)=>{
-      const el = ev.target; if (!(el instanceof HTMLElement)) return;
-      if (!el.matches('[data-ct-ic-corner-val]')) return; if (active<0) return;
-      const s=shapes[active]; if (!(s.type==='l' || s.type==='u')) return;
-      if ((el).value==='') return; if (!lenEditTimer){ pushHistory(); } if (lenEditTimer) clearTimeout(lenEditTimer); lenEditTimer=setTimeout(()=>{ lenEditTimer=null; }, 500);
-      if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-      const key = el.getAttribute('data-ct-ic-corner-val'); let v=parseFloat((el).value||'0'); if(!isFinite(v)||v<0)v=0; if(v>12)v=12;
+    root.addEventListener("input", (ev) => {
+      const el = ev.target;
+      if (!(el instanceof HTMLElement)) return;
+      if (!el.matches("[data-ct-ic-corner-val]")) return;
+      if (active < 0) return;
+      const s = shapes[active];
+      if (!(s.type === "l" || s.type === "u")) return;
+      if (el.value === "") return;
+      if (!lenEditTimer) {
+        pushHistory();
+      }
+      if (lenEditTimer) clearTimeout(lenEditTimer);
+      lenEditTimer = setTimeout(() => {
+        lenEditTimer = null;
+      }, 500);
+      if (!s.icCorners)
+        s.icCorners = {
+          iTL: { mode: "square", value: 0 },
+          iTR: { mode: "square", value: 0 },
+          iBR: { mode: "square", value: 0 },
+          iBL: { mode: "square", value: 0 },
+        };
+      const key = el.getAttribute("data-ct-ic-corner-val");
+      let v = parseFloat(el.value || "0");
+      if (!isFinite(v) || v < 0) v = 0;
+      if (v > 12) v = 12;
       // Geometric clamp based on current inner opening
-      if (s.type==='u'){
+      if (s.type === "u") {
         // Only top inside corners exist. Clamp per side height and inner width.
-        const A = Number(s.len?.A||0);
-        const eIn = Number(s.len?.E||0), hIn = Number(s.len?.H||0);
-        const dIn = Number(s.len?.D||0);
-        const BL = Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25));
-        const BR = Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25));
+        const A = Number(s.len?.A || 0);
+        const eIn = Number(s.len?.E || 0),
+          hIn = Number(s.len?.H || 0);
+        const dIn = Number(s.len?.D || 0);
+        const BL = Number(
+          s.len?.BL != null ? s.len.BL : s.len?.B != null ? s.len.B : 25
+        );
+        const BR = Number(
+          s.len?.BR != null ? s.len.BR : s.len?.B != null ? s.len.B : 25
+        );
         const innerW = Math.max(1, A - (eIn + hIn));
-        const heightTL = Math.max(0, BL - dIn), heightTR = Math.max(0, BR - dIn);
-        const tMaxTL = Math.max(0, Math.min(innerW/2, heightTL/2));
-        const tMaxTR = Math.max(0, Math.min(innerW/2, heightTR/2));
-        const lim = (key==='iTR') ? tMaxTR : tMaxTL;
+        const heightTL = Math.max(0, BL - dIn),
+          heightTR = Math.max(0, BR - dIn);
+        const tMaxTL = Math.max(0, Math.min(innerW / 2, heightTL / 2));
+        const tMaxTR = Math.max(0, Math.min(innerW / 2, heightTR / 2));
+        const lim = key === "iTR" ? tMaxTR : tMaxTL;
         v = Math.min(v, lim);
-      } else if (s.type==='l'){
-        const aIn = Number(s.len?.A||0), bIn = Number(s.len?.B||0);
-        const cIn = Number(s.len?.C||0), dIn = Number(s.len?.D||0);
+      } else if (s.type === "l") {
+        const aIn = Number(s.len?.A || 0),
+          bIn = Number(s.len?.B || 0);
+        const cIn = Number(s.len?.C || 0),
+          dIn = Number(s.len?.D || 0);
         const innerW = Math.max(0, aIn - cIn);
         const innerH = Math.max(0, bIn - dIn);
-        const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
+        const tMaxIn = Math.max(0, Math.min(innerW / 2, innerH / 2));
         v = Math.min(v, tMaxIn);
       }
-      const mode = s.icCorners[key]?.mode || 'square'; s.icCorners[key]={mode, value:v}; updateSummary(); save(); draw();
+      const mode = s.icCorners[key]?.mode || "square";
+      s.icCorners[key] = { mode, value: v };
+      updateSummary();
+      save();
+      draw();
     });
     // Inside-corner presets (L/U)
-    root.addEventListener('click', (ev)=>{
-      const btn = ev.target; if (!(btn instanceof HTMLElement)) return;
-      if (!btn.matches('[data-ct-ic-corner-preset]')) return; if (active<0) return;
-      const s=shapes[active]; if (!(s.type==='l' || s.type==='u')) return; ev.preventDefault(); pushHistory();
-      if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-      const key=btn.getAttribute('data-key'); let v=Math.max(0, Math.min(12, parseFloat(btn.getAttribute('data-value')||'0')));
-      // Geometric clamp
-      if (s.type==='u'){
-        const A = Number(s.len?.A||0);
-        const eIn = Number(s.len?.E||0), hIn = Number(s.len?.H||0);
-        const dIn = Number(s.len?.D||0);
-        const BL = Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25));
-        const BR = Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25));
-        const innerW = Math.max(1, A - (eIn + hIn));
-        const innerH = Math.max(0, Math.min(BL,BR) - dIn);
-        const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
-        v = Math.min(v, tMaxIn);
-      } else if (s.type==='l'){
-        const aIn = Number(s.len?.A||0), bIn = Number(s.len?.B||0);
-        const cIn = Number(s.len?.C||0), dIn = Number(s.len?.D||0);
-        const innerW = Math.max(0, aIn - cIn);
-        const innerH = Math.max(0, bIn - dIn);
-        const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
-        v = Math.min(v, tMaxIn);
-      }
-      const mode = s.icCorners[key]?.mode || 'radius'; s.icCorners[key]={mode, value:v};
-      const valEl = sel(`[data-ct-ic-corner-val="${key}"]`, root); if (valEl) valEl.value=String(v);
-      const selEl = sel(`[data-ct-ic-corner-mode="${key}"]`, root); if (selEl && selEl.value==='square') selEl.value='radius';
-      updateSummary(); save(); draw();
-    });
-    // Inside-corner apply-to-all (L/U)
-    root.addEventListener('click', (ev)=>{
-      const btn = ev.target; if (!(btn instanceof HTMLElement)) return;
-      if (!btn.matches('[data-ct-ic-corner-apply-all]')) return; if (active<0) return;
-      const s=shapes[active]; if (!(s.type==='l' || s.type==='u')) return; const modeSel=sel('[data-ct-ic-corner-all-mode]', root); const valInp=sel('[data-ct-ic-corner-all-val]', root);
-      const mode = modeSel ? modeSel.value : 'square'; let val = valInp ? Math.max(0, Math.min(12, parseFloat(valInp.value||'0'))) : 0; pushHistory();
-      // Geometric clamp
-      if (s.type==='u'){
-        const A = Number(s.len?.A||0);
-        const eIn = Number(s.len?.E||0), hIn = Number(s.len?.H||0);
-        const dIn = Number(s.len?.D||0);
-        const BL = Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25));
-        const BR = Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25));
-        const innerW = Math.max(1, A - (eIn + hIn));
-        const innerH = Math.max(0, Math.min(BL,BR) - dIn);
-        const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
-        val = Math.min(val, tMaxIn);
-      } else if (s.type==='l'){
-        const aIn = Number(s.len?.A||0), bIn = Number(s.len?.B||0);
-        const cIn = Number(s.len?.C||0), dIn = Number(s.len?.D||0);
-        const innerW = Math.max(0, aIn - cIn);
-        const innerH = Math.max(0, bIn - dIn);
-        const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
-        val = Math.min(val, tMaxIn);
-      }
-  if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-  const keys = (s.type==='u') ? ['iTL','iTR'] : ['iTL','iTR','iBR','iBL'];
-  keys.forEach(k=>{ if (s.type==='l' && (k==='iTR' || k==='iBL')) return; s.icCorners[k] = { mode, value: val }; });
-      updateSummary(); save(); draw();
-    });
-    // Corner presets handler
-    root.addEventListener('click', (ev)=>{
+    root.addEventListener("click", (ev) => {
       const btn = ev.target;
       if (!(btn instanceof HTMLElement)) return;
-      if (!btn.matches('[data-ct-corner-preset]')) return;
-      if (active<0) return; const s = shapes[active]; if (s.type!=='poly') return;
+      if (!btn.matches("[data-ct-ic-corner-preset]")) return;
+      if (active < 0) return;
+      const s = shapes[active];
+      if (!(s.type === "l" || s.type === "u")) return;
       ev.preventDefault();
-      const idx = parseInt(btn.getAttribute('data-index')||'0',10);
-      const v = parseFloat(btn.getAttribute('data-value')||'0');
-      const n = Array.isArray(s.points)?s.points.length:0; if (idx<0||idx>=n) return;
+      pushHistory();
+      if (!s.icCorners)
+        s.icCorners = {
+          iTL: { mode: "square", value: 0 },
+          iTR: { mode: "square", value: 0 },
+          iBR: { mode: "square", value: 0 },
+          iBL: { mode: "square", value: 0 },
+        };
+      const key = btn.getAttribute("data-key");
+      let v = Math.max(
+        0,
+        Math.min(12, parseFloat(btn.getAttribute("data-value") || "0"))
+      );
+      // Geometric clamp
+      if (s.type === "u") {
+        const A = Number(s.len?.A || 0);
+        const eIn = Number(s.len?.E || 0),
+          hIn = Number(s.len?.H || 0);
+        const dIn = Number(s.len?.D || 0);
+        const BL = Number(
+          s.len?.BL != null ? s.len.BL : s.len?.B != null ? s.len.B : 25
+        );
+        const BR = Number(
+          s.len?.BR != null ? s.len.BR : s.len?.B != null ? s.len.B : 25
+        );
+        const innerW = Math.max(1, A - (eIn + hIn));
+        const innerH = Math.max(0, Math.min(BL, BR) - dIn);
+        const tMaxIn = Math.max(0, Math.min(innerW / 2, innerH / 2));
+        v = Math.min(v, tMaxIn);
+      } else if (s.type === "l") {
+        const aIn = Number(s.len?.A || 0),
+          bIn = Number(s.len?.B || 0);
+        const cIn = Number(s.len?.C || 0),
+          dIn = Number(s.len?.D || 0);
+        const innerW = Math.max(0, aIn - cIn);
+        const innerH = Math.max(0, bIn - dIn);
+        const tMaxIn = Math.max(0, Math.min(innerW / 2, innerH / 2));
+        v = Math.min(v, tMaxIn);
+      }
+      const mode = s.icCorners[key]?.mode || "radius";
+      s.icCorners[key] = { mode, value: v };
+      const valEl = sel(`[data-ct-ic-corner-val="${key}"]`, root);
+      if (valEl) valEl.value = String(v);
+      const selEl = sel(`[data-ct-ic-corner-mode="${key}"]`, root);
+      if (selEl && selEl.value === "square") selEl.value = "radius";
+      updateSummary();
+      save();
+      draw();
+    });
+    // Inside-corner apply-to-all (L/U)
+    root.addEventListener("click", (ev) => {
+      const btn = ev.target;
+      if (!(btn instanceof HTMLElement)) return;
+      if (!btn.matches("[data-ct-ic-corner-apply-all]")) return;
+      if (active < 0) return;
+      const s = shapes[active];
+      if (!(s.type === "l" || s.type === "u")) return;
+      const modeSel = sel("[data-ct-ic-corner-all-mode]", root);
+      const valInp = sel("[data-ct-ic-corner-all-val]", root);
+      const mode = modeSel ? modeSel.value : "square";
+      let val = valInp
+        ? Math.max(0, Math.min(12, parseFloat(valInp.value || "0")))
+        : 0;
+      pushHistory();
+      // Geometric clamp
+      if (s.type === "u") {
+        const A = Number(s.len?.A || 0);
+        const eIn = Number(s.len?.E || 0),
+          hIn = Number(s.len?.H || 0);
+        const dIn = Number(s.len?.D || 0);
+        const BL = Number(
+          s.len?.BL != null ? s.len.BL : s.len?.B != null ? s.len.B : 25
+        );
+        const BR = Number(
+          s.len?.BR != null ? s.len.BR : s.len?.B != null ? s.len.B : 25
+        );
+        const innerW = Math.max(1, A - (eIn + hIn));
+        const innerH = Math.max(0, Math.min(BL, BR) - dIn);
+        const tMaxIn = Math.max(0, Math.min(innerW / 2, innerH / 2));
+        val = Math.min(val, tMaxIn);
+      } else if (s.type === "l") {
+        const aIn = Number(s.len?.A || 0),
+          bIn = Number(s.len?.B || 0);
+        const cIn = Number(s.len?.C || 0),
+          dIn = Number(s.len?.D || 0);
+        const innerW = Math.max(0, aIn - cIn);
+        const innerH = Math.max(0, bIn - dIn);
+        const tMaxIn = Math.max(0, Math.min(innerW / 2, innerH / 2));
+        val = Math.min(val, tMaxIn);
+      }
+      if (!s.icCorners)
+        s.icCorners = {
+          iTL: { mode: "square", value: 0 },
+          iTR: { mode: "square", value: 0 },
+          iBR: { mode: "square", value: 0 },
+          iBL: { mode: "square", value: 0 },
+        };
+      const keys =
+        s.type === "u" ? ["iTL", "iTR"] : ["iTL", "iTR", "iBR", "iBL"];
+      keys.forEach((k) => {
+        if (s.type === "l" && (k === "iTR" || k === "iBL")) return;
+        s.icCorners[k] = { mode, value: val };
+      });
+      updateSummary();
+      save();
+      draw();
+    });
+    // Corner presets handler
+    root.addEventListener("click", (ev) => {
+      const btn = ev.target;
+      if (!(btn instanceof HTMLElement)) return;
+      if (!btn.matches("[data-ct-corner-preset]")) return;
+      if (active < 0) return;
+      const s = shapes[active];
+      if (s.type !== "poly") return;
+      ev.preventDefault();
+      const idx = parseInt(btn.getAttribute("data-index") || "0", 10);
+      const v = parseFloat(btn.getAttribute("data-value") || "0");
+      const n = Array.isArray(s.points) ? s.points.length : 0;
+      if (idx < 0 || idx >= n) return;
       pushHistory();
       if (!Array.isArray(s.corners)) s.corners = new Array(n).fill(null);
-      const mode = (s.corners[idx]?.mode)||'radius';
+      const mode = s.corners[idx]?.mode || "radius";
       s.corners[idx] = { mode, value: Math.max(0, Math.min(48, v)) };
       // sync UI
-      const valEl = sel(`[data-ct-corner-val="${idx}"]`, root); if (valEl) valEl.value = String(s.corners[idx].value||0);
-      const selEl = sel(`[data-ct-corner-mode="${idx}"]`, root); if (selEl && selEl.value==='square') selEl.value='radius';
-      updateSummary(); save(); draw();
+      const valEl = sel(`[data-ct-corner-val="${idx}"]`, root);
+      if (valEl) valEl.value = String(s.corners[idx].value || 0);
+      const selEl = sel(`[data-ct-corner-mode="${idx}"]`, root);
+      if (selEl && selEl.value === "square") selEl.value = "radius";
+      updateSummary();
+      save();
+      draw();
     });
     // Apply-to-all: Rect/L/U
-    root.addEventListener('click', (ev)=>{
-      const btn = ev.target; if (!(btn instanceof HTMLElement)) return;
-      if (!btn.matches('[data-ct-rc-corner-apply-all]')) return; if (active<0) return;
-      const s=shapes[active]; if (!(s.type==='rect' || s.type==='l' || s.type==='u')) return;
-      const modeSel = sel('[data-ct-rc-corner-all-mode]', root);
-      const valInp = sel('[data-ct-rc-corner-all-val]', root);
-      const mode = modeSel ? modeSel.value : 'square';
-      let val = valInp ? Math.max(0, Math.min(12, parseFloat(valInp.value||'0'))) : 0;
+    root.addEventListener("click", (ev) => {
+      const btn = ev.target;
+      if (!(btn instanceof HTMLElement)) return;
+      if (!btn.matches("[data-ct-rc-corner-apply-all]")) return;
+      if (active < 0) return;
+      const s = shapes[active];
+      if (!(s.type === "rect" || s.type === "l" || s.type === "u")) return;
+      const modeSel = sel("[data-ct-rc-corner-all-mode]", root);
+      const valInp = sel("[data-ct-rc-corner-all-val]", root);
+      const mode = modeSel ? modeSel.value : "square";
+      let val = valInp
+        ? Math.max(0, Math.min(12, parseFloat(valInp.value || "0")))
+        : 0;
       // Geometric clamp for uniform apply-all: each must fit both top/bottom and left/right
-      const widthIn = Number(s.len?.A||0);
-      const heightIn = (s.type==='u') ? Math.max(Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25)), Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25))) : Number(s.len?.B||0);
-      val = Math.min(val, widthIn/2, heightIn/2);
+      const widthIn = Number(s.len?.A || 0);
+      const heightIn =
+        s.type === "u"
+          ? Math.max(
+              Number(
+                s.len?.BL != null ? s.len.BL : s.len?.B != null ? s.len.B : 25
+              ),
+              Number(
+                s.len?.BR != null ? s.len.BR : s.len?.B != null ? s.len.B : 25
+              )
+            )
+          : Number(s.len?.B || 0);
+      val = Math.min(val, widthIn / 2, heightIn / 2);
       pushHistory();
-      if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
-      ['TL','TR','BR','BL'].forEach(k=>{ s.rcCorners[k] = { mode, value: val }; });
-      updateSummary(); save(); draw();
+      if (!s.rcCorners)
+        s.rcCorners = {
+          TL: { mode: "square", value: 0 },
+          TR: { mode: "square", value: 0 },
+          BR: { mode: "square", value: 0 },
+          BL: { mode: "square", value: 0 },
+        };
+      ["TL", "TR", "BR", "BL"].forEach((k) => {
+        s.rcCorners[k] = { mode, value: val };
+      });
+      updateSummary();
+      save();
+      draw();
     });
     // Apply-to-all: Polygon
-    root.addEventListener('click', (ev)=>{
-      const btn = ev.target; if (!(btn instanceof HTMLElement)) return;
-      if (!btn.matches('[data-ct-corner-apply-all]')) return; if (active<0) return;
-      const s=shapes[active]; if (s.type!=='poly') return;
-      const modeSel = sel('[data-ct-corner-all-mode]', root);
-      const valInp = sel('[data-ct-corner-all-val]', root);
-      const mode = modeSel ? modeSel.value : 'square';
-      const val = valInp ? Math.max(0, Math.min(48, parseFloat(valInp.value||'0'))) : 0;
-      const n = Array.isArray(s.points)?s.points.length:0; if (n<=0) return;
+    root.addEventListener("click", (ev) => {
+      const btn = ev.target;
+      if (!(btn instanceof HTMLElement)) return;
+      if (!btn.matches("[data-ct-corner-apply-all]")) return;
+      if (active < 0) return;
+      const s = shapes[active];
+      if (s.type !== "poly") return;
+      const modeSel = sel("[data-ct-corner-all-mode]", root);
+      const valInp = sel("[data-ct-corner-all-val]", root);
+      const mode = modeSel ? modeSel.value : "square";
+      const val = valInp
+        ? Math.max(0, Math.min(48, parseFloat(valInp.value || "0")))
+        : 0;
+      const n = Array.isArray(s.points) ? s.points.length : 0;
+      if (n <= 0) return;
       pushHistory();
       if (!Array.isArray(s.corners)) s.corners = new Array(n).fill(null);
-      for (let i=0;i<n;i++){ s.corners[i] = { mode, value: val }; }
-      updateSummary(); save(); draw();
+      for (let i = 0; i < n; i++) {
+        s.corners[i] = { mode, value: val };
+      }
+      updateSummary();
+      save();
+      draw();
     });
     // L flip binding
-    sel('[data-ct-l-flip]', root)?.addEventListener('change', (e)=>{
-      const cur = shapes[active]; if (!cur || cur.type!=='l') return;
-        pushHistory();
-      cur.flipX = !!e.target.checked; draw(); updateSummary(); save();
+    sel("[data-ct-l-flip]", root)?.addEventListener("change", (e) => {
+      const cur = shapes[active];
+      if (!cur || cur.type !== "l") return;
+      pushHistory();
+      cur.flipX = !!e.target.checked;
+      draw();
+      updateSummary();
+      save();
     });
     // Backsplash height input
-    sel('[data-ct-bs-height]', root)?.addEventListener('input', (e)=>{
-  // Overhang removed
+    sel("[data-ct-bs-height]", root)?.addEventListener("input", (e) => {
+      // Overhang removed
 
-  // Seams UI removed
-        pushHistory();
-      let v = parseInt(e.target.value||'0',10); if(!isFinite(v)||v<0) v=0; if (v>24) v=24; opts.bsHeight = v; updateSummary(); save(); draw();
+      // Seams UI removed
+      pushHistory();
+      let v = parseInt(e.target.value || "0", 10);
+      if (!isFinite(v) || v < 0) v = 0;
+      if (v > 24) v = 24;
+      opts.bsHeight = v;
+      updateSummary();
+      save();
+      draw();
     });
 
     // Global backsplash toggle
-    const bsOnEl = sel('[data-ct-bs-on]', root);
-    if (bsOnEl){ bsOnEl.checked = !!opts.bsOn; bsOnEl.addEventListener('change', ()=>{ pushHistory(); opts.bsOn = !!bsOnEl.checked; updateSummary(); save(); draw(); }); }
+    const bsOnEl = sel("[data-ct-bs-on]", root);
+    if (bsOnEl) {
+      bsOnEl.checked = !!opts.bsOn;
+      bsOnEl.addEventListener("change", () => {
+        pushHistory();
+        opts.bsOn = !!bsOnEl.checked;
+        updateSummary();
+        save();
+        draw();
+      });
+    }
 
     // Select/Clear all backsplash sides for current shape
-    sel('[data-ct-bs-select]', root)?.addEventListener('click', ()=>{
-      if (active<0 || !shapes[active]) return; pushHistory(); const s=shapes[active];
-      if (s.type==='poly' && Array.isArray(s.points)){
-        const n=s.points.length; if (!Array.isArray(s.bsPoly)) s.bsPoly=new Array(n).fill(false); s.bsPoly = new Array(n).fill(true);
+    sel("[data-ct-bs-select]", root)?.addEventListener("click", () => {
+      if (active < 0 || !shapes[active]) return;
+      pushHistory();
+      const s = shapes[active];
+      if (s.type === "poly" && Array.isArray(s.points)) {
+        const n = s.points.length;
+        if (!Array.isArray(s.bsPoly)) s.bsPoly = new Array(n).fill(false);
+        s.bsPoly = new Array(n).fill(true);
       } else {
         s.bs = s.bs || {};
-        if (s.type==='u'){
-          ['A','BL','BR','C','D','E','H'].forEach(k=>{ s.bs[k] = true; });
+        if (s.type === "u") {
+          ["A", "BL", "BR", "C", "D", "E", "H"].forEach((k) => {
+            s.bs[k] = true;
+          });
         } else {
-          ['A','B','C','D'].forEach(k=>{ s.bs[k] = true; });
+          ["A", "B", "C", "D"].forEach((k) => {
+            s.bs[k] = true;
+          });
         }
       }
-      updateSummary(); save(); draw();
+      updateSummary();
+      save();
+      draw();
     });
-    sel('[data-ct-bs-clear]', root)?.addEventListener('click', ()=>{
-      if (active<0 || !shapes[active]) return; pushHistory(); const s=shapes[active];
-      if (s.type==='poly' && Array.isArray(s.points)){
-        const n=s.points.length; if (!Array.isArray(s.bsPoly)) s.bsPoly=new Array(n).fill(false); s.bsPoly = new Array(n).fill(false);
+    sel("[data-ct-bs-clear]", root)?.addEventListener("click", () => {
+      if (active < 0 || !shapes[active]) return;
+      pushHistory();
+      const s = shapes[active];
+      if (s.type === "poly" && Array.isArray(s.points)) {
+        const n = s.points.length;
+        if (!Array.isArray(s.bsPoly)) s.bsPoly = new Array(n).fill(false);
+        s.bsPoly = new Array(n).fill(false);
       } else {
-        s.bs = s.bs || {}; Object.keys(s.bs).forEach(k=> s.bs[k]=false);
+        s.bs = s.bs || {};
+        Object.keys(s.bs).forEach((k) => (s.bs[k] = false));
       }
-      updateSummary(); save(); draw();
+      updateSummary();
+      save();
+      draw();
+    });
+
+    // Optional: Select/Clear all wall sides for current shape (if controls exist)
+    sel("[data-ct-wall-select]", root)?.addEventListener("click", () => {
+      if (active < 0 || !shapes[active]) return;
+      pushHistory();
+      const s = shapes[active];
+      s.wall = s.wall || {};
+      if (s.type === "poly") {
+        // no global walls concept for polygon; skip
+      } else if (s.type === "u") {
+        ["A", "BL", "BR", "C", "D", "E", "H"].forEach((k) => {
+          if (k in s.wall) s.wall[k] = true;
+        });
+      } else {
+        ["A", "B", "C", "D"].forEach((k) => {
+          if (k in s.wall) s.wall[k] = true;
+        });
+      }
+      updateSummary();
+      save();
+      draw();
+    });
+    sel("[data-ct-wall-clear]", root)?.addEventListener("click", () => {
+      if (active < 0 || !shapes[active]) return;
+      pushHistory();
+      const s = shapes[active];
+      s.wall = s.wall || {};
+      Object.keys(s.wall).forEach((k) => (s.wall[k] = false));
+      updateSummary();
+      save();
+      draw();
     });
 
     // Reset/Delete actions (bind to all matching buttons)
-    all('[data-ct-reset]', root).forEach(el=> el.addEventListener('click', ()=>{
-      if(active<0) return;
+    all("[data-ct-reset]", root).forEach((el) =>
+      el.addEventListener("click", () => {
+        if (active < 0) return;
         pushHistory();
-      const cur = shapes[active];
-      cur.len = {A:60,B:25,C:0,D:0};
-      cur.rot = 0;
-      syncInputs(); draw(); updateOversize(); updateSummary();
-    }));
-    all('[data-ct-delete]', root).forEach(el=> el.addEventListener('click', ()=>{
+        const cur = shapes[active];
+        // Reset sensible defaults per shape type
+        if (cur.type === "u") {
+          const A = 60,
+            C = 20,
+            D = 10,
+            BL = 25,
+            BR = 25;
+          const E = Math.max(0, Math.round((A - C) / 2));
+          const H = E;
+          cur.len = { A, C, D, E, H, BL, BR };
+        } else if (cur.type === "l") {
+          cur.len = { A: 60, B: 25, C: 20, D: 10 };
+        } else if (cur.type === "rect") {
+          cur.len = { A: 60, B: 25, C: 0, D: 0 };
+        } else if (cur.type === "poly") {
+          // keep points; just zero rotation
+        }
+        cur.rot = 0;
+        syncInputs();
+        draw();
+        updateOversize();
+        updateSummary();
+      })
+    );
+    all("[data-ct-delete]", root).forEach((el) =>
+      el.addEventListener("click", () => {
         pushHistory();
-        if (shapes.length <= 1) { shapes = []; active=-1; shapeLabel.textContent='No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary(); save(); return; }
-      shapes.splice(active, 1);
-      if (active >= shapes.length) active = shapes.length - 1;
-      shapes.forEach((s,i)=> s.name = 'Shape ' + (i+1));
-      shapeLabel.textContent = shapes[active].name;
-      renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); updateSummary(); save();
-    }));
+        if (shapes.length <= 1) {
+          shapes = [];
+          active = -1;
+          shapeLabel.textContent = "No shape selected";
+          renderTabs();
+          syncInputs();
+          draw();
+          updateOversize();
+          updateActionStates();
+          updateSummary();
+          save();
+          return;
+        }
+        shapes.splice(active, 1);
+        if (active >= shapes.length) active = shapes.length - 1;
+        shapes.forEach((s, i) => (s.name = "Shape " + (i + 1)));
+        shapeLabel.textContent = shapes[active].name;
+        renderTabs();
+        syncInputs();
+        draw();
+        updateOversize();
+        updateActionStates();
+        updateSummary();
+        save();
+      })
+    );
 
-  // Initial draw
-  // Options bindings
+    // Initial draw
+    // Options bindings
     // single-select buttons: data-ct-opt
-  root.querySelectorAll('[data-ct-opt]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
+    root.querySelectorAll("[data-ct-opt]").forEach((btn) => {
+      btn.addEventListener("click", () => {
         pushHistory();
-        const key = btn.getAttribute('data-ct-opt'); const val = btn.getAttribute('data-value');
+        const key = btn.getAttribute("data-ct-opt");
+        const val = btn.getAttribute("data-value");
         opts[key] = val;
         // activate visual
-    root.querySelectorAll(`[data-ct-opt="${key}"]`).forEach(b=>{ b.classList.remove('is-active'); b.setAttribute('aria-pressed','false'); });
-    btn.classList.add('is-active'); btn.setAttribute('aria-pressed','true');
-    updateSummary(); save();
+        root.querySelectorAll(`[data-ct-opt="${key}"]`).forEach((b) => {
+          b.classList.remove("is-active");
+          b.setAttribute("aria-pressed", "false");
+        });
+        btn.classList.add("is-active");
+        btn.setAttribute("aria-pressed", "true");
+        updateSummary();
+        save();
       });
     });
-  // radio groups: data-ct-radio
-  root.querySelectorAll('[data-ct-radio]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
+    // radio groups: data-ct-radio
+    root.querySelectorAll("[data-ct-radio]").forEach((btn) => {
+      btn.addEventListener("click", () => {
         pushHistory();
-        const key = btn.getAttribute('data-ct-radio'); const val = btn.getAttribute('data-value');
+        const key = btn.getAttribute("data-ct-radio");
+        const val = btn.getAttribute("data-value");
         opts[key] = val;
-    root.querySelectorAll(`[data-ct-radio="${key}"]`).forEach(b=>{ b.classList.remove('is-active'); b.setAttribute('aria-pressed','false'); });
-    btn.classList.add('is-active'); btn.setAttribute('aria-pressed','true');
-    updateSummary(); save();
+        root.querySelectorAll(`[data-ct-radio="${key}"]`).forEach((b) => {
+          b.classList.remove("is-active");
+          b.setAttribute("aria-pressed", "false");
+        });
+        btn.classList.add("is-active");
+        btn.setAttribute("aria-pressed", "true");
+        updateSummary();
+        save();
       });
     });
-  // multi-select toggles: data-ct-multi
-  root.querySelectorAll('[data-ct-multi]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
+    // multi-select toggles: data-ct-multi
+    root.querySelectorAll("[data-ct-multi]").forEach((btn) => {
+      btn.addEventListener("click", () => {
         pushHistory();
-        const key = btn.getAttribute('data-ct-multi'); const val = btn.getAttribute('data-value');
+        const key = btn.getAttribute("data-ct-multi");
+        const val = btn.getAttribute("data-value");
         if (!Array.isArray(opts[key])) opts[key] = opts[key] ? [opts[key]] : [];
         const idx = opts[key].indexOf(val);
         const on = idx === -1;
-        if (on) opts[key].push(val); else opts[key].splice(idx,1);
+        if (on) opts[key].push(val);
+        else opts[key].splice(idx, 1);
         // update button state
-        btn.classList.toggle('is-active', on);
-        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-        updateSummary(); save();
+        btn.classList.toggle("is-active", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+        updateSummary();
+        save();
       });
     });
     // counters: data-ct-counter with .kc-ctr-inc / .kc-ctr-dec
     // Color preference input
-    sel('[data-ct-color]', root)?.addEventListener('input', (e)=>{ opts.color = e.target.value||''; updateSummary(); save(); });
+    sel("[data-ct-color]", root)?.addEventListener("input", (e) => {
+      opts.color = e.target.value || "";
+      updateSummary();
+      save();
+    });
 
     // Select and drag shapes directly in the preview
     let hitAreas = [];
-    (function enableDrag(){
-      const svgEl = sel('[data-ct-svg]', root);
-      if (!svgEl){ return; }
-      let dragging=false, start={}, orig={}, dragIdx=-1;
-      let resizing=false, resizeKey=null, resizeIdx=-1, startLocal={};
+    (function enableDrag() {
+      const svgEl = sel("[data-ct-svg]", root);
+      if (!svgEl) {
+        return;
+      }
+      let dragging = false,
+        start = {},
+        orig = {},
+        dragIdx = -1;
+      let resizing = false,
+        resizeKey = null,
+        resizeIdx = -1,
+        startLocal = {};
       hover = -1;
-      function getPoint(ev){
+      function getPoint(ev) {
         const rect = svgEl.getBoundingClientRect();
-        const vb = svgEl.viewBox?.baseVal || { x:0, y:0, width:rect.width, height:rect.height };
-        const cX = ('touches' in ev ? ev.touches[0].clientX : ev.clientX);
-        const cY = ('touches' in ev ? ev.touches[0].clientY : ev.clientY);
+        const vb = svgEl.viewBox?.baseVal || {
+          x: 0,
+          y: 0,
+          width: rect.width,
+          height: rect.height,
+        };
+        const cX = "touches" in ev ? ev.touches[0].clientX : ev.clientX;
+        const cY = "touches" in ev ? ev.touches[0].clientY : ev.clientY;
         const nx = (cX - rect.left) / rect.width;
         const ny = (cY - rect.top) / rect.height;
         return { x: vb.x + nx * vb.width, y: vb.y + ny * vb.height };
       }
-      function pointInRotRect(px, py, cx, cy, w, h, rotDeg, pad=0){
-        const rad = -rotDeg * Math.PI/180;
-        const cos = Math.cos(rad), sin = Math.sin(rad);
-        const dx = px - cx, dy = py - cy;
-        const lx = dx*cos - dy*sin; const ly = dx*sin + dy*cos;
-        return Math.abs(lx) <= (w/2 + pad) && Math.abs(ly) <= (h/2 + pad);
+      function pointInRotRect(px, py, cx, cy, w, h, rotDeg, pad = 0) {
+        const rad = (-rotDeg * Math.PI) / 180;
+        const cos = Math.cos(rad),
+          sin = Math.sin(rad);
+        const dx = px - cx,
+          dy = py - cy;
+        const lx = dx * cos - dy * sin;
+        const ly = dx * sin + dy * cos;
+        return Math.abs(lx) <= w / 2 + pad && Math.abs(ly) <= h / 2 + pad;
       }
-      function pickIndex(pt, pad=24){
-        for (let i=hitAreas.length-1;i>=0;i--){ const h=hitAreas[i]; if (pointInRotRect(pt.x, pt.y, h.cx, h.cy, h.w, h.h, h.rot, pad)) return h.idx; }
+      function pickIndex(pt, pad = 24) {
+        for (let i = hitAreas.length - 1; i >= 0; i--) {
+          const h = hitAreas[i];
+          if (pointInRotRect(pt.x, pt.y, h.cx, h.cy, h.w, h.h, h.rot, pad))
+            return h.idx;
+        }
         return -1;
       }
-      function pickHandle(pt){
-        for (let i=handles.length-1;i>=0;i--){ const h=handles[i]; const dx=pt.x-h.cx, dy=pt.y-h.cy; if ((dx*dx+dy*dy) <= Math.pow(h.r+6,2)) return {i, h}; }
+      function pickHandle(pt) {
+        for (let i = handles.length - 1; i >= 0; i--) {
+          const h = handles[i];
+          const dx = pt.x - h.cx,
+            dy = pt.y - h.cy;
+          if (dx * dx + dy * dy <= Math.pow(h.r + 6, 2)) return { i, h };
+        }
         return null;
       }
-      function worldToLocal(pxv, pyv, cx, cy, rotDeg){ const rad=-rotDeg*Math.PI/180; const cos=Math.cos(rad), sin=Math.sin(rad); const dx=pxv-cx, dy=pyv-cy; return { x: dx*cos - dy*sin, y: dx*sin + dy*cos }; }
+      function worldToLocal(pxv, pyv, cx, cy, rotDeg) {
+        const rad = (-rotDeg * Math.PI) / 180;
+        const cos = Math.cos(rad),
+          sin = Math.sin(rad);
+        const dx = pxv - cx,
+          dy = pyv - cy;
+        return { x: dx * cos - dy * sin, y: dx * sin + dy * cos };
+      }
 
-      const onDown=(ev)=>{
-        const pt=getPoint(ev);
-        if (drawingPoly && drawingIdx>=0 && shapes[drawingIdx] && shapes[drawingIdx].type==='poly'){
-          if (shapes[drawingIdx].points.length===0){ pushHistory(); }
-          const s=shapes[drawingIdx];
-          if (s.points.length===0){
+      const onDown = (ev) => {
+        const pt = getPoint(ev);
+        if (
+          drawingPoly &&
+          drawingIdx >= 0 &&
+          shapes[drawingIdx] &&
+          shapes[drawingIdx].type === "poly"
+        ) {
+          if (shapes[drawingIdx].points.length === 0) {
+            pushHistory();
+          }
+          const s = shapes[drawingIdx];
+          if (s.points.length === 0) {
             s.pos = { x: pt.x, y: pt.y };
-            s.points.push({x:0,y:0});
+            s.points.push({ x: 0, y: 0 });
           } else {
-            const loc = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot||0);
-            s.points.push({ x: Math.round(loc.x/2), y: Math.round(loc.y/2) });
+            const loc = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot || 0);
+            s.points.push({
+              x: Math.round(loc.x / 2),
+              y: Math.round(loc.y / 2),
+            });
           }
           const n = s.points.length;
           if (!Array.isArray(s.bsPoly)) s.bsPoly = new Array(n).fill(false);
-          if (s.bsPoly.length !== n){
+          if (s.bsPoly.length !== n) {
             const old = s.bsPoly.slice(0);
             const next = new Array(n).fill(false);
-            for (let i=0;i<Math.min(old.length, next.length);i++){ next[i] = !!old[i]; }
+            for (let i = 0; i < Math.min(old.length, next.length); i++) {
+              next[i] = !!old[i];
+            }
             s.bsPoly = next;
           }
-          active=drawingIdx; shapeLabel.textContent=s.name; draw(); save(); ev.preventDefault(); return;
+          active = drawingIdx;
+          shapeLabel.textContent = s.name;
+          draw();
+          save();
+          ev.preventDefault();
+          return;
         }
-        if (toolMode==='resize'){
+        if (toolMode === "resize") {
           const ph = pickHandle(pt);
-          if (ph){
+          if (ph) {
             pushHistory();
-            const {h}=ph; resizeIdx=h.idx; resizeKey=h.key; resizing=true; isGestureActive=true; updateActionStates();
+            const { h } = ph;
+            resizeIdx = h.idx;
+            resizeKey = h.key;
+            resizing = true;
+            isGestureActive = true;
+            updateActionStates();
             if (gestureHintTimer) clearTimeout(gestureHintTimer);
-            gestureHintTimer=setTimeout(()=>{ const gh=sel('[data-ct-gesture-hint]', root); if (gh && isGestureActive) gh.hidden=true; }, 2000);
-            start=pt; const s=shapes[resizeIdx]; startLocal = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot);
-            orig = { len: JSON.parse(JSON.stringify(s.len)), pos: {x:s.pos.x,y:s.pos.y} };
-            ev.preventDefault(); return;
+            gestureHintTimer = setTimeout(() => {
+              const gh = sel("[data-ct-gesture-hint]", root);
+              if (gh && isGestureActive) gh.hidden = true;
+            }, 2000);
+            start = pt;
+            const s = shapes[resizeIdx];
+            startLocal = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot);
+            orig = {
+              len: JSON.parse(JSON.stringify(s.len)),
+              pos: { x: s.pos.x, y: s.pos.y },
+            };
+            ev.preventDefault();
+            return;
           }
         }
-        if(!dragging){
-          const idx=pickIndex(pt, 28);
-          if (idx!==-1){
-            if (idx!==active){ active=idx; shapeLabel.textContent=shapes[active].name; renderTabs(); syncInputs(); draw(); }
-            if (toolMode==='move'){
-              pushHistory(); dragging=true; isGestureActive=true; updateActionStates();
+        if (!dragging) {
+          const idx = pickIndex(pt, 28);
+          if (idx !== -1) {
+            if (idx !== active) {
+              active = idx;
+              shapeLabel.textContent = shapes[active].name;
+              renderTabs();
+              syncInputs();
+              draw();
+            }
+            if (toolMode === "move") {
+              pushHistory();
+              dragging = true;
+              isGestureActive = true;
+              updateActionStates();
               if (gestureHintTimer) clearTimeout(gestureHintTimer);
-              gestureHintTimer=setTimeout(()=>{ const gh=sel('[data-ct-gesture-hint]', root); if (gh && isGestureActive) gh.hidden=true; }, 2000);
-              start=pt; orig={...shapes[active].pos}; dragIdx=active; ev.preventDefault();
+              gestureHintTimer = setTimeout(() => {
+                const gh = sel("[data-ct-gesture-hint]", root);
+                if (gh && isGestureActive) gh.hidden = true;
+              }, 2000);
+              start = pt;
+              orig = { ...shapes[active].pos };
+              dragIdx = active;
+              ev.preventDefault();
             }
           }
         }
       };
 
-      const snapper = (val)=> opts.snap ? Math.round(val/10)*10 : val;
-      const onMove=(ev)=>{
-        const pt=getPoint(ev);
-        if(resizing){
-          const s=shapes[resizeIdx];
+      const snapper = (val) => (opts.snap ? Math.round(val / 10) * 10 : val);
+      const onMove = (ev) => {
+        const pt = getPoint(ev);
+        if (resizing) {
+          const s = shapes[resizeIdx];
           const curLocal = worldToLocal(pt.x, pt.y, s.pos.x, s.pos.y, s.rot);
           let dxIn = (curLocal.x - startLocal.x) / 2;
           let dyIn = (curLocal.y - startLocal.y) / 2;
-          if (opts.snap){ dxIn = Math.round(dxIn); dyIn = Math.round(dyIn); }
-          const clamp=(v,min,max)=> Math.min(Math.max(v,min),max);
+          if (opts.snap) {
+            dxIn = Math.round(dxIn);
+            dyIn = Math.round(dyIn);
+          }
+          const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
           const oLen = orig.len || {};
-          if (resizeKey==='A-right'){
-            const newA = clamp(Math.round((oLen.A||0) + dxIn), 1, 600);
+          if (resizeKey === "A-right") {
+            const newA = clamp(Math.round((oLen.A || 0) + dxIn), 1, 600);
             s.len.A = newA;
-            if (s.type==='u'){
-              const maxC = Math.max(1, newA-1);
-              s.len.C = clamp(Math.round(s.len.C||1), 1, maxC);
-              const spare = Math.max(0, newA - (s.len.C||1));
-              let e = Math.max(0, Math.min(spare, s.len.E||0));
-              let h = Math.max(0, Math.min(spare - e, s.len.H||0));
+            if (s.type === "u") {
+              const maxC = Math.max(1, newA - 1);
+              s.len.C = clamp(Math.round(s.len.C || 1), 1, maxC);
+              const spare = Math.max(0, newA - (s.len.C || 1));
+              let e = Math.max(0, Math.min(spare, s.len.E || 0));
+              let h = Math.max(0, Math.min(spare - e, s.len.H || 0));
               const used = e + h;
-              if (used > spare){ if (h > spare){ h = spare; e = 0; } else { e = spare - h; } }
+              if (used > spare) {
+                if (h > spare) {
+                  h = spare;
+                  e = 0;
+                } else {
+                  e = spare - h;
+                }
+              }
               s.len.E = Math.round(e);
               s.len.H = Math.round(h);
             }
-          } else if (resizeKey==='D'){
-            if (s.type==='rect'){
-              s.len.B = Math.max(1, Math.round((oLen.B||0)));
-            } else if (s.type==='u'){
-              const BL = Number((s.len.BL!=null)?s.len.BL:((s.len.B!=null)?s.len.B:25));
-              const BR = Number((s.len.BR!=null)?s.len.BR:((s.len.B!=null)?s.len.B:25));
+          } else if (resizeKey === "D") {
+            if (s.type === "rect") {
+              s.len.B = Math.max(1, Math.round(oLen.B || 0));
+            } else if (s.type === "u") {
+              const BL = Number(
+                s.len.BL != null ? s.len.BL : s.len.B != null ? s.len.B : 25
+              );
+              const BR = Number(
+                s.len.BR != null ? s.len.BR : s.len.B != null ? s.len.B : 25
+              );
               const m = Math.max(0, Math.min(BL, BR));
-              s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, m-1));
-            } else if (s.type==='l'){
-              s.len.D = clamp(Math.round((oLen.D||0) + dyIn), 0, Math.max(0, (s.len.B||0)-1));
+              s.len.D = clamp(
+                Math.round((oLen.D || 0) + dyIn),
+                0,
+                Math.max(0, m - 1)
+              );
+            } else if (s.type === "l") {
+              s.len.D = clamp(
+                Math.round((oLen.D || 0) + dyIn),
+                0,
+                Math.max(0, (s.len.B || 0) - 1)
+              );
             }
-          } else if (resizeKey==='BL' && s.type==='u'){
-            const curBL = (oLen.BL!=null)?oLen.BL:((oLen.B!=null)?oLen.B:25);
+          } else if (resizeKey === "BL" && s.type === "u") {
+            const curBL =
+              oLen.BL != null ? oLen.BL : oLen.B != null ? oLen.B : 25;
             const newBL = clamp(Math.round(curBL + dyIn), 1, 240);
             s.len.BL = newBL;
-            const BR = Number((s.len.BR!=null)?s.len.BR:((s.len.B!=null)?s.len.B:25));
+            const BR = Number(
+              s.len.BR != null ? s.len.BR : s.len.B != null ? s.len.B : 25
+            );
             const m = Math.max(0, Math.min(newBL, BR));
-            s.len.D = Math.max(0, Math.min(Math.round(s.len.D||0), Math.max(0, m-1)));
-          } else if (resizeKey==='BR' && s.type==='u'){
-            const curBR = (oLen.BR!=null)?oLen.BR:((oLen.B!=null)?oLen.B:25);
+            s.len.D = Math.max(
+              0,
+              Math.min(Math.round(s.len.D || 0), Math.max(0, m - 1))
+            );
+          } else if (resizeKey === "BR" && s.type === "u") {
+            const curBR =
+              oLen.BR != null ? oLen.BR : oLen.B != null ? oLen.B : 25;
             const newBR = clamp(Math.round(curBR + dyIn), 1, 240);
             s.len.BR = newBR;
-            const BL = Number((s.len.BL!=null)?s.len.BL:((s.len.B!=null)?s.len.B:25));
+            const BL = Number(
+              s.len.BL != null ? s.len.BL : s.len.B != null ? s.len.B : 25
+            );
             const m = Math.max(0, Math.min(BL, newBR));
-            s.len.D = Math.max(0, Math.min(Math.round(s.len.D||0), Math.max(0, m-1)));
-          } else if (['E','H'].includes(String(resizeKey)) && s.type==='u'){
-            if (resizeKey==='E'){
-              const maxE = Math.max(0, (s.len.A||0) - 1 - (s.len.H||0));
-              s.len.E = clamp(Math.round((oLen.E||0) + dxIn), 0, maxE);
-            } else if (resizeKey==='H'){
-              const maxH = Math.max(0, (s.len.A||0) - 1 - (s.len.E||0));
-              s.len.H = clamp(Math.round((oLen.H||0) - dxIn), 0, maxH);
+            s.len.D = Math.max(
+              0,
+              Math.min(Math.round(s.len.D || 0), Math.max(0, m - 1))
+            );
+          } else if (["E", "H"].includes(String(resizeKey)) && s.type === "u") {
+            if (resizeKey === "E") {
+              const maxE = Math.max(0, (s.len.A || 0) - 1 - (s.len.H || 0));
+              s.len.E = clamp(Math.round((oLen.E || 0) + dxIn), 0, maxE);
+            } else if (resizeKey === "H") {
+              const maxH = Math.max(0, (s.len.A || 0) - 1 - (s.len.E || 0));
+              s.len.H = clamp(Math.round((oLen.H || 0) - dxIn), 0, maxH);
             }
-          } else if (resizeKey && String(resizeKey).startsWith('P-') && s.type==='poly'){
-            const i = parseInt(String(resizeKey).split('-')[1]||'-1',10);
-            if (Array.isArray(s.points) && i>=0){
-              if (!orig.points) orig.points = s.points.map(p=> ({x:p.x, y:p.y}));
-              const a = orig.points[i]; const b = orig.points[(i+1)%orig.points.length];
-              const ax=a.x, ay=a.y, bx=b.x, by=b.y;
-              const vx=bx-ax, vy=by-ay; const len=Math.hypot(vx,vy)||1; const nx=vx/len, ny=vy/len;
-              const t = (dxIn*nx + dyIn*ny);
+          } else if (
+            resizeKey &&
+            String(resizeKey).startsWith("P-") &&
+            s.type === "poly"
+          ) {
+            const i = parseInt(String(resizeKey).split("-")[1] || "-1", 10);
+            if (Array.isArray(s.points) && i >= 0) {
+              if (!orig.points)
+                orig.points = s.points.map((p) => ({ x: p.x, y: p.y }));
+              const a = orig.points[i];
+              const b = orig.points[(i + 1) % orig.points.length];
+              const ax = a.x,
+                ay = a.y,
+                bx = b.x,
+                by = b.y;
+              const vx = bx - ax,
+                vy = by - ay;
+              const len = Math.hypot(vx, vy) || 1;
+              const nx = vx / len,
+                ny = vy / len;
+              const t = dxIn * nx + dyIn * ny;
               const move = t;
-              s.points[(i+1)%s.points.length] = { x: Math.round(bx + move*nx), y: Math.round(by + move*ny) };
+              s.points[(i + 1) % s.points.length] = {
+                x: Math.round(bx + move * nx),
+                y: Math.round(by + move * ny),
+              };
             }
-          } else if (resizeKey && String(resizeKey).startsWith('V-')){
-            const i = parseInt(String(resizeKey).split('-')[1]||'-1',10);
-            if (Array.isArray(s.points) && i>=0 && i<s.points.length){
-              if (!orig.points) orig.points = s.points.map(p=> ({x:p.x, y:p.y}));
+          } else if (resizeKey && String(resizeKey).startsWith("V-")) {
+            const i = parseInt(String(resizeKey).split("-")[1] || "-1", 10);
+            if (Array.isArray(s.points) && i >= 0 && i < s.points.length) {
+              if (!orig.points)
+                orig.points = s.points.map((p) => ({ x: p.x, y: p.y }));
               const op = orig.points[i];
-              const nx = (op.x||0) + dxIn; const ny = (op.y||0) + dyIn;
+              const nx = (op.x || 0) + dxIn;
+              const ny = (op.y || 0) + dyIn;
               s.points[i] = { x: Math.round(nx), y: Math.round(ny) };
             }
-          } else if (resizeKey && String(resizeKey).startsWith('RC-P-') && s.type==='poly'){
+          } else if (
+            resizeKey &&
+            String(resizeKey).startsWith("RC-P-") &&
+            s.type === "poly"
+          ) {
             // Corner size drag for polygon: adjust corner[i].value by projecting drag along bisector direction
-            const i = parseInt(String(resizeKey).split('-')[2]||'-1',10);
-            if (Array.isArray(s.points) && i>=0){
-              if (!orig.points) orig.points = s.points.map(p=> ({x:p.x, y:p.y}));
-              const pts = orig.points; const n=pts.length;
-              const p0 = pts[(i-1+n)%n], p1=pts[i], p2=pts[(i+1)%n];
+            const i = parseInt(String(resizeKey).split("-")[2] || "-1", 10);
+            if (Array.isArray(s.points) && i >= 0) {
+              if (!orig.points)
+                orig.points = s.points.map((p) => ({ x: p.x, y: p.y }));
+              const pts = orig.points;
+              const n = pts.length;
+              const p0 = pts[(i - 1 + n) % n],
+                p1 = pts[i],
+                p2 = pts[(i + 1) % n];
               const v10 = { x: p0.x - p1.x, y: p0.y - p1.y };
               const v12 = { x: p2.x - p1.x, y: p2.y - p1.y };
-              const l10=Math.hypot(v10.x,v10.y)||1, l12=Math.hypot(v12.x,v12.y)||1;
-              const u10={x:v10.x/l10,y:v10.y/l10}, u12={x:v12.x/l12,y:v12.y/l12};
+              const l10 = Math.hypot(v10.x, v10.y) || 1,
+                l12 = Math.hypot(v12.x, v12.y) || 1;
+              const u10 = { x: v10.x / l10, y: v10.y / l10 },
+                u12 = { x: v12.x / l12, y: v12.y / l12 };
               // unit bisector direction inward from p1
               const bis = { x: u10.x + u12.x, y: u10.y + u12.y };
-              const bl=Math.hypot(bis.x,bis.y)||1; const ub={x:bis.x/bl,y:bis.y/bl};
-              const delta = (dxIn*ub.x + dyIn*ub.y);
-              const nOld = (Array.isArray(s.corners) && s.corners[i]) ? Number(s.corners[i].value||0) : 0;
+              const bl = Math.hypot(bis.x, bis.y) || 1;
+              const ub = { x: bis.x / bl, y: bis.y / bl };
+              const delta = dxIn * ub.x + dyIn * ub.y;
+              const nOld =
+                Array.isArray(s.corners) && s.corners[i]
+                  ? Number(s.corners[i].value || 0)
+                  : 0;
               const vNew = Math.max(0, Math.min(48, Math.round(nOld + delta)));
-              if (!Array.isArray(s.corners)) s.corners = new Array(n).fill(null);
-              const mode = (s.corners[i]?.mode)||'radius';
+              if (!Array.isArray(s.corners))
+                s.corners = new Array(n).fill(null);
+              const mode = s.corners[i]?.mode || "radius";
               s.corners[i] = { mode, value: vNew };
             }
-          } else if (resizeKey && String(resizeKey).startsWith('RC-') && (s.type==='rect' || s.type==='l' || s.type==='u')){
+          } else if (
+            resizeKey &&
+            String(resizeKey).startsWith("RC-") &&
+            (s.type === "rect" || s.type === "l" || s.type === "u")
+          ) {
             // Corner size drag for Rect/L/U: use average of dx,dy magnitude in local space as inches delta
-            const map = { 'RC-TL':'TL','RC-TR':'TR','RC-BR':'BR','RC-BL':'BL' };
-            const key = map[String(resizeKey)]||'TL';
-            const prev = (s.rcCorners && s.rcCorners[key]) ? Number(s.rcCorners[key].value||0) : 0;
+            const map = {
+              "RC-TL": "TL",
+              "RC-TR": "TR",
+              "RC-BR": "BR",
+              "RC-BL": "BL",
+            };
+            const key = map[String(resizeKey)] || "TL";
+            const prev =
+              s.rcCorners && s.rcCorners[key]
+                ? Number(s.rcCorners[key].value || 0)
+                : 0;
             const deltaIn = (Math.abs(dxIn) + Math.abs(dyIn)) / 2;
             let vNew = Math.max(0, Math.min(12, Math.round(prev + deltaIn)));
             // Geometric clamp
-            const widthIn = Number(s.len?.A||0);
-            const heightIn = (s.type==='u') ? Math.max(Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25)), Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25))) : Number(s.len?.B||0);
+            const widthIn = Number(s.len?.A || 0);
+            const heightIn =
+              s.type === "u"
+                ? Math.max(
+                    Number(
+                      s.len?.BL != null
+                        ? s.len.BL
+                        : s.len?.B != null
+                        ? s.len.B
+                        : 25
+                    ),
+                    Number(
+                      s.len?.BR != null
+                        ? s.len.BR
+                        : s.len?.B != null
+                        ? s.len.B
+                        : 25
+                    )
+                  )
+                : Number(s.len?.B || 0);
             const rc = s.rcCorners || {};
-            const valOf = (k)=> Math.max(0, Number(rc[k]?.value||0));
-            if (key==='TL'){
-              vNew = Math.min(vNew, Math.max(0, widthIn - valOf('TR')));
-              vNew = Math.min(vNew, Math.max(0, heightIn - valOf('BL')));
-            } else if (key==='TR'){
-              vNew = Math.min(vNew, Math.max(0, widthIn - valOf('TL')));
-              vNew = Math.min(vNew, Math.max(0, heightIn - valOf('BR')));
-            } else if (key==='BR'){
-              vNew = Math.min(vNew, Math.max(0, widthIn - valOf('BL')));
-              vNew = Math.min(vNew, Math.max(0, heightIn - valOf('TR')));
-            } else if (key==='BL'){
-              vNew = Math.min(vNew, Math.max(0, widthIn - valOf('BR')));
-              vNew = Math.min(vNew, Math.max(0, heightIn - valOf('TL')));
+            const valOf = (k) => Math.max(0, Number(rc[k]?.value || 0));
+            if (key === "TL") {
+              vNew = Math.min(vNew, Math.max(0, widthIn - valOf("TR")));
+              vNew = Math.min(vNew, Math.max(0, heightIn - valOf("BL")));
+            } else if (key === "TR") {
+              vNew = Math.min(vNew, Math.max(0, widthIn - valOf("TL")));
+              vNew = Math.min(vNew, Math.max(0, heightIn - valOf("BR")));
+            } else if (key === "BR") {
+              vNew = Math.min(vNew, Math.max(0, widthIn - valOf("BL")));
+              vNew = Math.min(vNew, Math.max(0, heightIn - valOf("TR")));
+            } else if (key === "BL") {
+              vNew = Math.min(vNew, Math.max(0, widthIn - valOf("BR")));
+              vNew = Math.min(vNew, Math.max(0, heightIn - valOf("TL")));
             }
-            if (!s.rcCorners) s.rcCorners = {TL:{mode:'square',value:0}, TR:{mode:'square',value:0}, BR:{mode:'square',value:0}, BL:{mode:'square',value:0}};
-            const mode = s.rcCorners[key]?.mode || 'radius';
+            if (!s.rcCorners)
+              s.rcCorners = {
+                TL: { mode: "square", value: 0 },
+                TR: { mode: "square", value: 0 },
+                BR: { mode: "square", value: 0 },
+                BL: { mode: "square", value: 0 },
+              };
+            const mode = s.rcCorners[key]?.mode || "radius";
             s.rcCorners[key] = { mode, value: vNew };
-          } else if (resizeKey && String(resizeKey).startsWith('IC-') && (s.type==='l' || s.type==='u')){
-            const map = { 'IC-TL':'iTL','IC-TR':'iTR','IC-BR':'iBR','IC-BL':'iBL' };
-            const key = map[String(resizeKey)]||'iTL';
-            const prev = (s.icCorners && s.icCorners[key]) ? Number(s.icCorners[key].value||0) : 0;
+          } else if (
+            resizeKey &&
+            String(resizeKey).startsWith("IC-") &&
+            (s.type === "l" || s.type === "u")
+          ) {
+            const map = {
+              "IC-TL": "iTL",
+              "IC-TR": "iTR",
+              "IC-BR": "iBR",
+              "IC-BL": "iBL",
+            };
+            const key = map[String(resizeKey)] || "iTL";
+            const prev =
+              s.icCorners && s.icCorners[key]
+                ? Number(s.icCorners[key].value || 0)
+                : 0;
             const deltaIn = (Math.abs(dxIn) + Math.abs(dyIn)) / 2;
             let vNew = Math.max(0, Math.min(12, Math.round(prev + deltaIn)));
             // Geometric clamp
-            if (s.type==='u'){
-              const A = Number(s.len?.A||0);
-              const eIn = Number(s.len?.E||0), hIn = Number(s.len?.H||0);
-              const dIn = Number(s.len?.D||0);
-              const BL = Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25));
-              const BR = Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25));
+            if (s.type === "u") {
+              const A = Number(s.len?.A || 0);
+              const eIn = Number(s.len?.E || 0),
+                hIn = Number(s.len?.H || 0);
+              const dIn = Number(s.len?.D || 0);
+              const BL = Number(
+                s.len?.BL != null ? s.len.BL : s.len?.B != null ? s.len.B : 25
+              );
+              const BR = Number(
+                s.len?.BR != null ? s.len.BR : s.len?.B != null ? s.len.B : 25
+              );
               const innerW = Math.max(1, A - (eIn + hIn));
-              const innerH = Math.max(0, Math.min(BL,BR) - dIn);
-              const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
+              const innerH = Math.max(0, Math.min(BL, BR) - dIn);
+              const tMaxIn = Math.max(0, Math.min(innerW / 2, innerH / 2));
               vNew = Math.min(vNew, tMaxIn);
-            } else if (s.type==='l'){
-              const aIn = Number(s.len?.A||0), bIn = Number(s.len?.B||0);
-              const cIn = Number(s.len?.C||0), dIn2 = Number(s.len?.D||0);
+            } else if (s.type === "l") {
+              const aIn = Number(s.len?.A || 0),
+                bIn = Number(s.len?.B || 0);
+              const cIn = Number(s.len?.C || 0),
+                dIn2 = Number(s.len?.D || 0);
               const innerW = Math.max(0, aIn - cIn);
               const innerH = Math.max(0, bIn - dIn2);
-              const tMaxIn = Math.max(0, Math.min(innerW/2, innerH/2));
+              const tMaxIn = Math.max(0, Math.min(innerW / 2, innerH / 2));
               vNew = Math.min(vNew, tMaxIn);
             }
-            if (!s.icCorners) s.icCorners = { iTL:{mode:'square',value:0}, iTR:{mode:'square',value:0}, iBR:{mode:'square',value:0}, iBL:{mode:'square',value:0} };
-            const mode = s.icCorners[key]?.mode || 'radius';
+            if (!s.icCorners)
+              s.icCorners = {
+                iTL: { mode: "square", value: 0 },
+                iTR: { mode: "square", value: 0 },
+                iBR: { mode: "square", value: 0 },
+                iBL: { mode: "square", value: 0 },
+              };
+            const mode = s.icCorners[key]?.mode || "radius";
             s.icCorners[key] = { mode, value: vNew };
           }
-          draw(); updateOversize(); updateSummary(); return;
-        }
-        if(!dragging){
-          const idx=pickIndex(pt, 28);
-          if (hover!==idx){ hover=idx; }
-          let changed=false;
-          let ph = null;
-          if (toolMode==='resize'){
-            ph = pickHandle(pt);
-            svgEl.style.cursor = ph ? 'nwse-resize' : (hover!==-1 ? 'move' : 'default');
-          } else {
-            svgEl.style.cursor = hover!==-1 ? 'move' : 'default';
-          }
-          const newSig = ph ? (ph.h.key+':'+ph.i) : '';
-          const oldSig = hoverHandle ? (hoverHandle.h.key+':'+hoverHandle.i) : '';
-          if (newSig !== oldSig){ hoverHandle = ph; changed=true; }
-          if (changed){ draw(); }
+          draw();
+          updateOversize();
+          updateSummary();
           return;
         }
-        const dx=pt.x-start.x, dy=pt.y-start.y; shapes[dragIdx].pos={x:snapper(orig.x+dx),y:snapper(orig.y+dy)}; draw();
-      };
-
-      const onUp=()=>{
-        if(resizing){
-          resizing=false; resizeIdx=-1; resizeKey=null; hoverHandle=null; isGestureActive=false;
-          if (gestureHintTimer) clearTimeout(gestureHintTimer);
-          try{ const pop=sel('[data-ct-gesture-pop]', root); if (pop) pop.hidden=true; }catch(e){}
-          updateActionStates(); save(); return;
+        if (!dragging) {
+          const idx = pickIndex(pt, 28);
+          if (hover !== idx) {
+            hover = idx;
+          }
+          let changed = false;
+          let ph = null;
+          if (toolMode === "resize") {
+            ph = pickHandle(pt);
+            svgEl.style.cursor = ph
+              ? "nwse-resize"
+              : hover !== -1
+              ? "move"
+              : "default";
+          } else {
+            svgEl.style.cursor = hover !== -1 ? "move" : "default";
+          }
+          const newSig = ph ? ph.h.key + ":" + ph.i : "";
+          const oldSig = hoverHandle
+            ? hoverHandle.h.key + ":" + hoverHandle.i
+            : "";
+          if (newSig !== oldSig) {
+            hoverHandle = ph;
+            changed = true;
+          }
+          if (changed) {
+            draw();
+          }
+          return;
         }
-        if(!dragging) return;
-        dragging=false; dragIdx=-1; isGestureActive=false;
-        if (gestureHintTimer) clearTimeout(gestureHintTimer);
-        try{ const pop=sel('[data-ct-gesture-pop]', root); if (pop) pop.hidden=true; }catch(e){}
-        updateActionStates(); save();
+        const dx = pt.x - start.x,
+          dy = pt.y - start.y;
+        shapes[dragIdx].pos = {
+          x: snapper(orig.x + dx),
+          y: snapper(orig.y + dy),
+        };
+        draw();
       };
 
-      svgEl.addEventListener('mousedown', onDown);
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onUp);
-      svgEl.addEventListener('touchstart', onDown, {passive:false});
-      window.addEventListener('touchmove', onMove, {passive:false});
-      window.addEventListener('touchend', onUp);
-      window.addEventListener('keydown', (ev)=>{
-        if (ev.key !== 'Escape') return;
-        try{ const pop = sel('[data-ct-gesture-pop]', root); if (pop && !pop.hidden){ pop.hidden = true; } }catch(e){}
+      const onUp = () => {
+        if (resizing) {
+          resizing = false;
+          resizeIdx = -1;
+          resizeKey = null;
+          hoverHandle = null;
+          isGestureActive = false;
+          if (gestureHintTimer) clearTimeout(gestureHintTimer);
+          try {
+            const pop = sel("[data-ct-gesture-pop]", root);
+            if (pop) pop.hidden = true;
+          } catch (e) {}
+          updateActionStates();
+          save();
+          return;
+        }
+        if (!dragging) return;
+        dragging = false;
+        dragIdx = -1;
+        isGestureActive = false;
+        if (gestureHintTimer) clearTimeout(gestureHintTimer);
+        try {
+          const pop = sel("[data-ct-gesture-pop]", root);
+          if (pop) pop.hidden = true;
+        } catch (e) {}
+        updateActionStates();
+        save();
+      };
+
+      svgEl.addEventListener("mousedown", onDown);
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+      svgEl.addEventListener("touchstart", onDown, { passive: false });
+      window.addEventListener("touchmove", onMove, { passive: false });
+      window.addEventListener("touchend", onUp);
+      window.addEventListener("keydown", (ev) => {
+        if (ev.key !== "Escape") return;
+        try {
+          const pop = sel("[data-ct-gesture-pop]", root);
+          if (pop && !pop.hidden) {
+            pop.hidden = true;
+          }
+        } catch (e) {}
         if (!dragging && !resizing) return;
         ev.preventDefault();
         undo();
-        dragging=false; dragIdx=-1; resizing=false; resizeIdx=-1; resizeKey=null; hoverHandle=null; isGestureActive=false; updateActionStates();
-        announce('Canceled'); try{ toast('Canceled'); }catch(e){}
+        dragging = false;
+        dragIdx = -1;
+        resizing = false;
+        resizeIdx = -1;
+        resizeKey = null;
+        hoverHandle = null;
+        isGestureActive = false;
+        updateActionStates();
+        announce("Canceled");
+        try {
+          toast("Canceled");
+        } catch (e) {}
       });
-      svgEl.addEventListener('dblclick', ()=>{ if(drawingPoly){ pushHistory(); drawingPoly=false; drawingIdx=-1; save(); draw(); } });
+      svgEl.addEventListener("dblclick", () => {
+        if (drawingPoly) {
+          pushHistory();
+          drawingPoly = false;
+          drawingIdx = -1;
+          save();
+          draw();
+        }
+      });
     })();
-  // Reposition inline inputs on resize/scroll
-  window.addEventListener('resize', ()=>{ if (inlineHost) { try{ renderInlineInputs(); }catch(e){} } });
-  window.addEventListener('scroll', ()=>{ if (inlineHost) { try{ renderInlineInputs(); }catch(e){} } }, true);
+    // Reposition inline inputs on resize/scroll
+    window.addEventListener("resize", () => {
+      if (inlineHost) {
+        try {
+          renderInlineInputs();
+        } catch (e) {}
+      }
+    });
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (inlineHost) {
+          try {
+            renderInlineInputs();
+          } catch (e) {}
+        }
+      },
+      true
+    );
 
     // Toolbar bindings
-    root.querySelectorAll('.kc-ct-toolbar [data-ct-tool]')?.forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const type = btn.getAttribute('data-ct-tool')||'move';
-        if (type==='shapes'){
-          const panelBtn = sel('[data-ct-panel="shapes"]', root); if (panelBtn) panelBtn.click();
+    root.querySelectorAll(".kc-ct-toolbar [data-ct-tool]")?.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const type = btn.getAttribute("data-ct-tool") || "move";
+        if (type === "shapes") {
+          const panelBtn = sel('[data-ct-panel="shapes"]', root);
+          if (panelBtn) panelBtn.click();
           // restore Move active
-          root.querySelectorAll('.kc-ct-toolbar .kc-tool').forEach(b=> b.classList.remove('is-active'));
-          const mv = sel('.kc-ct-toolbar [data-ct-tool="move"]', root); if (mv){ mv.classList.add('is-active'); }
-          toolMode='move'; mode='move';
-          root.querySelectorAll('[data-ct-tool-mode]').forEach(b=> b.classList.toggle('is-active', (b.getAttribute('data-ct-tool-mode')||'move')==='move'));
+          root
+            .querySelectorAll(".kc-ct-toolbar .kc-tool")
+            .forEach((b) => b.classList.remove("is-active"));
+          const mv = sel('.kc-ct-toolbar [data-ct-tool="move"]', root);
+          if (mv) {
+            mv.classList.add("is-active");
+          }
+          toolMode = "move";
+          mode = "move";
+          root
+            .querySelectorAll("[data-ct-tool-mode]")
+            .forEach((b) =>
+              b.classList.toggle(
+                "is-active",
+                (b.getAttribute("data-ct-tool-mode") || "move") === "move"
+              )
+            );
           return;
         }
-        if (type==='resize'){
-          const panelBtn = sel('[data-ct-panel="measure"]', root); if (panelBtn) panelBtn.click();
+        if (type === "resize") {
+          const panelBtn = sel('[data-ct-panel="measure"]', root);
+          if (panelBtn) panelBtn.click();
         }
-        root.querySelectorAll('.kc-ct-toolbar .kc-tool').forEach(b=> b.classList.remove('is-active'));
-        btn.classList.add('is-active');
+        root
+          .querySelectorAll(".kc-ct-toolbar .kc-tool")
+          .forEach((b) => b.classList.remove("is-active"));
+        btn.classList.add("is-active");
         toolMode = type;
         // sync left palette
-        root.querySelectorAll('[data-ct-tool-mode]').forEach(b=>{
-          const name = b.getAttribute('data-ct-tool-mode') || 'move';
-          b.classList.toggle('is-active', name===toolMode);
+        root.querySelectorAll("[data-ct-tool-mode]").forEach((b) => {
+          const name = b.getAttribute("data-ct-tool-mode") || "move";
+          b.classList.toggle("is-active", name === toolMode);
         });
         mode = toolMode;
         // redraw to reflect handle visibility for the new mode
         draw();
       });
     });
-  // Undo / Redo toolbar buttons
-  sel('[data-ct-undo]', root)?.addEventListener('click', ()=>{ undo(); });
-  sel('[data-ct-redo]', root)?.addEventListener('click', ()=>{ redo(); });
-  // Gesture cancel button
-  sel('[data-ct-gesture-cancel]', root)?.addEventListener('click', (e)=>{ e.preventDefault(); if (isGestureActive) { undo(); isGestureActive=false; updateActionStates(); announce('Canceled'); try{ toast('Canceled'); }catch(e){} } });
-  // Help popover toggle
-  sel('[data-ct-gesture-help]', root)?.addEventListener('click', (e)=>{ e.preventDefault(); const pop = sel('[data-ct-gesture-pop]', root); if (!pop) return; pop.hidden = !pop.hidden; });
-  // Duplicate already bound to all matching buttons above
-  const svgView = sel('[data-ct-svg]', root);
-  function applyZoom(){ svgView.setAttribute('viewBox', `0 0 ${600/zoom} ${600/zoom}`); }
-  sel('[data-ct-zoom-in]', root)?.addEventListener('click', ()=>{ zoom=Math.min(3, zoom+0.2); applyZoom(); draw(); });
-  sel('[data-ct-zoom-out]', root)?.addEventListener('click', ()=>{ zoom=Math.max(0.4, zoom-0.2); applyZoom(); draw(); });
-    root.querySelectorAll('[data-ct-counter]').forEach(box=>{
-      const key = box.getAttribute('data-ct-counter');
-      const valEl = box.querySelector('.kc-ctr-val');
-      const sync = ()=>{ valEl.textContent = String(opts[key]); };
-  box.querySelector('.kc-ctr-inc')?.addEventListener('click', ()=>{ pushHistory(); opts[key] = (opts[key]||0)+1; sync(); updateSummary(); save(); });
-  box.querySelector('.kc-ctr-dec')?.addEventListener('click', ()=>{ pushHistory(); opts[key] = Math.max(0,(opts[key]||0)-1); sync(); updateSummary(); save(); });
+    // Undo / Redo toolbar buttons
+    sel("[data-ct-undo]", root)?.addEventListener("click", () => {
+      undo();
+    });
+    sel("[data-ct-redo]", root)?.addEventListener("click", () => {
+      redo();
+    });
+    // Gesture cancel button
+    sel("[data-ct-gesture-cancel]", root)?.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (isGestureActive) {
+        undo();
+        isGestureActive = false;
+        updateActionStates();
+        announce("Canceled");
+        try {
+          toast("Canceled");
+        } catch (e) {}
+      }
+    });
+    // Help popover toggle
+    sel("[data-ct-gesture-help]", root)?.addEventListener("click", (e) => {
+      e.preventDefault();
+      const pop = sel("[data-ct-gesture-pop]", root);
+      if (!pop) return;
+      pop.hidden = !pop.hidden;
+    });
+    // Duplicate already bound to all matching buttons above
+    const svgView = sel("[data-ct-svg]", root);
+    function applyZoom() {
+      svgView.setAttribute("viewBox", `0 0 ${600 / zoom} ${600 / zoom}`);
+    }
+    sel("[data-ct-zoom-in]", root)?.addEventListener("click", () => {
+      zoom = Math.min(3, zoom + 0.2);
+      applyZoom();
+      draw();
+    });
+    sel("[data-ct-zoom-out]", root)?.addEventListener("click", () => {
+      zoom = Math.max(0.4, zoom - 0.2);
+      applyZoom();
+      draw();
+    });
+    sel("[data-ct-zoom-reset]", root)?.addEventListener("click", () => {
+      zoom = 1;
+      applyZoom();
+      draw();
+    });
+    root.querySelectorAll("[data-ct-counter]").forEach((box) => {
+      const key = box.getAttribute("data-ct-counter");
+      const valEl = box.querySelector(".kc-ctr-val");
+      const sync = () => {
+        valEl.textContent = String(opts[key]);
+      };
+      box.querySelector(".kc-ctr-inc")?.addEventListener("click", () => {
+        pushHistory();
+        opts[key] = (opts[key] || 0) + 1;
+        sync();
+        updateSummary();
+        save();
+      });
+      box.querySelector(".kc-ctr-dec")?.addEventListener("click", () => {
+        pushHistory();
+        opts[key] = Math.max(0, (opts[key] || 0) - 1);
+        sync();
+        updateSummary();
+        save();
+      });
       sync();
     });
 
-    // keyboard nudging for active shape
-    root.addEventListener('keydown', (e)=>{
-      if (drawingPoly){
-        if (e.key==='Enter'){ pushHistory(); drawingPoly=false; drawingIdx=-1; draw(); save(); }
-        if (e.key==='Escape'){ // cancel drawing: remove empty poly
-          if (drawingIdx>=0 && shapes[drawingIdx] && Array.isArray(shapes[drawingIdx].points) && shapes[drawingIdx].points.length<3){ shapes.splice(drawingIdx,1); active=Math.max(-1, Math.min(active, shapes.length-1)); }
-          drawingPoly=false; drawingIdx=-1; draw(); save();
+    // keyboard nudging for active shape + shortcuts
+    root.addEventListener("keydown", (e) => {
+      if (drawingPoly) {
+        if (e.key === "Enter") {
+          pushHistory();
+          drawingPoly = false;
+          drawingIdx = -1;
+          draw();
+          save();
+        }
+        if (e.key === "Escape") {
+          // cancel drawing: remove empty poly
+          if (
+            drawingIdx >= 0 &&
+            shapes[drawingIdx] &&
+            Array.isArray(shapes[drawingIdx].points) &&
+            shapes[drawingIdx].points.length < 3
+          ) {
+            shapes.splice(drawingIdx, 1);
+            active = Math.max(-1, Math.min(active, shapes.length - 1));
+          }
+          drawingPoly = false;
+          drawingIdx = -1;
+          draw();
+          save();
         }
         return;
       }
       // Undo/Redo shortcuts
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); return; }
-      if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase()==='y' || (e.shiftKey && e.key.toLowerCase()==='z'))){ e.preventDefault(); redo(); return; }
-      if (active<0) return;
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        !e.shiftKey &&
+        e.key.toLowerCase() === "z"
+      ) {
+        e.preventDefault();
+        undo();
+        return;
+      }
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key.toLowerCase() === "y" ||
+          (e.shiftKey && e.key.toLowerCase() === "z"))
+      ) {
+        e.preventDefault();
+        redo();
+        return;
+      }
+      // Delete active shape via Delete/Backspace when not typing and no active gesture
+      if (!isGestureActive && (e.key === "Delete" || e.key === "Backspace")) {
+        const tag =
+          (document.activeElement && document.activeElement.tagName) || "";
+        const isTyping =
+          /^(INPUT|TEXTAREA|SELECT)$/i.test(tag) ||
+          (document.activeElement && document.activeElement.isContentEditable);
+        if (!isTyping && active >= 0) {
+          e.preventDefault();
+          pushHistory();
+          if (shapes.length <= 1) {
+            shapes = [];
+            active = -1;
+            shapeLabel.textContent = "No shape selected";
+            renderTabs();
+            syncInputs();
+            draw();
+            updateOversize();
+            updateActionStates();
+            updateSummary();
+            save();
+            return;
+          }
+          shapes.splice(active, 1);
+          if (active >= shapes.length) active = shapes.length - 1;
+          shapes.forEach((s, i) => (s.name = "Shape " + (i + 1)));
+          shapeLabel.textContent = shapes[active].name;
+          renderTabs();
+          syncInputs();
+          draw();
+          updateOversize();
+          updateActionStates();
+          updateSummary();
+          save();
+          return;
+        }
+      }
+      if (active < 0) return;
       const step = opts.snap ? 10 : 2;
-      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
+      if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
         e.preventDefault();
         pushHistory();
         const p = shapes[active].pos;
-        if (e.key==='ArrowLeft') p.x -= step;
-        if (e.key==='ArrowRight') p.x += step;
-        if (e.key==='ArrowUp') p.y -= step;
-        if (e.key==='ArrowDown') p.y += step;
-        draw(); save();
+        if (e.key === "ArrowLeft") p.x -= step;
+        if (e.key === "ArrowRight") p.x += step;
+        if (e.key === "ArrowUp") p.y -= step;
+        if (e.key === "ArrowDown") p.y += step;
+        draw();
+        save();
       }
     });
 
-    function syncOptionsUI(){
-      root.querySelectorAll('[data-ct-opt]').forEach(btn=>{
-        const key=btn.getAttribute('data-ct-opt'); const val=btn.getAttribute('data-value');
-        const on = (opts[key]===val); btn.classList.toggle('is-active', on); btn.setAttribute('aria-pressed', on?'true':'false');
+    function syncOptionsUI() {
+      root.querySelectorAll("[data-ct-opt]").forEach((btn) => {
+        const key = btn.getAttribute("data-ct-opt");
+        const val = btn.getAttribute("data-value");
+        const on = opts[key] === val;
+        btn.classList.toggle("is-active", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
       });
-      root.querySelectorAll('[data-ct-radio]').forEach(btn=>{
-        const key=btn.getAttribute('data-ct-radio'); const val=btn.getAttribute('data-value');
-        const on = (opts[key]===val); btn.classList.toggle('is-active', on); btn.setAttribute('aria-pressed', on?'true':'false');
+      root.querySelectorAll("[data-ct-radio]").forEach((btn) => {
+        const key = btn.getAttribute("data-ct-radio");
+        const val = btn.getAttribute("data-value");
+        const on = opts[key] === val;
+        btn.classList.toggle("is-active", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
       });
-      root.querySelectorAll('[data-ct-multi]').forEach(btn=>{
-        const key=btn.getAttribute('data-ct-multi'); const val=btn.getAttribute('data-value');
-        const list = Array.isArray(opts[key]) ? opts[key] : (opts[key] ? [opts[key]] : []);
-        const on = list.includes(val); btn.classList.toggle('is-active', on); btn.setAttribute('aria-pressed', on?'true':'false');
+      root.querySelectorAll("[data-ct-multi]").forEach((btn) => {
+        const key = btn.getAttribute("data-ct-multi");
+        const val = btn.getAttribute("data-value");
+        const list = Array.isArray(opts[key])
+          ? opts[key]
+          : opts[key]
+          ? [opts[key]]
+          : [];
+        const on = list.includes(val);
+        btn.classList.toggle("is-active", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
       });
-      root.querySelectorAll('[data-ct-counter]').forEach(box=>{
-        const key = box.getAttribute('data-ct-counter'); const valEl = box.querySelector('.kc-ctr-val');
-        if (valEl) valEl.textContent = String(opts[key]||0);
+      root.querySelectorAll("[data-ct-counter]").forEach((box) => {
+        const key = box.getAttribute("data-ct-counter");
+        const valEl = box.querySelector(".kc-ctr-val");
+        if (valEl) valEl.textContent = String(opts[key] || 0);
       });
-  // Overhang/Seams UI state
-  // Overhang removed
-  const seamShow = sel('[data-ct-seam-show]', root); if (seamShow){ seamShow.checked = !!opts.showSeams; }
-  const guidesEl = sel('[data-ct-show-guides]', root); if (guidesEl){ guidesEl.checked = !!opts.showGuides; }
+      // Overhang/Seams UI state
+      // Overhang removed
+      const seamShow = sel("[data-ct-seam-show]", root);
+      if (seamShow) {
+        seamShow.checked = !!opts.showSeams;
+      }
+      const guidesEl = sel("[data-ct-show-guides]", root);
+      if (guidesEl) {
+        guidesEl.checked = !!opts.showGuides;
+      }
     }
 
-    function updateSummary(){
-  const piecesEl = sel('[data-ct-sum-pieces]', root);
-      const areaEl = sel('[data-ct-sum-area]', root);
-  const matEl = sel('[data-ct-sum-material]', root);
-      const edgeEl = sel('[data-ct-sum-edge]', root);
-      const sinksEl = sel('[data-ct-sum-sinks]', root);
-  const colorEl = sel('[data-ct-sum-color]', root);
-      const cutCookEl = sel('[data-ct-sum-cut-cooktop]', root);
-      const cutFaucEl = sel('[data-ct-sum-cut-faucet]', root);
-      const cutOtherEl = sel('[data-ct-sum-cut-other]', root);
-      const removalEl = sel('[data-ct-sum-removal]', root);
-  const seamsEl = sel('[data-ct-sum-seams]', root);
+    function updateSummary() {
+      const piecesEl = sel("[data-ct-sum-pieces]", root);
+      const areaEl = sel("[data-ct-sum-area]", root);
+      const matEl = sel("[data-ct-sum-material]", root);
+      const edgeEl = sel("[data-ct-sum-edge]", root);
+      const sinksEl = sel("[data-ct-sum-sinks]", root);
+      const colorEl = sel("[data-ct-sum-color]", root);
+      const cutCookEl = sel("[data-ct-sum-cut-cooktop]", root);
+      const cutFaucEl = sel("[data-ct-sum-cut-faucet]", root);
+      const cutOtherEl = sel("[data-ct-sum-cut-other]", root);
+      const removalEl = sel("[data-ct-sum-removal]", root);
+      const seamsEl = sel("[data-ct-sum-seams]", root);
       if (piecesEl) piecesEl.textContent = String(shapes.length);
       // area: rect A*B, U: A*(BL+BR)/2 - C*(min(BL,BR)-D), L: A*B - (A-C)*(B-D)
-  const totalSqIn = shapes.reduce((acc,s)=>{
-        const A=Number(s.len?.A||0), B=Number(s.len?.B||0), C=Number(s.len?.C||0), D=Number(s.len?.D||0);
-        if (s.type==='u'){
-          const BL = Number((s.len?.BL!=null)?s.len.BL:((s.len?.B!=null)?s.len.B:25));
-          const BR = Number((s.len?.BR!=null)?s.len.BR:((s.len?.B!=null)?s.len.B:25));
+      const totalSqIn = shapes.reduce((acc, s) => {
+        const A = Number(s.len?.A || 0),
+          B = Number(s.len?.B || 0),
+          C = Number(s.len?.C || 0),
+          D = Number(s.len?.D || 0);
+        if (s.type === "u") {
+          const BL = Number(
+            s.len?.BL != null ? s.len.BL : s.len?.B != null ? s.len.B : 25
+          );
+          const BR = Number(
+            s.len?.BR != null ? s.len.BR : s.len?.B != null ? s.len.B : 25
+          );
           const minSide = Math.max(0, Math.min(BL, BR));
-          return acc + (A*((BL+BR)/2) - Math.max(0, C*Math.max(0, minSide - D)));
+          return (
+            acc +
+            (A * ((BL + BR) / 2) - Math.max(0, C * Math.max(0, minSide - D)))
+          );
         }
-        if (s.type==='l') return acc + (A*B - Math.max(0, (A-C)*Math.max(0, B-D)));
-        if (s.type==='poly' && Array.isArray(s.points) && s.points.length>=3){
+        if (s.type === "l")
+          return acc + (A * B - Math.max(0, (A - C) * Math.max(0, B - D)));
+        if (
+          s.type === "poly" &&
+          Array.isArray(s.points) &&
+          s.points.length >= 3
+        ) {
           // shoelace formula (in^2) on local-inch points
-          let area=0; for (let i=0;i<s.points.length;i++){ const p1=s.points[i], p2=s.points[(i+1)%s.points.length]; area += (p1.x*p2.y - p2.x*p1.y); } area=Math.abs(area)/2; return acc + area;
+          let area = 0;
+          for (let i = 0; i < s.points.length; i++) {
+            const p1 = s.points[i],
+              p2 = s.points[(i + 1) % s.points.length];
+            area += p1.x * p2.y - p2.x * p1.y;
+          }
+          area = Math.abs(area) / 2;
+          return acc + area;
         }
-        return acc + (A*B);
+        return acc + A * B;
       }, 0);
-  const sqFt = totalSqIn/144; const sqFtTxt = (Math.round(sqFt*10)/10).toFixed(1); if (areaEl) areaEl.textContent = sqFtTxt;
-  if (matEl) matEl.textContent = Array.isArray(opts.material)? (opts.material.join(', ')||'') : (opts.material||'');
-      if (edgeEl) edgeEl.textContent = opts.edge||'';
-      if (sinksEl) sinksEl.textContent = opts.sinks||'';
-  if (colorEl) colorEl.textContent = opts.color||'-';
-      if (cutCookEl) cutCookEl.textContent = String(opts['cutout-cooktop']||0);
-      if (cutFaucEl) cutFaucEl.textContent = String(opts['cutout-faucet']||0);
-      if (cutOtherEl) cutOtherEl.textContent = String(opts['cutout-other']||0);
-  if (removalEl) removalEl.textContent = opts.removal||'';
-  if (seamsEl){ const seamCount = shapes.reduce((acc,s)=> acc + (Array.isArray(s.seams)? s.seams.length:0), 0); seamsEl.textContent = String(seamCount); }
+      const sqFt = totalSqIn / 144;
+      const sqFtTxt = (Math.round(sqFt * 10) / 10).toFixed(1);
+      if (areaEl) areaEl.textContent = sqFtTxt;
+      if (matEl)
+        matEl.textContent = Array.isArray(opts.material)
+          ? opts.material.join(", ") || ""
+          : opts.material || "";
+      if (edgeEl) edgeEl.textContent = opts.edge || "";
+      if (sinksEl) sinksEl.textContent = opts.sinks || "";
+      if (colorEl) colorEl.textContent = opts.color || "-";
+      if (cutCookEl)
+        cutCookEl.textContent = String(opts["cutout-cooktop"] || 0);
+      if (cutFaucEl) cutFaucEl.textContent = String(opts["cutout-faucet"] || 0);
+      if (cutOtherEl)
+        cutOtherEl.textContent = String(opts["cutout-other"] || 0);
+      if (removalEl) removalEl.textContent = opts.removal || "";
+      if (seamsEl) {
+        const seamCount = shapes.reduce(
+          (acc, s) => acc + (Array.isArray(s.seams) ? s.seams.length : 0),
+          0
+        );
+        seamsEl.textContent = String(seamCount);
+      }
       // Mini summary mirrors
-      const pMini = sel('[data-ct-sum-pieces-mini]', root); if (pMini) pMini.textContent = String(shapes.length);
-      const aMini = sel('[data-ct-sum-area-mini]', root); if (aMini) aMini.textContent = sqFtTxt;
-      const sMini = sel('[data-ct-sum-seams-mini]', root); if (sMini){ const seamCount = shapes.reduce((acc,s)=> acc + (Array.isArray(s.seams)? s.seams.length:0), 0); sMini.textContent = String(seamCount); }
+      const pMini = sel("[data-ct-sum-pieces-mini]", root);
+      if (pMini) pMini.textContent = String(shapes.length);
+      const aMini = sel("[data-ct-sum-area-mini]", root);
+      if (aMini) aMini.textContent = sqFtTxt;
+      const sMini = sel("[data-ct-sum-seams-mini]", root);
+      if (sMini) {
+        const seamCount = shapes.reduce(
+          (acc, s) => acc + (Array.isArray(s.seams) ? s.seams.length : 0),
+          0
+        );
+        sMini.textContent = String(seamCount);
+      }
     }
 
     // Load saved state if present
-    try{
+    try {
       const raw = localStorage.getItem(STATE_KEY);
-      if (raw){
+      if (raw) {
         const parsed = JSON.parse(raw);
-  if (parsed && Array.isArray(parsed.shapes) && parsed.opts){ shapes = parsed.shapes.map(normalizeShape); active = Math.max(0, Math.min(parsed.active||0, shapes.length-1)); }
+        if (parsed && Array.isArray(parsed.shapes) && parsed.opts) {
+          shapes = parsed.shapes.map(normalizeShape);
+          active = Math.max(0, Math.min(parsed.active || 0, shapes.length - 1));
+        }
         if (parsed && parsed.opts) Object.assign(opts, parsed.opts);
         // migrate material to array if stored as string
-        if (typeof opts.material === 'string') opts.material = opts.material ? [opts.material] : [];
-  }
-    } catch(e){}
+        if (typeof opts.material === "string")
+          opts.material = opts.material ? [opts.material] : [];
+      }
+    } catch (e) {}
 
-    const stateEl = sel('[data-ct-state]', root);
-    const save = ()=>{
-  const data = { shapes, active, opts };
-      try{ localStorage.setItem(STATE_KEY, JSON.stringify(data)); }catch(e){}
+    const stateEl = sel("[data-ct-state]", root);
+    const save = () => {
+      const data = { shapes, active, opts };
+      try {
+        localStorage.setItem(STATE_KEY, JSON.stringify(data));
+      } catch (e) {}
       if (stateEl) stateEl.value = JSON.stringify(data);
       updateSummary();
     };
 
     // Save on meaningful interactions
-    const saveAnd = (fn)=> (...args)=>{ const r=fn(...args); save(); return r; };
+    const saveAnd =
+      (fn) =>
+      (...args) => {
+        const r = fn(...args);
+        save();
+        return r;
+      };
     // wrap key handlers
-    const origDraw = draw; draw = saveAnd(draw);
-    const origRenderTabs = renderTabs; renderTabs = saveAnd(renderTabs);
-    const origSyncInputs = syncInputs; syncInputs = saveAnd(syncInputs);
+    const origDraw = draw;
+    draw = saveAnd(draw);
+    const origRenderTabs = renderTabs;
+    renderTabs = saveAnd(renderTabs);
+    const origSyncInputs = syncInputs;
+    syncInputs = saveAnd(syncInputs);
 
     // Snap toggle
-  const snapEl = sel('[data-ct-snap]', root); if (snapEl){ snapEl.checked = !!opts.snap; snapEl.addEventListener('change', ()=>{ pushHistory(); opts.snap = !!snapEl.checked; save(); }); }
-  const guidesEl2 = sel('[data-ct-show-guides]', root); if (guidesEl2){ guidesEl2.checked = !!opts.showGuides; guidesEl2.addEventListener('change', ()=>{ pushHistory(); opts.showGuides = !!guidesEl2.checked; draw(); save(); }); }
+    const snapEl = sel("[data-ct-snap]", root);
+    if (snapEl) {
+      snapEl.checked = !!opts.snap;
+      snapEl.addEventListener("change", () => {
+        pushHistory();
+        opts.snap = !!snapEl.checked;
+        save();
+      });
+    }
+    const guidesEl2 = sel("[data-ct-show-guides]", root);
+    if (guidesEl2) {
+      guidesEl2.checked = !!opts.showGuides;
+      guidesEl2.addEventListener("change", () => {
+        pushHistory();
+        opts.showGuides = !!guidesEl2.checked;
+        draw();
+        save();
+      });
+    }
 
     // Export current config
-    sel('[data-ct-export]', root)?.addEventListener('click', ()=>{
-      const blob = new Blob([JSON.stringify({shapes,active,opts}, null, 2)], {type:'application/json'});
+    sel("[data-ct-export]", root)?.addEventListener("click", () => {
+      const blob = new Blob(
+        [JSON.stringify({ shapes, active, opts }, null, 2)],
+        { type: "application/json" }
+      );
       const url = URL.createObjectURL(blob);
-      const a=document.createElement('a'); a.href=url; a.download='countertop-config.json'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "countertop-config.json";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        a.remove();
+      }, 0);
     });
     // Import config
-    sel('[data-ct-import]', root)?.addEventListener('click', ()=> sel('[data-ct-import-input]', root)?.click());
-    sel('[data-ct-import-input]', root)?.addEventListener('change', (e)=>{
-      const f=e.target.files?.[0]; if(!f) return; const reader=new FileReader(); reader.onload=()=>{
-        try{
-          const data=JSON.parse(String(reader.result||'{}'));
-          if (data && Array.isArray(data.shapes) && data.opts){
-            shapes=data.shapes.map(normalizeShape); active=Math.max(-1, Math.min(data.active??-1, shapes.length-1)); Object.assign(opts, data.opts);
-            renderTabs(); syncInputs(); syncOptionsUI(); draw(); updateOversize(); updateActionStates(); updateSummary(); save();
+    sel("[data-ct-import]", root)?.addEventListener("click", () =>
+      sel("[data-ct-import-input]", root)?.click()
+    );
+    sel("[data-ct-import-input]", root)?.addEventListener("change", (e) => {
+      const f = e.target.files?.[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(String(reader.result || "{}"));
+          if (data && Array.isArray(data.shapes) && data.opts) {
+            shapes = data.shapes.map(normalizeShape);
+            active = Math.max(
+              -1,
+              Math.min(data.active ?? -1, shapes.length - 1)
+            );
+            Object.assign(opts, data.opts);
+            renderTabs();
+            syncInputs();
+            syncOptionsUI();
+            draw();
+            updateOversize();
+            updateActionStates();
+            updateSummary();
+            save();
           }
-        }catch(err){}
-      }; reader.readAsText(f);
+        } catch (err) {}
+      };
+      reader.readAsText(f);
     });
 
-  // do not auto-open panels so controls show only when selected
-  shapeLabel.textContent = (active>=0 && shapes[active]) ? shapes[active].name : 'No shape selected'; renderTabs(); syncInputs(); draw(); updateOversize(); updateActionStates(); syncOptionsUI(); updateSummary(); save();
+    // do not auto-open panels so controls show only when selected
+    shapeLabel.textContent =
+      active >= 0 && shapes[active] ? shapes[active].name : "No shape selected";
+    renderTabs();
+    syncInputs();
+    draw();
+    updateOversize();
+    updateActionStates();
+    syncOptionsUI();
+    updateSummary();
+    save();
   }
 
-  function boot(){
-    document.querySelectorAll('.kc-ct-configurator').forEach(init);
+  function boot() {
+    document.querySelectorAll(".kc-ct-configurator").forEach(init);
   }
   // Expose a tiny runtime for diagnostics/manual boot
-  try{
+  try {
     window.KC_CT = window.KC_CT || {};
-  window.KC_CT.version = '2025-09-23T40';
+    window.KC_CT.version = "2025-09-23T40";
     window.KC_CT.init = init;
     window.KC_CT.initAll = boot;
-  }catch(e){}
+  } catch (e) {}
 
   // Auto-boot now and also watch for late-added nodes (e.g., injected at footer)
-  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot); else boot();
-  try{
-    const mo = new MutationObserver((mutations)=>{
-      for (const m of mutations){
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+  try {
+    const mo = new MutationObserver((mutations) => {
+      for (const m of mutations) {
         if (!m.addedNodes) continue;
-        m.addedNodes.forEach(n=>{
+        m.addedNodes.forEach((n) => {
           if (!(n instanceof Element)) return;
-          if (n.classList && n.classList.contains('kc-ct-configurator')) { init(n); }
-          n.querySelectorAll && n.querySelectorAll('.kc-ct-configurator').forEach(init);
+          if (n.classList && n.classList.contains("kc-ct-configurator")) {
+            init(n);
+          }
+          n.querySelectorAll &&
+            n.querySelectorAll(".kc-ct-configurator").forEach(init);
         });
       }
     });
-    mo.observe(document.body || document.documentElement, { childList: true, subtree: true });
-  }catch(e){}
+    mo.observe(document.body || document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+  } catch (e) {}
 })();

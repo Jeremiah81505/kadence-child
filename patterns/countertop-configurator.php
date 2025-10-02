@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Title: Countertop Configurator
  * Slug: kadence-child/countertop-configurator
@@ -10,7 +11,7 @@
 <div class="wp-block-group alignwide kc-ct-configurator is-contained">
   <!-- wp:html -->
   <div>
-  <div class="kc-ct-tabs" data-ct-tabs role="tablist" aria-label="Shapes"></div>
+    <div class="kc-ct-tabs" data-ct-tabs role="tablist" aria-label="Shapes"></div>
 
     <div class="kc-ct-actions" data-ct-actions>
       <div class="kc-ct-actions-left">
@@ -85,6 +86,9 @@
                   <label class="kc-meas opt"><input type="checkbox" data-ct-bs-on /> Enable Backsplash</label>
                   <button type="button" class="kc-opt" data-ct-bs-select>Select All Sides</button>
                   <button type="button" class="kc-opt" data-ct-bs-clear>Clear All Sides</button>
+                  <span class="kc-split"></span>
+                  <button type="button" class="kc-opt" data-ct-wall-select>Select All Walls</button>
+                  <button type="button" class="kc-opt" data-ct-wall-clear>Clear All Walls</button>
                 </div>
                 <div class="kc-option-grid" data-ct-bs-list>
                   <!-- Dynamic backsplash side checkboxes injected by JS -->
@@ -107,7 +111,7 @@
             </div>
 
             <!-- Seams panel removed per request -->
-            
+
           </div>
         </div>
       </aside>
@@ -129,6 +133,7 @@
             <div class="kc-tool-split"></div>
             <button type="button" class="kc-tool" data-ct-zoom-in title="Zoom In">＋</button>
             <button type="button" class="kc-tool" data-ct-zoom-out title="Zoom Out">－</button>
+            <button type="button" class="kc-tool" data-ct-zoom-reset title="Reset Zoom (100%)">100%</button>
           </div>
           <div class="kc-gesture-hint" data-ct-gesture-hint hidden>
             <span>Press Esc to cancel</span>
@@ -164,7 +169,7 @@
       </section>
     </div>
 
-  <div class="kc-ct-options" data-ct-options>
+    <div class="kc-ct-options" data-ct-options>
       <section class="kc-section">
         <h3>Material Quote Request options</h3>
         <div class="kc-option-grid" role="group" aria-label="Material Quote Request options">
@@ -243,21 +248,43 @@
           <button class="kc-opt" type="button" data-ct-radio="removal" data-value="Countertops + Backsplash">Countertops + Backsplash</button>
         </div>
       </section>
-      
-    <section class="kc-section kc-summary">
+
+      <section class="kc-section kc-summary">
         <h3>Summary</h3>
         <div class="kc-summary-grid">
-          <div><strong>Pieces</strong><div data-ct-sum-pieces>1</div></div>
-          <div><strong>Area (sq ft)</strong><div data-ct-sum-area>10.4</div></div>
-      <div><strong>Material</strong><div data-ct-sum-material>Laminate</div></div>
-          <div><strong>Edge</strong><div data-ct-sum-edge>Bevel</div></div>
-          <div><strong>Sinks</strong><div data-ct-sum-sinks>No</div></div>
-      <div><strong>Color Preference</strong><div data-ct-sum-color>-</div></div>
-          <div><strong>Cutouts (Cooktop)</strong><div data-ct-sum-cut-cooktop>0</div></div>
-          <div><strong>Cutouts (Faucet)</strong><div data-ct-sum-cut-faucet>0</div></div>
-          <div><strong>Cutouts (Other)</strong><div data-ct-sum-cut-other>0</div></div>
-          <div><strong>Removal</strong><div data-ct-sum-removal>Countertops Only</div></div>
-          <div><strong>Seams</strong><div data-ct-sum-seams>0</div></div>
+          <div><strong>Pieces</strong>
+            <div data-ct-sum-pieces>1</div>
+          </div>
+          <div><strong>Area (sq ft)</strong>
+            <div data-ct-sum-area>10.4</div>
+          </div>
+          <div><strong>Material</strong>
+            <div data-ct-sum-material>Laminate</div>
+          </div>
+          <div><strong>Edge</strong>
+            <div data-ct-sum-edge>Bevel</div>
+          </div>
+          <div><strong>Sinks</strong>
+            <div data-ct-sum-sinks>No</div>
+          </div>
+          <div><strong>Color Preference</strong>
+            <div data-ct-sum-color>-</div>
+          </div>
+          <div><strong>Cutouts (Cooktop)</strong>
+            <div data-ct-sum-cut-cooktop>0</div>
+          </div>
+          <div><strong>Cutouts (Faucet)</strong>
+            <div data-ct-sum-cut-faucet>0</div>
+          </div>
+          <div><strong>Cutouts (Other)</strong>
+            <div data-ct-sum-cut-other>0</div>
+          </div>
+          <div><strong>Removal</strong>
+            <div data-ct-sum-removal>Countertops Only</div>
+          </div>
+          <div><strong>Seams</strong>
+            <div data-ct-sum-seams>0</div>
+          </div>
         </div>
       </section>
     </div>
@@ -268,7 +295,7 @@
         This design contains an oversized piece. An oversized piece charge has been added to the total price. For more information, including details on how to avoid this charge by using seams <a href="#" target="_blank" rel="noreferrer noopener">Click Here</a>.
       </div>
     </div>
-  <textarea class="kc-visually-hidden" data-ct-state name="countertop_config" aria-hidden="true"></textarea>
+    <textarea class="kc-visually-hidden" data-ct-state name="countertop_config" aria-hidden="true"></textarea>
   </div>
   <!-- /wp:html -->
 </div>
