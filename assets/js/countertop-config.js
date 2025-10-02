@@ -5388,21 +5388,48 @@
     const svgView = sel("[data-ct-svg]", root);
     function applyZoom() {
       svgView.setAttribute("viewBox", `0 0 ${600 / zoom} ${600 / zoom}`);
+      try {
+        syncZoomUI();
+      } catch (e) {}
+    }
+    function syncZoomUI() {
+      const zin = sel("[data-ct-zoom-in]", root);
+      const zout = sel("[data-ct-zoom-out]", root);
+      const zreset = sel("[data-ct-zoom-reset]", root);
+      if (zin) zin.disabled = zoom >= 3;
+      if (zout) zout.disabled = zoom <= 0.4;
+      if (zreset) {
+        const pct = Math.round(zoom * 100);
+        zreset.textContent = `${pct}%`;
+        zreset.disabled = Math.abs(zoom - 1) < 1e-6;
+        const base = "Reset Zoom (100%)";
+        zreset.title = zoom === 1 ? base : `Zoom: ${pct}% (Click to reset)`;
+        zreset.setAttribute("aria-label", zreset.title);
+      }
     }
     sel("[data-ct-zoom-in]", root)?.addEventListener("click", () => {
       zoom = Math.min(3, zoom + 0.2);
       applyZoom();
       draw();
+      try {
+        syncZoomUI();
+      } catch (e) {}
     });
     sel("[data-ct-zoom-out]", root)?.addEventListener("click", () => {
       zoom = Math.max(0.4, zoom - 0.2);
       applyZoom();
       draw();
+      try {
+        syncZoomUI();
+      } catch (e) {}
     });
     sel("[data-ct-zoom-reset]", root)?.addEventListener("click", () => {
       zoom = 1;
       applyZoom();
       draw();
+      try {
+        syncZoomUI();
+      } catch (e) {}
     });
     root.querySelectorAll("[data-ct-counter]").forEach((box) => {
       const key = box.getAttribute("data-ct-counter");
@@ -5473,6 +5500,39 @@
         e.preventDefault();
         redo();
         return;
+      }
+      // Zoom shortcuts (when focus is within configurator)
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "0") {
+          e.preventDefault();
+          zoom = 1;
+          applyZoom();
+          draw();
+          try {
+            syncZoomUI();
+          } catch (err) {}
+          return;
+        }
+        if (e.key === "+" || e.key === "=") {
+          e.preventDefault();
+          zoom = Math.min(3, zoom + 0.2);
+          applyZoom();
+          draw();
+          try {
+            syncZoomUI();
+          } catch (err) {}
+          return;
+        }
+        if (e.key === "-" || e.key === "_") {
+          e.preventDefault();
+          zoom = Math.max(0.4, zoom - 0.2);
+          applyZoom();
+          draw();
+          try {
+            syncZoomUI();
+          } catch (err) {}
+          return;
+        }
       }
       // Delete active shape via Delete/Backspace when not typing and no active gesture
       if (!isGestureActive && (e.key === "Delete" || e.key === "Backspace")) {
