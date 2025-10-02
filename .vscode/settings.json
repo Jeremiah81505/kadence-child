@@ -1,0 +1,23 @@
+{
+  // Prefer PowerShell in this workspace on Windows
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+
+  // Shell integration: enables command detection/decorations and better nav
+  "terminal.integrated.shellIntegration.enabled": true,
+
+  // Quality of life while iterating
+  "terminal.integrated.scrollback": 10000,
+  "terminal.integrated.copyOnSelection": true,
+  "terminal.integrated.multiLinePasteWarning": "never",
+  "terminal.integrated.gpuAcceleration": "auto",
+  "terminal.integrated.splitCwd": "workspaceRoot"
+}
+{
+  // Make Intelephense aware of PHP stdlib + WordPress APIs.
+  // Note: setting stubs replaces defaults, so include Core/standard/SPL, etc.
+  "intelephense.stubs": [
+    "Core","standard","SPL","PDO","Phar","ctype","curl","date","dom","fileinfo","filter","gd","gettext","hash","iconv","imap","intl","json","libxml","mbstring","mysql","mysqli","openssl","pcntl","pcre","posix","readline","Reflection","session","SimpleXML","sockets","tokenizer","xml","xmlreader","xmlwriter","zip","zlib",
+    "wordpress"
+  ],
+  "intelephense.environment.phpVersion": "8.1"
+}
