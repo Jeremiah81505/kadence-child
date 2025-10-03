@@ -246,7 +246,7 @@
           const ang = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
           const t = document.createElementNS(ns, "text");
           t.setAttribute("x", String(mx));
-          t.setAttribute("y", String(my - 4));
+          t.setAttribute("y", String(my - 10));
           t.setAttribute("text-anchor", "middle");
           t.setAttribute("font-size", "11");
           t.setAttribute("font-weight", "600");
@@ -559,12 +559,19 @@
           d = Number(dims.D ?? cur.len?.D ?? 0);
 
         if (cur.type === "rect") {
+          const bhpx = opts.bsOn ? px(Number(opts.bsHeight || 0)) : 0;
+          const bs = cur.bs || {};
           const aPx = px(a),
             bPx = px(b);
           // A top
-          mk(cx, cy - bPx / 2 - 10, `A: ${a}\"`);
+          mk(cx, cy - bPx / 2 - 10 - (bs.A ? bhpx + 6 : 0), `A: ${a}\"`);
           // B left
-          mkRot(cx - aPx / 2 - 22, cy, `B: ${b}\"`, -90);
+          mkRot(
+            cx - aPx / 2 - 22 - (bs.B ? bhpx + 6 : 0),
+            cy,
+            `B: ${b}\"`,
+            -90
+          );
           return;
         }
         if (cur.type === "l") {
@@ -572,24 +579,48 @@
             bPx = px(b),
             cPx = px(c),
             dPx = px(d);
+          const bhpx = opts.bsOn ? px(Number(opts.bsHeight || 0)) : 0;
+          const bs = cur.bs || {};
           // A label: top wall side only
-          mk(cx, cy - bPx / 2 - 10, `A: ${a}\"`);
+          mk(cx, cy - bPx / 2 - 10 - (bs.A ? bhpx + 6 : 0), `A: ${a}\"`);
           const flipX = !!cur.flipX;
           // B label: only on the wall vertical side (left when not flipped, right when flipped)
-          if (!flipX) mkRot(cx - aPx / 2 - 22, cy, `B: ${b}\"`, -90);
-          else mkRot(cx + aPx / 2 + 22, cy, `B: ${b}\"`, -90);
+          if (!flipX)
+            mkRot(
+              cx - aPx / 2 - 22 - (bs.B ? bhpx + 6 : 0),
+              cy,
+              `B: ${b}\"`,
+              -90
+            );
+          else
+            mkRot(
+              cx + aPx / 2 + 22 + (bs.D ? bhpx + 6 : 0),
+              cy,
+              `B: ${b}\"`,
+              -90
+            );
           // C bottom inner run
           const cMidX = !flipX
             ? cx - aPx / 2 + cPx / 2
             : cx + aPx / 2 - cPx / 2;
           const cY = cy + bPx / 2 + 14;
-          mk(cMidX, cY, `C: ${c}\"`);
+          mk(cMidX, cY + (bs.C ? bhpx + 6 : 0), `C: ${c}\"`);
           // D outer vertical segment on mirrored side
           const dYmid = cy - bPx / 2 + dPx / 2;
           if (!flipX) {
-            mkRot(cx + aPx / 2 + 22, dYmid, `D: ${d}\"`, -90);
+            mkRot(
+              cx + aPx / 2 + 22 + (bs.D ? bhpx + 6 : 0),
+              dYmid,
+              `D: ${d}\"`,
+              -90
+            );
           } else {
-            mkRot(cx - aPx / 2 - 22, dYmid, `D: ${d}\"`, -90);
+            mkRot(
+              cx - aPx / 2 - 22 - (bs.B ? bhpx + 6 : 0),
+              dYmid,
+              `D: ${d}\"`,
+              -90
+            );
           }
           return;
         }
@@ -597,23 +628,35 @@
           const aPx = px(a);
           const bl = Number(dims.BL ?? cur.len?.BL ?? cur.len?.B ?? 25);
           const br = Number(dims.BR ?? cur.len?.BR ?? cur.len?.B ?? 25);
+          const bhpx = opts.bsOn ? px(Number(opts.bsHeight || 0)) : 0;
+          const bs = cur.bs || {};
           const blPx = px(bl),
             brPx = px(br);
           const hMax = Math.max(blPx, brPx);
           const yTop = cy - hMax / 2;
           // A top outer width
-          mk(cx, yTop - 10, `A: ${a}\"`);
+          mk(cx, yTop - 10 - (bs.A ? bhpx + 6 : 0), `A: ${a}\"`);
           // B-L and B-R numbers (left and right verticals)
-          mkRot(cx - aPx / 2 - 22, yTop + blPx / 2, `BL: ${bl}\"`, -90);
-          mkRot(cx + aPx / 2 + 22, yTop + brPx / 2, `BR: ${br}\"`, -90);
+          mkRot(
+            cx - aPx / 2 - 22 - (bs.BL ? bhpx + 6 : 0),
+            yTop + blPx / 2,
+            `BL: ${bl}\"`,
+            -90
+          );
+          mkRot(
+            cx + aPx / 2 + 22 + (bs.BR ? bhpx + 6 : 0),
+            yTop + brPx / 2,
+            `BR: ${br}\"`,
+            -90
+          );
           // Returns labels only (E/H)
           const e = Number(cur.len?.E ?? Math.max(0, Math.round((a - c) / 2)));
           const h = Number(cur.len?.H ?? Math.max(0, Math.round((a - c) / 2)));
           // E/H bottom return labels
           const eMidX = cx - aPx / 2 + px(e) / 2;
-          mk(eMidX, yTop + blPx + 14, `E: ${e}\"`);
+          mk(eMidX, yTop + blPx + 14 + (bs.E ? bhpx + 6 : 0), `E: ${e}\"`);
           const hMidX = cx + aPx / 2 - px(h) / 2;
-          mk(hMidX, yTop + brPx + 14, `H: ${h}\"`);
+          mk(hMidX, yTop + brPx + 14 + (bs.H ? bhpx + 6 : 0), `H: ${h}\"`);
           return;
         }
       };
