@@ -894,7 +894,7 @@
             rotG.appendChild(p);
           }
 
-          // wall side overlays (black if against wall)
+          // wall side overlays (black if against wall) — independent of backsplash
           const sideColor = "#000";
           const mkLine = (x1, y1, x2, y2) => {
             const l = document.createElementNS(ns, "line");
@@ -906,86 +906,42 @@
             l.setAttribute("stroke-width", "3");
             return l;
           };
-          // If backsplash is on, limit black wall lines to backsplash extents; else fall back to full wall sides
-          {
-            const bhLocal = px(Number(opts.bsHeight || 0));
-            const useBsSpans = !!(opts.bsOn && bhLocal > 0);
-            if (useBsSpans) {
-              if (cur.bs.A)
-                rotG.appendChild(
-                  mkLine(
-                    centerX - w / 2,
-                    centerY - h / 2,
-                    centerX + w / 2,
-                    centerY - h / 2
-                  )
-                );
-              if (cur.bs.B)
-                rotG.appendChild(
-                  mkLine(
-                    centerX - w / 2,
-                    centerY - h / 2,
-                    centerX - w / 2,
-                    centerY + h / 2
-                  )
-                );
-              if (cur.bs.C)
-                rotG.appendChild(
-                  mkLine(
-                    centerX - w / 2,
-                    centerY + h / 2,
-                    centerX + w / 2,
-                    centerY + h / 2
-                  )
-                );
-              if (cur.bs.D)
-                rotG.appendChild(
-                  mkLine(
-                    centerX + w / 2,
-                    centerY - h / 2,
-                    centerX + w / 2,
-                    centerY + h / 2
-                  )
-                );
-            } else {
-              if (cur.wall.A)
-                rotG.appendChild(
-                  mkLine(
-                    centerX - w / 2,
-                    centerY - h / 2,
-                    centerX + w / 2,
-                    centerY - h / 2
-                  )
-                );
-              if (cur.wall.B)
-                rotG.appendChild(
-                  mkLine(
-                    centerX - w / 2,
-                    centerY - h / 2,
-                    centerX - w / 2,
-                    centerY + h / 2
-                  )
-                );
-              if (cur.wall.C)
-                rotG.appendChild(
-                  mkLine(
-                    centerX - w / 2,
-                    centerY + h / 2,
-                    centerX + w / 2,
-                    centerY + h / 2
-                  )
-                );
-              if (cur.wall.D)
-                rotG.appendChild(
-                  mkLine(
-                    centerX + w / 2,
-                    centerY - h / 2,
-                    centerX + w / 2,
-                    centerY + h / 2
-                  )
-                );
-            }
-          }
+          if (cur.wall.A)
+            rotG.appendChild(
+              mkLine(
+                centerX - w / 2,
+                centerY - h / 2,
+                centerX + w / 2,
+                centerY - h / 2
+              )
+            );
+          if (cur.wall.B)
+            rotG.appendChild(
+              mkLine(
+                centerX - w / 2,
+                centerY - h / 2,
+                centerX - w / 2,
+                centerY + h / 2
+              )
+            );
+          if (cur.wall.C)
+            rotG.appendChild(
+              mkLine(
+                centerX - w / 2,
+                centerY + h / 2,
+                centerX + w / 2,
+                centerY + h / 2
+              )
+            );
+          if (cur.wall.D)
+            rotG.appendChild(
+              mkLine(
+                centerX + w / 2,
+                centerY - h / 2,
+                centerX + w / 2,
+                centerY + h / 2
+              )
+            );
 
           // seams (draw before highlight)
           if (opts.showSeams && Array.isArray(cur.seams)) {
@@ -1504,7 +1460,7 @@
           }
 
           rotG.appendChild(path);
-          // wall sides (approx bounding box) — clip to backsplash extents when backsplash is active
+          // wall sides (approx bounding box) — independent of backsplash
           const sideColor = "#000";
           const mkLine = (x1, y1, x2, y2) => {
             const l = document.createElementNS(ns, "line");
@@ -1516,125 +1472,80 @@
             l.setAttribute("stroke-width", "3");
             return l;
           };
-          {
-            const bhLocal = px(Number(opts.bsHeight || 0));
-            const useBsSpans = !!(opts.bsOn && bhLocal > 0);
-            if (useBsSpans) {
-              // A: full top width only if backsplash A is on
-              if (cur.bs.A)
-                rotG.appendChild(
-                  mkLine(
-                    centerX - a / 2,
-                    centerY - b / 2,
-                    centerX + a / 2,
-                    centerY - b / 2
-                  )
-                );
-              // B: full height on wall side based on flip, only if backsplash B is on
-              if (cur.bs.B) {
-                if (!flipX) {
-                  // left vertical full
-                  rotG.appendChild(
-                    mkLine(
-                      centerX - a / 2,
-                      centerY - b / 2,
-                      centerX - a / 2,
-                      centerY + b / 2
-                    )
-                  );
-                } else {
-                  // right vertical full
-                  rotG.appendChild(
-                    mkLine(
-                      centerX + a / 2,
-                      centerY - b / 2,
-                      centerX + a / 2,
-                      centerY + b / 2
-                    )
-                  );
-                }
-              }
-              // C: bottom segment length=c (mirrors with flip)
-              if (cur.bs.C) {
-                if (!flipX) {
-                  rotG.appendChild(
-                    mkLine(
-                      centerX - a / 2,
-                      centerY + b / 2,
-                      centerX - a / 2 + c,
-                      centerY + b / 2
-                    )
-                  );
-                } else {
-                  rotG.appendChild(
-                    mkLine(
-                      centerX + a / 2 - c,
-                      centerY + b / 2,
-                      centerX + a / 2,
-                      centerY + b / 2
-                    )
-                  );
-                }
-              }
-              // D: top segment on the opposite vertical, height=d (mirrors with flip)
-              if (cur.bs.D) {
-                if (!flipX) {
-                  rotG.appendChild(
-                    mkLine(
-                      centerX + a / 2,
-                      centerY - b / 2,
-                      centerX + a / 2,
-                      centerY - b / 2 + d
-                    )
-                  );
-                } else {
-                  rotG.appendChild(
-                    mkLine(
-                      centerX - a / 2,
-                      centerY - b / 2,
-                      centerX - a / 2,
-                      centerY - b / 2 + d
-                    )
-                  );
-                }
-              }
+          // A: full top
+          if (cur.wall.A)
+            rotG.appendChild(
+              mkLine(
+                centerX - a / 2,
+                centerY - b / 2,
+                centerX + a / 2,
+                centerY - b / 2
+              )
+            );
+          // B: full vertical on wall side (mirror-aware)
+          if (cur.wall.B) {
+            if (!flipX) {
+              rotG.appendChild(
+                mkLine(
+                  centerX - a / 2,
+                  centerY - b / 2,
+                  centerX - a / 2,
+                  centerY + b / 2
+                )
+              );
             } else {
-              if (cur.wall.A)
-                rotG.appendChild(
-                  mkLine(
-                    centerX - a / 2,
-                    centerY - b / 2,
-                    centerX + a / 2,
-                    centerY - b / 2
-                  )
-                );
-              if (cur.wall.B)
-                rotG.appendChild(
-                  mkLine(
-                    centerX - a / 2,
-                    centerY - b / 2,
-                    centerX - a / 2,
-                    centerY + b / 2
-                  )
-                );
-              if (cur.wall.C)
-                rotG.appendChild(
-                  mkLine(
-                    centerX - a / 2,
-                    centerY + b / 2,
-                    centerX + a / 2,
-                    centerY + b / 2
-                  )
-                );
-              if (cur.wall.D)
-                rotG.appendChild(
-                  mkLine(
-                    centerX + a / 2,
-                    centerY - b / 2,
-                    centerX + a / 2,
-                    centerY + b / 2
-                  )
-                );
+              rotG.appendChild(
+                mkLine(
+                  centerX + a / 2,
+                  centerY - b / 2,
+                  centerX + a / 2,
+                  centerY + b / 2
+                )
+              );
+            }
+          }
+          // C: bottom segment of length c (mirror-aware)
+          if (cur.wall.C) {
+            if (!flipX) {
+              rotG.appendChild(
+                mkLine(
+                  centerX - a / 2,
+                  centerY + b / 2,
+                  centerX - a / 2 + c,
+                  centerY + b / 2
+                )
+              );
+            } else {
+              rotG.appendChild(
+                mkLine(
+                  centerX + a / 2 - c,
+                  centerY + b / 2,
+                  centerX + a / 2,
+                  centerY + b / 2
+                )
+              );
+            }
+          }
+          // D: top segment on opposite vertical of height d (mirror-aware)
+          if (cur.wall.D) {
+            if (!flipX) {
+              rotG.appendChild(
+                mkLine(
+                  centerX + a / 2,
+                  centerY - b / 2,
+                  centerX + a / 2,
+                  centerY - b / 2 + d
+                )
+              );
+            } else {
+              rotG.appendChild(
+                mkLine(
+                  centerX - a / 2,
+                  centerY - b / 2,
+                  centerX - a / 2,
+                  centerY - b / 2 + d
+                )
+              );
             }
           }
 
@@ -2228,83 +2139,48 @@
             l.setAttribute("stroke-width", "3");
             return l;
           };
-          {
-            const bhLocal = px(Number(opts.bsHeight || 0));
-            const useBsSpans = !!(opts.bsOn && bhLocal > 0);
-            if (useBsSpans) {
-              // A: outer top only if backsplash A is on
-              if (cur.bs.A)
-                rotG.appendChild(
-                  mkLine(centerX - a / 2, yTop, centerX + a / 2, yTop)
-                );
-              // BL: outer left vertical only if backsplash BL is on
-              if (cur.bs.BL)
-                rotG.appendChild(
-                  mkLine(centerX - a / 2, yTop, centerX - a / 2, yTop + blPx)
-                );
-              // BR: outer right vertical only if backsplash BR is on
-              if (cur.bs.BR)
-                rotG.appendChild(
-                  mkLine(centerX + a / 2, yTop, centerX + a / 2, yTop + brPx)
-                );
-              // C: inner top only if backsplash C is on
-              if (cur.bs.C && xiR > xiL)
-                rotG.appendChild(mkLine(xiL, yInnerTop, xiR, yInnerTop));
-              // D: inner verticals only if backsplash D is on
-              if (cur.bs.D && yInnerTop > yTop) {
-                rotG.appendChild(mkLine(xiL, yTop, xiL, yInnerTop));
-                rotG.appendChild(mkLine(xiR, yTop, xiR, yInnerTop));
-              }
-              // E/H: bottom returns along outer bottom when their backsplash is on and length > 0
-              const eLen = px(Math.max(0, Number(len.E || 0)));
-              const hLen = px(Math.max(0, Number(len.H || 0)));
-              if (cur.bs.E && eLen > 0)
-                rotG.appendChild(
-                  mkLine(
-                    centerX - a / 2,
-                    yTop + blPx,
-                    centerX - a / 2 + eLen,
-                    yTop + blPx
-                  )
-                );
-              if (cur.bs.H && hLen > 0)
-                rotG.appendChild(
-                  mkLine(
-                    centerX + a / 2 - hLen,
-                    yTop + brPx,
-                    centerX + a / 2,
-                    yTop + brPx
-                  )
-                );
-            } else {
-              // Original wall behavior
-              if (cur.wall.A)
-                rotG.appendChild(
-                  mkLine(centerX - a / 2, yTop, centerX + a / 2, yTop)
-                );
-              if (cur.wall.BL)
-                rotG.appendChild(
-                  mkLine(centerX - a / 2, yTop, centerX - a / 2, yTop + blPx)
-                );
-              if (cur.wall.BR)
-                rotG.appendChild(
-                  mkLine(centerX + a / 2, yTop, centerX + a / 2, yTop + brPx)
-                );
-              if (cur.wall.C && xiR > xiL)
-                rotG.appendChild(mkLine(xiL, yInnerTop, xiR, yInnerTop));
-              if (cur.wall.D && yInnerTop > yTop) {
-                rotG.appendChild(mkLine(xiL, yTop, xiL, yInnerTop));
-                rotG.appendChild(mkLine(xiR, yTop, xiR, yInnerTop));
-              }
-              if (cur.wall.E)
-                rotG.appendChild(
-                  mkLine(centerX - a / 2, yTop + blPx, xiL, yTop + blPx)
-                );
-              if (cur.wall.H)
-                rotG.appendChild(
-                  mkLine(xiR, yTop + brPx, centerX + a / 2, yTop + brPx)
-                );
-            }
+          // Wall edges are independent of backsplash — use wall flags and draw exact spans
+          if (cur.wall.A)
+            rotG.appendChild(
+              mkLine(centerX - a / 2, yTop, centerX + a / 2, yTop)
+            );
+          if (cur.wall.BL)
+            rotG.appendChild(
+              mkLine(centerX - a / 2, yTop, centerX - a / 2, yTop + blPx)
+            );
+          if (cur.wall.BR)
+            rotG.appendChild(
+              mkLine(centerX + a / 2, yTop, centerX + a / 2, yTop + brPx)
+            );
+          if (cur.wall.C && xiR > xiL)
+            rotG.appendChild(mkLine(xiL, yInnerTop, xiR, yInnerTop));
+          if (cur.wall.D && yInnerTop > yTop) {
+            rotG.appendChild(mkLine(xiL, yTop, xiL, yInnerTop));
+            rotG.appendChild(mkLine(xiR, yTop, xiR, yInnerTop));
+          }
+          if (cur.wall.E) {
+            const eLen = px(Math.max(0, Number(len.E || 0)));
+            if (eLen > 0)
+              rotG.appendChild(
+                mkLine(
+                  centerX - a / 2,
+                  yTop + blPx,
+                  Math.min(centerX - a / 2 + eLen, xiL),
+                  yTop + blPx
+                )
+              );
+          }
+          if (cur.wall.H) {
+            const hLen = px(Math.max(0, Number(len.H || 0)));
+            if (hLen > 0)
+              rotG.appendChild(
+                mkLine(
+                  Math.max(centerX + a / 2 - hLen, xiR),
+                  yTop + brPx,
+                  centerX + a / 2,
+                  yTop + brPx
+                )
+              );
           }
 
           if (idx === active) {
