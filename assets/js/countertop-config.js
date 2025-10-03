@@ -595,7 +595,6 @@
         }
         if (cur.type === "u") {
           const aPx = px(a);
-          const dPx = px(Number(dims.D ?? cur.len?.D ?? 0));
           const bl = Number(dims.BL ?? cur.len?.BL ?? cur.len?.B ?? 25);
           const br = Number(dims.BR ?? cur.len?.BR ?? cur.len?.B ?? 25);
           const blPx = px(bl),
@@ -607,17 +606,9 @@
           // B-L and B-R numbers (left and right verticals)
           mkRot(cx - aPx / 2 - 22, yTop + blPx / 2, `BL: ${bl}\"`, -90);
           mkRot(cx + aPx / 2 + 22, yTop + brPx / 2, `BR: ${br}\"`, -90);
-          // Inner top C and D positions derived from E/H splits
+          // Returns labels only (E/H)
           const e = Number(cur.len?.E ?? Math.max(0, Math.round((a - c) / 2)));
           const h = Number(cur.len?.H ?? Math.max(0, Math.round((a - c) / 2)));
-          const xiL = cx - aPx / 2 + px(e);
-          const xiR = cx + aPx / 2 - px(h);
-          const innerTopY = yTop + dPx;
-          const cX = xiL + (xiR - xiL) * 0.5;
-          mk(cX, innerTopY - 6, `C: ${c}\"`);
-          // D label near vertical center
-          const dX = xiL + (xiR - xiL) * 0.5;
-          mk(dX, yTop + dPx / 2, `D: ${d}\"`);
           // E/H bottom return labels
           const eMidX = cx - aPx / 2 + px(e) / 2;
           mk(eMidX, yTop + blPx + 14, `E: ${e}\"`);
@@ -2300,16 +2291,7 @@
             const wBR = toWorld(a / 2, -hMax / 2 + brPx);
             addHandle(idx, wBL.x, wBL.y, 0, "BL");
             addHandle(idx, wBR.x, wBR.y, 0, "BR");
-            // inner spans in local coords
-            const xiLhLocal = -a / 2 + px(eIn);
-            const xiRhLocal = a / 2 - px(hIn);
-            const yiLocal = -hMax / 2 + px(dIn);
-            const midXLocal = (xiLhLocal + xiRhLocal) / 2;
-            const pC = toWorld(midXLocal, yiLocal);
-            addHandle(idx, pC.x, pC.y, 0, "C");
-            // D handle: place on left inner vertical midpoint to avoid overlap
-            const pD = toWorld(xiLhLocal, -hMax / 2 + px(dIn) / 2);
-            addHandle(idx, pD.x, pD.y, 0, "D");
+            // inner C/D handles removed per request
             // E and H: midpoints of bottom returns
             const pE = toWorld(-a / 2 + px(eIn) / 2, hMax / 2);
             const pH = toWorld(a / 2 - px(hIn) / 2, hMax / 2);
@@ -3651,19 +3633,17 @@
             // U-shape: adopt L-style clarity with explicit keys and labels
             // Ensure wall/backsplash objects have the expected keys so inline toggles appear
             if (!cur.wall) cur.wall = {};
-            ["A", "BL", "BR", "C", "D", "E", "H"].forEach((k) => {
+            ["A", "BL", "BR", "E", "H"].forEach((k) => {
               if (cur.wall[k] == null) cur.wall[k] = false;
             });
             if (!cur.bs) cur.bs = {};
-            ["A", "BL", "BR", "C", "D", "E", "H"].forEach((k) => {
+            ["A", "BL", "BR", "E", "H"].forEach((k) => {
               if (cur.bs[k] == null) cur.bs[k] = false;
             });
             // Measurements rows (with inline wall/backsplash controls in simple UI)
             addRow("Top (A)", "A");
             addRow("Left depth (BL)", "BL");
             addRow("Right depth (BR)", "BR");
-            addRow("Inner top span (C)", "C");
-            addRow("Inner vertical (D)", "D");
             addRow("Left return (E)", "E");
             addRow("Right return (H)", "H");
             if (!opts.simpleUI) {
@@ -3805,7 +3785,6 @@
                   A: false,
                   BL: false,
                   BR: false,
-                  C: false,
                   E: false,
                   H: false,
                 };
@@ -3818,9 +3797,7 @@
               if (cur.bs.BR == null) cur.bs.BR = false;
               if (cur.bs.E == null) cur.bs.E = false;
               if (cur.bs.H == null) cur.bs.H = false;
-              ["A", "BL", "BR", "C", "D", "E", "H"].forEach((s) =>
-                mk(s, sideLabel(s))
-              );
+              ["A", "BL", "BR", "E", "H"].forEach((s) => mk(s, sideLabel(s)));
             } else if (cur.type === "poly") {
               const n = Array.isArray(cur.points) ? cur.points.length : 0;
               if (!Array.isArray(cur.bsPoly))
