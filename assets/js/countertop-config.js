@@ -3255,6 +3255,8 @@
           s.len[k] = v;
         }
         if (s.type === "u") {
+          // Normalize dependent relationships after any U edit
+          s.len.A = Math.max(1, Number(s.len.A || 0));
           const A = Number(s.len.A || 0);
           const BL = Number(
             s.len.BL != null ? s.len.BL : s.len.B != null ? s.len.B : 25
@@ -3262,15 +3264,37 @@
           const BR = Number(
             s.len.BR != null ? s.len.BR : s.len.B != null ? s.len.B : 25
           );
-          const minSide = Math.max(0, Math.min(BL, BR));
-          if (k === "E" || k === "H") {
+          const minSide = Math.max(
+            0,
+            Math.min(Math.max(1, BL), Math.max(1, BR))
+          );
+          if (k === "A") {
+            // Clamp returns to maintain inner span >= 1 and update C
+            s.len.E = Math.max(
+              0,
+              Math.min(
+                Number(s.len.E || 0),
+                Math.max(0, A - 1 - Math.max(0, s.len.H || 0))
+              )
+            );
+            s.len.H = Math.max(
+              0,
+              Math.min(
+                Number(s.len.H || 0),
+                Math.max(0, A - 1 - Math.max(0, s.len.E || 0))
+              )
+            );
+            s.len.C = Math.max(
+              1,
+              A - Math.max(0, s.len.E || 0) - Math.max(0, s.len.H || 0)
+            );
+          } else if (k === "E" || k === "H") {
             if (k === "E") {
               s.len.E = Math.max(
                 0,
                 Math.min(v, Math.max(0, A - 1 - (s.len.H || 0)))
               );
-            }
-            if (k === "H") {
+            } else {
               s.len.H = Math.max(
                 0,
                 Math.min(v, Math.max(0, A - 1 - (s.len.E || 0)))
@@ -3280,20 +3304,20 @@
               1,
               A - Math.max(0, s.len.E || 0) - Math.max(0, s.len.H || 0)
             );
+          } else if (k === "C") {
+            // Update C by rebalancing E/H symmetrically to keep notch centered
+            const newC = Math.max(1, Math.min(v, Math.max(1, A - 1)));
+            const spare = Math.max(0, A - newC);
+            const e = Math.floor(spare / 2);
+            const h = spare - e;
+            s.len.C = newC;
+            s.len.E = e;
+            s.len.H = h;
           } else if (k === "D") {
             s.len.D = Math.max(
               0,
               Math.min(Number(s.len.D || 0), Math.max(0, minSide - 1))
             );
-          } else if (k === "C") {
-            // Update C by rebalancing E/H symmetrically to keep notch centered
-            const newC = Math.max(1, Math.min(v, Math.max(1, A - 1)));
-            const spare = Math.max(0, A - newC);
-            const e = Math.floor(spare / 2),
-              h = spare - e;
-            s.len.C = newC;
-            s.len.E = e;
-            s.len.H = h;
           } else if (k === "BL" || k === "BR") {
             // Clamp D to the new shallower side - 1
             const nBL = Number(
@@ -3320,13 +3344,23 @@
               Math.min(Number(s.len.D || 0), Math.max(0, m - 1))
             );
           }
+          // Final guard to keep C consistent if nothing else adjusted it
+          s.len.C = Math.max(
+            1,
+            Number(s.len.A || 0) -
+              Math.max(0, s.len.E || 0) -
+              Math.max(0, s.len.H || 0)
+          );
         }
       }
       draw();
       updateOversize();
       updateSummary();
       updateConstraintsUI();
-      save();
+      // Refresh inputs so derived values (C/E/H/D) reflect current state immediately
+      try {
+        syncInputs();
+      } catch (e) {}
     });
 
     function updateOversize() {
@@ -3431,6 +3465,48 @@
         const list = sel("[data-ct-meas-list]", root);
         if (list) {
           list.innerHTML = "";
+          // Ensure U-shape dependent values are normalized before showing inputs
+          if (cur.type === "u") {
+            if (!cur.len) cur.len = {};
+            const A = Math.max(1, Number(cur.len.A || 0));
+            // Depths (BL/BR) default from legacy B if needed
+            const BL0 =
+              cur.len.BL != null
+                ? Number(cur.len.BL)
+                : cur.len.B != null
+                ? Number(cur.len.B)
+                : 25;
+            const BR0 =
+              cur.len.BR != null
+                ? Number(cur.len.BR)
+                : cur.len.B != null
+                ? Number(cur.len.B)
+                : 25;
+            const BL = Math.max(1, isFinite(BL0) ? BL0 : 25);
+            const BR = Math.max(1, isFinite(BR0) ? BR0 : 25);
+            cur.len.BL = BL;
+            cur.len.BR = BR;
+            // Inner vertical D limited by shallower side minus 1
+            const minSide = Math.max(0, Math.min(BL, BR));
+            const dRaw = Math.max(0, Number(cur.len.D || 0));
+            cur.len.D = Math.max(0, Math.min(dRaw, Math.max(0, minSide - 1)));
+            // Returns E/H limited so inner span >= 1
+            let E = Math.max(0, Number(cur.len.E || 0));
+            let H = Math.max(0, Number(cur.len.H || 0));
+            const maxSum = Math.max(0, A - 1);
+            if (E + H > maxSum) {
+              const total = E + H || 1;
+              // Proportionally reduce, keep integers; ensure sum fits exactly
+              const eNew = Math.floor((E / total) * maxSum);
+              const hNew = Math.max(0, maxSum - eNew);
+              E = eNew;
+              H = hNew;
+            }
+            cur.len.E = E;
+            cur.len.H = H;
+            // C is derived from A, E, H; keep it authoritative for UI/constraints
+            cur.len.C = Math.max(1, A - E - H);
+          }
           const addRow = (label, key) => {
             const row = document.createElement("div");
             row.className = "row";
