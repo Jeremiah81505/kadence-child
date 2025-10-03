@@ -407,12 +407,16 @@
         if (sForLbl) {
           if (isL) {
             // Override values for L-shape so labels match wall-side semantics
-            if (keyStr === "B-top") vtxt = fmtVal(sForLbl.len?.A); // show A value on top
+            if (keyStr === "B-top")
+              vtxt = fmtVal(sForLbl.len?.A); // show A value on top
             else if (keyStr === "B-bottom") vtxt = ""; // hide bottom duplicate
             else if (keyStr === "A-left" || keyStr === "A-right")
-              vtxt = (flipXForL && keyStr === "A-right") || (!flipXForL && keyStr === "A-left")
-                ? fmtVal(sForLbl.len?.B)
-                : ""; // only show B on wall side
+              vtxt =
+                (flipXForL && keyStr === "A-right") ||
+                (!flipXForL && keyStr === "A-left")
+                  ? fmtVal(sForLbl.len?.B)
+                  : "";
+            // only show B on wall side
             else if (keyStr === "C") vtxt = fmtVal(sForLbl.len?.C);
             else if (keyStr === "D") vtxt = fmtVal(sForLbl.len?.D);
             else if (keyStr === "BL")
@@ -482,9 +486,9 @@
           }
         }
         label.textContent = vtxt ? `${ltxt}: ${vtxt}` : ltxt;
-        // Hide the left 'A' label by default to avoid A on both sides
-        const primaryKeys = new Set([
-          "A-right",
+        // Visible keys: by default, suppress left 'A' to avoid duplicates on rectangles.
+        // For L-shapes, allow the wall-side vertical handle key so 'B' appears on the correct side.
+        const allowedKeys = new Set([
           "B-top",
           "B-bottom",
           "BL",
@@ -494,9 +498,18 @@
           "E",
           "H",
         ]);
+        const sVis = shapes[idx];
+        const isLshape = sVis && sVis.type === "l";
+        const flipL = isLshape ? !!sVis.flipX : false;
+        if (isLshape) {
+          // Only show the side 'A-*' handle label on the wall side for B
+          allowedKeys.add(flipL ? "A-right" : "A-left");
+        } else {
+          allowedKeys.add("A-right");
+        }
         const showLabel =
           idx === active &&
-          (primaryKeys.has(String(key)) ||
+          (allowedKeys.has(String(key)) ||
             (toolMode === "resize" &&
               hoverHandle &&
               hoverHandle.h &&
