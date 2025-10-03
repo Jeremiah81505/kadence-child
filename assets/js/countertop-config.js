@@ -562,9 +562,9 @@
           const aPx = px(a),
             bPx = px(b);
           // A top
-          mk(cx, cy - bPx / 2 - 10, `${a}\"`);
+          mk(cx, cy - bPx / 2 - 10, `A: ${a}\"`);
           // B left
-          mkRot(cx - aPx / 2 - 22, cy, `${b}\"`, -90);
+          mkRot(cx - aPx / 2 - 22, cy, `B: ${b}\"`, -90);
           return;
         }
         if (cur.type === "l") {
@@ -573,23 +573,23 @@
             cPx = px(c),
             dPx = px(d);
           // A label: top wall side only
-          mk(cx, cy - bPx / 2 - 10, `${a}\"`);
+          mk(cx, cy - bPx / 2 - 10, `A: ${a}\"`);
           const flipX = !!cur.flipX;
           // B label: only on the wall vertical side (left when not flipped, right when flipped)
-          if (!flipX) mkRot(cx - aPx / 2 - 22, cy, `${b}\"`, -90);
-          else mkRot(cx + aPx / 2 + 22, cy, `${b}\"`, -90);
+          if (!flipX) mkRot(cx - aPx / 2 - 22, cy, `B: ${b}\"`, -90);
+          else mkRot(cx + aPx / 2 + 22, cy, `B: ${b}\"`, -90);
           // C bottom inner run
           const cMidX = !flipX
             ? cx - aPx / 2 + cPx / 2
             : cx + aPx / 2 - cPx / 2;
           const cY = cy + bPx / 2 + 14;
-          mk(cMidX, cY, `${c}\"`);
+          mk(cMidX, cY, `C: ${c}\"`);
           // D outer vertical segment on mirrored side
           const dYmid = cy - bPx / 2 + dPx / 2;
           if (!flipX) {
-            mkRot(cx + aPx / 2 + 22, dYmid, `${d}\"`, -90);
+            mkRot(cx + aPx / 2 + 22, dYmid, `D: ${d}\"`, -90);
           } else {
-            mkRot(cx - aPx / 2 - 22, dYmid, `${d}\"`, -90);
+            mkRot(cx - aPx / 2 - 22, dYmid, `D: ${d}\"`, -90);
           }
           return;
         }
@@ -603,10 +603,10 @@
           const hMax = Math.max(blPx, brPx);
           const yTop = cy - hMax / 2;
           // A top outer width
-          mk(cx, yTop - 10, `${a}\"`);
+          mk(cx, yTop - 10, `A: ${a}\"`);
           // B-L and B-R numbers (left and right verticals)
-          mkRot(cx - aPx / 2 - 22, yTop + blPx / 2, `${bl}\"`, -90);
-          mkRot(cx + aPx / 2 + 22, yTop + brPx / 2, `${br}\"`, -90);
+          mkRot(cx - aPx / 2 - 22, yTop + blPx / 2, `BL: ${bl}\"`, -90);
+          mkRot(cx + aPx / 2 + 22, yTop + brPx / 2, `BR: ${br}\"`, -90);
           // Inner top C and D positions derived from E/H splits
           const e = Number(cur.len?.E ?? Math.max(0, Math.round((a - c) / 2)));
           const h = Number(cur.len?.H ?? Math.max(0, Math.round((a - c) / 2)));
@@ -614,15 +614,15 @@
           const xiR = cx + aPx / 2 - px(h);
           const innerTopY = yTop + dPx;
           const cX = xiL + (xiR - xiL) * 0.5;
-          mk(cX, innerTopY - 6, `${c}\"`);
+          mk(cX, innerTopY - 6, `C: ${c}\"`);
           // D label near vertical center
           const dX = xiL + (xiR - xiL) * 0.5;
-          mk(dX, yTop + dPx / 2, `${d}\"`);
+          mk(dX, yTop + dPx / 2, `D: ${d}\"`);
           // E/H bottom return labels
           const eMidX = cx - aPx / 2 + px(e) / 2;
-          mk(eMidX, yTop + blPx + 14, `${e}\"`);
+          mk(eMidX, yTop + blPx + 14, `E: ${e}\"`);
           const hMidX = cx + aPx / 2 - px(h) / 2;
-          mk(hMidX, yTop + brPx + 14, `${h}\"`);
+          mk(hMidX, yTop + brPx + 14, `H: ${h}\"`);
           return;
         }
       };
@@ -1007,9 +1007,7 @@
           gRoot.appendChild(rotG);
           // Label: center of rectangle
           drawShapeName(centerX, centerY, cur.name || `Shape ${idx + 1}`);
-          if (opts.showGuides) {
-            labelNumbers(rotG, centerX, centerY, cur, { A: len.A, B: len.B });
-          }
+          labelNumbers(rotG, centerX, centerY, cur, { A: len.A, B: len.B });
           hitAreas.push({ idx, cx: centerX, cy: centerY, w, h, rot: rotation });
           if (idx === active) {
             // local anchors relative to center, then convert
@@ -1641,9 +1639,7 @@
           // Label: place within the solid leg (shift from center based on flip)
           const lLabelX = !flipX ? centerX - a / 4 : centerX + a / 4;
           drawShapeName(lLabelX, centerY, cur.name || `Shape ${idx + 1}`);
-          if (opts.showGuides) {
-            labelNumbers(rotG, centerX, centerY, cur, { A: aIn, B: bIn });
-          }
+          labelNumbers(rotG, centerX, centerY, cur, { A: aIn, B: bIn });
           hitAreas.push({
             idx,
             cx: centerX,
@@ -2267,15 +2263,13 @@
           // Label: set within the top rail (between top and inner-top)
           const uLabelY = yTop + Math.max(12, px(dIn) / 2);
           drawShapeName(centerX, uLabelY, cur.name || `Shape ${idx + 1}`);
-          if (opts.showGuides) {
-            labelNumbers(rotG, centerX, centerY, cur, {
-              A: aIn,
-              BL: blIn,
-              BR: brIn,
-              C: cIn,
-              D: dIn,
-            });
-          }
+          labelNumbers(rotG, centerX, centerY, cur, {
+            A: aIn,
+            BL: blIn,
+            BR: brIn,
+            C: cIn,
+            D: dIn,
+          });
           hitAreas.push({
             idx,
             cx: centerX,
