@@ -311,22 +311,30 @@
         const t = document.createElementNS(ns, "title");
         let tip = "Adjust";
         const keyStr = String(key || "");
-        if (keyStr === "A-right") tip = "Drag to change A (increase)";
-        else if (keyStr === "A-left") tip = "Drag to change A (decrease)";
-        else if (keyStr === "B-top") tip = "Drag to change B (decrease)";
-        else if (keyStr === "B-bottom") tip = "Drag to change B (increase)";
-        else if (keyStr === "C") tip = "Drag to adjust C";
+        // Tips: for L-shapes, A is top and B is the wall-side vertical
+        const sTip = shapes[idx];
+        const isLtip = sTip && sTip.type === "l";
+        const flipTip = isLtip ? !!sTip.flipX : false;
+        if (isLtip) {
+          if (keyStr === "B-top") tip = "Drag to change A (decrease)";
+          else if (keyStr === "B-bottom") tip = "Drag to change A (increase)";
+          else if (keyStr === (flipTip ? "A-right" : "A-left")) tip = "Drag to change B";
+        } else {
+          if (keyStr === "A-right") tip = "Drag to change A (increase)";
+          else if (keyStr === "A-left") tip = "Drag to change A (decrease)";
+          else if (keyStr === "B-top") tip = "Drag to change B (decrease)";
+          else if (keyStr === "B-bottom") tip = "Drag to change B (increase)";
+        }
+        // Additional keys common to all shapes
+        if (keyStr === "C") tip = "Drag to adjust C";
         else if (keyStr === "D") tip = "Drag to adjust D";
         else if (keyStr === "BL") tip = "Drag to adjust Left depth (BL)";
         else if (keyStr === "BR") tip = "Drag to adjust Right depth (BR)";
         else if (keyStr === "E") tip = "Drag to adjust Left return (E)";
         else if (keyStr === "H") tip = "Drag to adjust Right return (H)";
-        else if (keyStr.startsWith("P-"))
-          tip = "Drag to scale this side length";
-        else if (keyStr.startsWith("RC-"))
-          tip = "Drag to adjust outer corner size";
-        else if (keyStr.startsWith("IC-"))
-          tip = "Drag to adjust inner corner size";
+        else if (keyStr.startsWith("P-")) tip = "Drag to scale this side length";
+        else if (keyStr.startsWith("RC-")) tip = "Drag to adjust outer corner size";
+        else if (keyStr.startsWith("IC-")) tip = "Drag to adjust inner corner size";
         else if (keyStr.startsWith("V-")) tip = "Drag to move this vertex";
         t.textContent = tip;
         c.appendChild(t);
@@ -3433,7 +3441,8 @@
             }
           } else if (cur.type === "l") {
             addRow("Top (A)", "A");
-            addRow("Left (B)", "B");
+            const wallSideLabel = cur.flipX ? "Right (B)" : "Left (B)";
+            addRow(wallSideLabel, "B");
             addRow("Inner bottom run (C)", "C");
             addRow("Inner vertical (D)", "D");
             if (!opts.simpleUI) {
@@ -4586,6 +4595,8 @@
       if (!cur || cur.type !== "l") return;
       pushHistory();
       cur.flipX = !!e.target.checked;
+      // Re-sync inputs so the B label reflects the current wall side
+      syncInputs();
       draw();
       updateSummary();
       save();
