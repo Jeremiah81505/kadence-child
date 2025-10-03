@@ -2208,23 +2208,23 @@
               yTop + m,
               "A"
             );
-            // B: Right depth (BR)
+            // BR: Right depth
             drawGuideLine(
               rotG,
               centerX + a / 2 - m,
               yTop + m,
               centerX + a / 2 - m,
               yTop + brPx - m,
-              "B"
+              "BR"
             );
-            // D: Left depth (BL)
+            // BL: Left depth
             drawGuideLine(
               rotG,
               centerX - a / 2 + m,
               yTop + m,
               centerX - a / 2 + m,
               yTop + blPx - m,
-              "D"
+              "BL"
             );
             // C: Inner top span
             drawGuideLine(
@@ -2235,14 +2235,14 @@
               yInnerTop + m,
               "C"
             );
-            // F: Inner setback vertical
+            // D: Inner setback vertical
             drawGuideLine(
               rotG,
               (xiL + xiR) / 2,
               yTop + m,
               (xiL + xiR) / 2,
               yInnerTop - m,
-              "F"
+              "D"
             );
             // E: Bottom left return
             drawGuideLine(
@@ -3578,46 +3578,24 @@
               mkIC("iBR", "Inside BR");
             }
           } else if (cur.type === "u") {
-            // Present U as A–F like the legacy screenshot
-            const addURow = (label, virt) => {
-              const row = document.createElement("div");
-              row.className = "row";
-              if (opts.simpleUI) {
-                // Map legacy letters to internal wall/backsplash keys and initial checked state
-                const mapKey = {
-                  A: "H",
-                  B: "BR",
-                  C: "A",
-                  D: "BL",
-                  E: "E",
-                  F: "D",
-                };
-                const wKey = virt === "F" ? null : mapKey[virt];
-                const bKey = virt === "F" ? null : mapKey[virt];
-                const wChecked = wKey ? !!(cur.wall && cur.wall[wKey]) : false;
-                const bChecked = bKey ? !!(cur.bs && cur.bs[bKey]) : false;
-                const wallCtl = wKey
-                  ? `<label class="opt"><input type="checkbox" data-ct-wall-inline="U-${virt}" ${
-                      wChecked ? "checked" : ""
-                    }/> Side against wall</label>`
-                  : "";
-                const bsCtl = bKey
-                  ? `<label class="opt"><input type="checkbox" data-ct-backsplash-inline="U-${virt}" ${
-                      bChecked ? "checked" : ""
-                    }/> Add same-material backsplash</label>`
-                  : "";
-                row.innerHTML = `<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="U${virt}" /></label><div class="opts">${wallCtl} ${bsCtl}</div>`;
-              } else {
-                row.innerHTML = `<label><span>${label}</span><input type="number" min="0" step="1" data-ct-len="U${virt}" /></label>`;
-              }
-              list.appendChild(row);
-            };
-            addURow("A", "A"); // bottom right return (maps to H)
-            addURow("B", "B"); // right depth (BR)
-            addURow("C", "C"); // outer top width (A)
-            addURow("D", "D"); // left depth (BL)
-            addURow("E", "E"); // bottom left return (E)
-            addURow("F", "F"); // inner setback (D)
+            // U-shape: adopt L-style clarity with explicit keys and labels
+            // Ensure wall/backsplash objects have the expected keys so inline toggles appear
+            if (!cur.wall) cur.wall = {};
+            ["A", "BL", "BR", "C", "D", "E", "H"].forEach((k) => {
+              if (cur.wall[k] == null) cur.wall[k] = false;
+            });
+            if (!cur.bs) cur.bs = {};
+            ["A", "BL", "BR", "C", "D", "E", "H"].forEach((k) => {
+              if (cur.bs[k] == null) cur.bs[k] = false;
+            });
+            // Measurements rows (with inline wall/backsplash controls in simple UI)
+            addRow("Top (A)", "A");
+            addRow("Left depth (BL)", "BL");
+            addRow("Right depth (BR)", "BR");
+            addRow("Inner top span (C)", "C");
+            addRow("Inner vertical (D)", "D");
+            addRow("Left return (E)", "E");
+            addRow("Right return (H)", "H");
             if (!opts.simpleUI) {
               // Outside corner controls for U
               const cornersHdr = document.createElement("div");
