@@ -246,7 +246,8 @@
           const ang = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
           const t = document.createElementNS(ns, "text");
           t.setAttribute("x", String(mx));
-          t.setAttribute("y", String(my - 10));
+          // Offset a bit farther from the strip to avoid crowding
+          t.setAttribute("y", String(my - 12));
           t.setAttribute("text-anchor", "middle");
           t.setAttribute("font-size", "11");
           t.setAttribute("font-weight", "600");
