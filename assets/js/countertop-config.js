@@ -318,7 +318,8 @@
         if (isLtip) {
           if (keyStr === "B-top") tip = "Drag to change A (decrease)";
           else if (keyStr === "B-bottom") tip = "Drag to change A (increase)";
-          else if (keyStr === (flipTip ? "A-right" : "A-left")) tip = "Drag to change B";
+          else if (keyStr === (flipTip ? "A-right" : "A-left"))
+            tip = "Drag to change B";
         } else {
           if (keyStr === "A-right") tip = "Drag to change A (increase)";
           else if (keyStr === "A-left") tip = "Drag to change A (decrease)";
@@ -332,9 +333,12 @@
         else if (keyStr === "BR") tip = "Drag to adjust Right depth (BR)";
         else if (keyStr === "E") tip = "Drag to adjust Left return (E)";
         else if (keyStr === "H") tip = "Drag to adjust Right return (H)";
-        else if (keyStr.startsWith("P-")) tip = "Drag to scale this side length";
-        else if (keyStr.startsWith("RC-")) tip = "Drag to adjust outer corner size";
-        else if (keyStr.startsWith("IC-")) tip = "Drag to adjust inner corner size";
+        else if (keyStr.startsWith("P-"))
+          tip = "Drag to scale this side length";
+        else if (keyStr.startsWith("RC-"))
+          tip = "Drag to adjust outer corner size";
+        else if (keyStr.startsWith("IC-"))
+          tip = "Drag to adjust inner corner size";
         else if (keyStr.startsWith("V-")) tip = "Drag to move this vertex";
         t.textContent = tip;
         c.appendChild(t);
@@ -1349,16 +1353,31 @@
                 );
               }
               if (cur.bs.B) {
-                addRect(
-                  centerX - a / 2 - bh,
-                  centerY - b / 2,
-                  bh,
-                  b,
-                  centerX - a / 2 - bh,
-                  centerY - b / 2,
-                  centerX - a / 2 - bh,
-                  centerY + b / 2
-                );
+                if (!flipX) {
+                  // Left full-height backsplash for B when not flipped
+                  addRect(
+                    centerX - a / 2 - bh,
+                    centerY - b / 2,
+                    bh,
+                    b,
+                    centerX - a / 2 - bh,
+                    centerY - b / 2,
+                    centerX - a / 2 - bh,
+                    centerY + b / 2
+                  );
+                } else {
+                  // Right full-height backsplash for B when flipped
+                  addRect(
+                    centerX + a / 2,
+                    centerY - b / 2,
+                    bh,
+                    b,
+                    centerX + a / 2 + bh,
+                    centerY - b / 2,
+                    centerX + a / 2 + bh,
+                    centerY + b / 2
+                  );
+                }
               }
               if (cur.bs.C) {
                 if (!flipX) {
