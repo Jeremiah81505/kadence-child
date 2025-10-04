@@ -711,6 +711,7 @@
           // backsplash per side
           const bh = px(Number(opts.bsHeight || 0));
           if (bh > 0) {
+            const labMag = 8 + bh; // dynamic outward label offset
             ["A", "B", "C", "D"].forEach((side) => {
               if (cur.bs[side]) {
                 const r = document.createElementNS(ns, "rect");
@@ -751,7 +752,7 @@
                     centerX + w / 2,
                     centerY - h / 2 - bh,
                     "Backsplash",
-                    -12
+                    -labMag
                   );
                 if (side === "B")
                   drawBsLabel(
@@ -761,7 +762,7 @@
                     centerX - w / 2 - bh,
                     centerY + h / 2,
                     "Backsplash",
-                    -12
+                    -labMag
                   );
                 if (side === "C")
                   drawBsLabel(
@@ -771,7 +772,7 @@
                     centerX + w / 2,
                     centerY + h / 2 + bh,
                     "Backsplash",
-                    12
+                    labMag
                   );
                 if (side === "D")
                   drawBsLabel(
@@ -781,7 +782,7 @@
                     centerX + w / 2 + bh,
                     centerY + h / 2,
                     "Backsplash",
-                    12
+                    labMag
                   );
               }
             });
@@ -1372,6 +1373,7 @@
           {
             const bh = px(Number(opts.bsHeight || 0));
             if (opts.bsOn && bh > 0) {
+              const labMag = 8 + bh;
               // labOff moves the label outward from the countertop surface for the given edge
               const addRect = (
                 x,
@@ -1414,7 +1416,7 @@
                   centerY - b / 2 - bh,
                   centerX + a / 2,
                   centerY - b / 2 - bh,
-                  -12 // A (top) label offset outward (up)
+                  -labMag // A (top) label offset outward (up)
                 );
               }
               if (cur.bs.B) {
@@ -1429,7 +1431,7 @@
                     centerY - b / 2,
                     centerX - a / 2 - bh,
                     centerY + b / 2,
-                    -12 // B (left vertical) outward is left
+                    -labMag // B (left vertical) outward is left
                   );
                 } else {
                   // Right full-height backsplash for B when flipped
@@ -1442,7 +1444,7 @@
                     centerY - b / 2,
                     centerX + a / 2 + bh,
                     centerY + b / 2,
-                    12 // B (right vertical) outward is right
+                    labMag // B (right vertical) outward is right
                   );
                 }
               }
@@ -1458,7 +1460,7 @@
                     centerY + b / 2 + bh,
                     centerX - a / 2 + c,
                     centerY + b / 2 + bh,
-                    12 // C (bottom horizontal) outward is down
+                    labMag // C (bottom horizontal) outward is down
                   );
                 } else {
                   // right bottom segment from notch start to right outer (length=c)
@@ -1471,7 +1473,7 @@
                     centerY + b / 2 + bh,
                     centerX + a / 2,
                     centerY + b / 2 + bh,
-                    12 // C (bottom horizontal) outward is down
+                    labMag // C (bottom horizontal) outward is down
                   );
                 }
               }
@@ -1487,7 +1489,7 @@
                     centerY - b / 2,
                     centerX + a / 2 + bh,
                     centerY - b / 2 + d,
-                    12 // D (right vertical) outward is right
+                    labMag // D (right vertical) outward is right
                   );
                 } else {
                   // top segment on left edge, height=d
@@ -1500,7 +1502,7 @@
                     centerY - b / 2,
                     centerX - a / 2 - bh,
                     centerY - b / 2 + d,
-                    -12 // D (left vertical) outward is left
+                    -labMag // D (left vertical) outward is left
                   );
                 }
               }
@@ -2079,6 +2081,7 @@
             const aBox = a;
             const bh = px(Number(opts.bsHeight || 0));
             if (opts.bsOn && bh > 0) {
+              const labMag = 8 + bh;
               const addRect = (
                 x,
                 y,
@@ -2120,7 +2123,7 @@
                   yTop - bh,
                   centerX + aBox / 2,
                   yTop - bh,
-                  -12
+                  -labMag
                 );
               }
               if (cur.bs.BL) {
@@ -2133,7 +2136,7 @@
                   yTop,
                   centerX - aBox / 2 - bh,
                   yTop + blPx,
-                  -12
+                  -labMag
                 );
               }
               if (cur.bs.BR) {
@@ -2146,7 +2149,7 @@
                   yTop,
                   centerX + aBox / 2 + bh,
                   yTop + brPx,
-                  12
+                  labMag
                 );
               }
               if (cur.bs.C) {
@@ -2159,7 +2162,7 @@
                   yInnerTop + bh,
                   xiR,
                   yInnerTop + bh,
-                  12
+                  labMag
                 );
               }
               // Inner vertical backsplash for D (two strips into opening)
@@ -2174,7 +2177,7 @@
                   yTop,
                   xiL - bh,
                   yInnerTop,
-                  12
+                  labMag
                 );
                 // right inner
                 addRect(
@@ -2186,7 +2189,7 @@
                   yTop,
                   xiR + bh,
                   yInnerTop,
-                  12
+                  labMag
                 );
               }
               if (cur.bs && (cur.bs.E || cur.bs.H)) {
@@ -2202,7 +2205,7 @@
                     yTop + blPx + bh,
                     centerX - a / 2 + eLen,
                     yTop + blPx + bh,
-                    12
+                    labMag
                   );
                 }
                 if (cur.bs.H && hLen > 0) {
@@ -2215,7 +2218,7 @@
                     yTop + brPx + bh,
                     centerX + a / 2,
                     yTop + brPx + bh,
-                    12
+                    labMag
                   );
                 }
               }
@@ -2616,8 +2619,9 @@
                 bp.setAttribute("stroke-width", "1.25");
                 gRoot.appendChild(bp);
                 // Label along the original edge with outward offset (push text away from surface)
-                // Choose a fixed outward distance similar to others, positive along the outward normal
-                const labOff = 12;
+                // Positive off sits on the right of the edge direction; for CCW polygons the outward normal is to the right.
+                const labMag = 8 + bhPx;
+                const labOff = isCCW ? labMag : -labMag;
                 drawBsLabel(gRoot, p0x, p0y, p1x, p1y, "Backsplash", labOff);
               }
             }
