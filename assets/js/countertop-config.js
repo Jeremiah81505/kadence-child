@@ -239,15 +239,23 @@
       hitAreas = [];
       handles = [];
       // Helper to draw a small rotated label along an edge
-      const drawBsLabel = (parent, x1, y1, x2, y2, txt = "Backsplash") => {
+      const drawBsLabel = (
+        parent,
+        x1,
+        y1,
+        x2,
+        y2,
+        txt = "Backsplash",
+        off = -12
+      ) => {
         try {
           const mx = (x1 + x2) / 2,
             my = (y1 + y2) / 2;
           const ang = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
           const t = document.createElementNS(ns, "text");
           t.setAttribute("x", String(mx));
-          // Offset a bit farther from the strip to avoid crowding
-          t.setAttribute("y", String(my - 12));
+          // Offset perpendicular to the edge; positive moves outward for our calls
+          t.setAttribute("y", String(my + off));
           t.setAttribute("text-anchor", "middle");
           t.setAttribute("font-size", "11");
           t.setAttribute("font-weight", "600");
@@ -1360,7 +1368,18 @@
           {
             const bh = px(Number(opts.bsHeight || 0));
             if (opts.bsOn && bh > 0) {
-              const addRect = (x, y, w, h, labX1, labY1, labX2, labY2) => {
+              // labOff moves the label outward from the countertop surface for the given edge
+              const addRect = (
+                x,
+                y,
+                w,
+                h,
+                labX1,
+                labY1,
+                labX2,
+                labY2,
+                labOff = -12
+              ) => {
                 const r = document.createElementNS(ns, "rect");
                 r.setAttribute("x", String(x));
                 r.setAttribute("y", String(y));
@@ -1371,7 +1390,15 @@
                 r.setAttribute("stroke-width", "1");
                 rotG.appendChild(r);
                 if (labX1 != null)
-                  drawBsLabel(rotG, labX1, labY1, labX2, labY2, "Backsplash");
+                  drawBsLabel(
+                    rotG,
+                    labX1,
+                    labY1,
+                    labX2,
+                    labY2,
+                    "Backsplash",
+                    labOff
+                  );
               };
               if (cur.bs.A) {
                 addRect(
@@ -1382,7 +1409,8 @@
                   centerX - a / 2,
                   centerY - b / 2 - bh,
                   centerX + a / 2,
-                  centerY - b / 2 - bh
+                  centerY - b / 2 - bh,
+                  -12 // A (top) label offset outward (up)
                 );
               }
               if (cur.bs.B) {
@@ -1396,7 +1424,8 @@
                     centerX - a / 2 - bh,
                     centerY - b / 2,
                     centerX - a / 2 - bh,
-                    centerY + b / 2
+                    centerY + b / 2,
+                    12 // B (left vertical) outward is left
                   );
                 } else {
                   // Right full-height backsplash for B when flipped
@@ -1408,7 +1437,8 @@
                     centerX + a / 2 + bh,
                     centerY - b / 2,
                     centerX + a / 2 + bh,
-                    centerY + b / 2
+                    centerY + b / 2,
+                    -12 // B (right vertical) outward is right
                   );
                 }
               }
@@ -1423,7 +1453,8 @@
                     centerX - a / 2,
                     centerY + b / 2 + bh,
                     centerX - a / 2 + c,
-                    centerY + b / 2 + bh
+                    centerY + b / 2 + bh,
+                    12 // C (bottom horizontal) outward is down
                   );
                 } else {
                   // right bottom segment from notch start to right outer (length=c)
@@ -1435,7 +1466,8 @@
                     centerX + a / 2 - c,
                     centerY + b / 2 + bh,
                     centerX + a / 2,
-                    centerY + b / 2 + bh
+                    centerY + b / 2 + bh,
+                    12 // C (bottom horizontal) outward is down
                   );
                 }
               }
@@ -1450,7 +1482,8 @@
                     centerX + a / 2 + bh,
                     centerY - b / 2,
                     centerX + a / 2 + bh,
-                    centerY - b / 2 + d
+                    centerY - b / 2 + d,
+                    -12 // D (right vertical) outward is right
                   );
                 } else {
                   // top segment on left edge, height=d
@@ -1462,7 +1495,8 @@
                     centerX - a / 2 - bh,
                     centerY - b / 2,
                     centerX - a / 2 - bh,
-                    centerY - b / 2 + d
+                    centerY - b / 2 + d,
+                    12 // D (left vertical) outward is left
                   );
                 }
               }
