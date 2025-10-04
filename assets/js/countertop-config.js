@@ -711,7 +711,7 @@
           // backsplash per side
           const bh = px(Number(opts.bsHeight || 0));
           if (bh > 0) {
-            const labMag = 8 + bh; // dynamic outward label offset
+            const labMag = Math.max(12, Math.min(40, 8 + bh)); // dynamic outward label offset with clamp
             ["A", "B", "C", "D"].forEach((side) => {
               if (cur.bs[side]) {
                 const r = document.createElementNS(ns, "rect");
@@ -1373,7 +1373,7 @@
           {
             const bh = px(Number(opts.bsHeight || 0));
             if (opts.bsOn && bh > 0) {
-              const labMag = 8 + bh;
+              const labMag = Math.max(12, Math.min(40, 8 + bh));
               // labOff moves the label outward from the countertop surface for the given edge
               const addRect = (
                 x,
@@ -2081,7 +2081,7 @@
             const aBox = a;
             const bh = px(Number(opts.bsHeight || 0));
             if (opts.bsOn && bh > 0) {
-              const labMag = 8 + bh;
+              const labMag = Math.max(12, Math.min(40, 8 + bh));
               const addRect = (
                 x,
                 y,
@@ -2620,7 +2620,7 @@
                 gRoot.appendChild(bp);
                 // Label along the original edge with outward offset (push text away from surface)
                 // Positive off sits on the right of the edge direction; for CCW polygons the outward normal is to the right.
-                const labMag = 8 + bhPx;
+                const labMag = Math.max(12, Math.min(40, 8 + bhPx));
                 const labOff = isCCW ? labMag : -labMag;
                 drawBsLabel(gRoot, p0x, p0y, p1x, p1y, "Backsplash", labOff);
               }
