@@ -750,7 +750,8 @@
                     centerY - h / 2 - bh,
                     centerX + w / 2,
                     centerY - h / 2 - bh,
-                    "Backsplash"
+                    "Backsplash",
+                    -12
                   );
                 if (side === "B")
                   drawBsLabel(
@@ -759,7 +760,8 @@
                     centerY - h / 2,
                     centerX - w / 2 - bh,
                     centerY + h / 2,
-                    "Backsplash"
+                    "Backsplash",
+                    -12
                   );
                 if (side === "C")
                   drawBsLabel(
@@ -768,7 +770,8 @@
                     centerY + h / 2 + bh,
                     centerX + w / 2,
                     centerY + h / 2 + bh,
-                    "Backsplash"
+                    "Backsplash",
+                    12
                   );
                 if (side === "D")
                   drawBsLabel(
@@ -777,7 +780,8 @@
                     centerY - h / 2,
                     centerX + w / 2 + bh,
                     centerY + h / 2,
-                    "Backsplash"
+                    "Backsplash",
+                    12
                   );
               }
             });
@@ -1425,7 +1429,7 @@
                     centerY - b / 2,
                     centerX - a / 2 - bh,
                     centerY + b / 2,
-                    12 // B (left vertical) outward is left
+                    -12 // B (left vertical) outward is left
                   );
                 } else {
                   // Right full-height backsplash for B when flipped
@@ -1438,7 +1442,7 @@
                     centerY - b / 2,
                     centerX + a / 2 + bh,
                     centerY + b / 2,
-                    -12 // B (right vertical) outward is right
+                    12 // B (right vertical) outward is right
                   );
                 }
               }
@@ -1483,7 +1487,7 @@
                     centerY - b / 2,
                     centerX + a / 2 + bh,
                     centerY - b / 2 + d,
-                    -12 // D (right vertical) outward is right
+                    12 // D (right vertical) outward is right
                   );
                 } else {
                   // top segment on left edge, height=d
@@ -1496,7 +1500,7 @@
                     centerY - b / 2,
                     centerX - a / 2 - bh,
                     centerY - b / 2 + d,
-                    12 // D (left vertical) outward is left
+                    -12 // D (left vertical) outward is left
                   );
                 }
               }
@@ -2075,7 +2079,17 @@
             const aBox = a;
             const bh = px(Number(opts.bsHeight || 0));
             if (opts.bsOn && bh > 0) {
-              const addRect = (x, y, w, h, labX1, labY1, labX2, labY2) => {
+              const addRect = (
+                x,
+                y,
+                w,
+                h,
+                labX1,
+                labY1,
+                labX2,
+                labY2,
+                labOff = -12
+              ) => {
                 const r = document.createElementNS(ns, "rect");
                 r.setAttribute("x", String(x));
                 r.setAttribute("y", String(y));
@@ -2086,7 +2100,15 @@
                 r.setAttribute("stroke-width", "1");
                 rotG.appendChild(r);
                 if (labX1 != null)
-                  drawBsLabel(rotG, labX1, labY1, labX2, labY2, "Backsplash");
+                  drawBsLabel(
+                    rotG,
+                    labX1,
+                    labY1,
+                    labX2,
+                    labY2,
+                    "Backsplash",
+                    labOff
+                  );
               };
               if (cur.bs.A) {
                 addRect(
@@ -2097,7 +2119,8 @@
                   centerX - aBox / 2,
                   yTop - bh,
                   centerX + aBox / 2,
-                  yTop - bh
+                  yTop - bh,
+                  -12
                 );
               }
               if (cur.bs.BL) {
@@ -2109,7 +2132,8 @@
                   centerX - aBox / 2 - bh,
                   yTop,
                   centerX - aBox / 2 - bh,
-                  yTop + blPx
+                  yTop + blPx,
+                  -12
                 );
               }
               if (cur.bs.BR) {
@@ -2121,7 +2145,8 @@
                   centerX + aBox / 2 + bh,
                   yTop,
                   centerX + aBox / 2 + bh,
-                  yTop + brPx
+                  yTop + brPx,
+                  12
                 );
               }
               if (cur.bs.C) {
@@ -2133,7 +2158,8 @@
                   xiL,
                   yInnerTop + bh,
                   xiR,
-                  yInnerTop + bh
+                  yInnerTop + bh,
+                  12
                 );
               }
               // Inner vertical backsplash for D (two strips into opening)
@@ -2147,7 +2173,8 @@
                   xiL - bh,
                   yTop,
                   xiL - bh,
-                  yInnerTop
+                  yInnerTop,
+                  12
                 );
                 // right inner
                 addRect(
@@ -2158,7 +2185,8 @@
                   xiR + bh,
                   yTop,
                   xiR + bh,
-                  yInnerTop
+                  yInnerTop,
+                  12
                 );
               }
               if (cur.bs && (cur.bs.E || cur.bs.H)) {
@@ -2173,7 +2201,8 @@
                     centerX - a / 2,
                     yTop + blPx + bh,
                     centerX - a / 2 + eLen,
-                    yTop + blPx + bh
+                    yTop + blPx + bh,
+                    12
                   );
                 }
                 if (cur.bs.H && hLen > 0) {
@@ -2185,7 +2214,8 @@
                     centerX + a / 2 - hLen,
                     yTop + brPx + bh,
                     centerX + a / 2,
-                    yTop + brPx + bh
+                    yTop + brPx + bh,
+                    12
                   );
                 }
               }
@@ -2585,8 +2615,10 @@
                 bp.setAttribute("stroke", "#4d8fe8");
                 bp.setAttribute("stroke-width", "1.25");
                 gRoot.appendChild(bp);
-                // Label along the original edge
-                drawBsLabel(gRoot, p0x, p0y, p1x, p1y, "Backsplash");
+                // Label along the original edge with outward offset (push text away from surface)
+                // Choose a fixed outward distance similar to others, positive along the outward normal
+                const labOff = 12;
+                drawBsLabel(gRoot, p0x, p0y, p1x, p1y, "Backsplash", labOff);
               }
             }
           }
