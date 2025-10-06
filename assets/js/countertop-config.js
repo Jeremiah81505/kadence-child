@@ -569,14 +569,19 @@
 
         if (cur.type === "rect") {
           const bhpx = opts.bsOn ? px(Number(opts.bsHeight || 0)) : 0;
+          const extra = 16; // extra gap beyond splash for label separation
           const bs = cur.bs || {};
           const aPx = px(a),
             bPx = px(b);
           // A top
-          mk(cx, cy - bPx / 2 - 12 - (bs.A ? bhpx + 10 : 0), `A: ${a}\"`);
+          mk(
+            cx,
+            cy - bPx / 2 - 14 - (bs.A ? bhpx + extra : 0),
+            `A: ${a}\"`
+          );
           // B left
           mkRot(
-            cx - aPx / 2 - 26 - (bs.B ? bhpx + 10 : 0),
+            cx - aPx / 2 - 30 - (bs.B ? bhpx + extra : 0),
             cy,
             `B: ${b}\"`,
             -90
@@ -589,21 +594,22 @@
             cPx = px(c),
             dPx = px(d);
           const bhpx = opts.bsOn ? px(Number(opts.bsHeight || 0)) : 0;
+          const extra = 16;
           const bs = cur.bs || {};
           // A label: top wall side only
-          mk(cx, cy - bPx / 2 - 12 - (bs.A ? bhpx + 10 : 0), `A: ${a}\"`);
+          mk(cx, cy - bPx / 2 - 14 - (bs.A ? bhpx + extra : 0), `A: ${a}\"`);
           const flipX = !!cur.flipX;
           // B label: only on the wall vertical side (left when not flipped, right when flipped)
           if (!flipX)
             mkRot(
-              cx - aPx / 2 - 26 - (bs.B ? bhpx + 10 : 0),
+              cx - aPx / 2 - 30 - (bs.B ? bhpx + extra : 0),
               cy,
               `B: ${b}\"`,
               -90
             );
           else
             mkRot(
-              cx + aPx / 2 + 26 + (bs.D ? bhpx + 10 : 0),
+              cx + aPx / 2 + 30 + (bs.D ? bhpx + extra : 0),
               cy,
               `B: ${b}\"`,
               -90
@@ -612,20 +618,20 @@
           const cMidX = !flipX
             ? cx - aPx / 2 + cPx / 2
             : cx + aPx / 2 - cPx / 2;
-          const cY = cy + bPx / 2 + 18;
-          mk(cMidX, cY + (bs.C ? bhpx + 10 : 0), `C: ${c}\"`);
+          const cY = cy + bPx / 2 + 22;
+          mk(cMidX, cY + (bs.C ? bhpx + extra : 0), `C: ${c}\"`);
           // D outer vertical segment on mirrored side
           const dYmid = cy - bPx / 2 + dPx / 2;
           if (!flipX) {
             mkRot(
-              cx + aPx / 2 + 26 + (bs.D ? bhpx + 10 : 0),
+              cx + aPx / 2 + 30 + (bs.D ? bhpx + extra : 0),
               dYmid,
               `D: ${d}\"`,
               -90
             );
           } else {
             mkRot(
-              cx - aPx / 2 - 26 - (bs.B ? bhpx + 10 : 0),
+              cx - aPx / 2 - 30 - (bs.B ? bhpx + extra : 0),
               dYmid,
               `D: ${d}\"`,
               -90
@@ -638,22 +644,23 @@
           const bl = Number(dims.BL ?? cur.len?.BL ?? cur.len?.B ?? 25);
           const br = Number(dims.BR ?? cur.len?.BR ?? cur.len?.B ?? 25);
           const bhpx = opts.bsOn ? px(Number(opts.bsHeight || 0)) : 0;
+          const extra = 16;
           const bs = cur.bs || {};
           const blPx = px(bl),
             brPx = px(br);
           const hMax = Math.max(blPx, brPx);
           const yTop = cy - hMax / 2;
           // A top outer width
-          mk(cx, yTop - 12 - (bs.A ? bhpx + 10 : 0), `A: ${a}\"`);
+          mk(cx, yTop - 14 - (bs.A ? bhpx + extra : 0), `A: ${a}\"`);
           // B-L and B-R numbers (left and right verticals)
           mkRot(
-            cx - aPx / 2 - 26 - (bs.BL ? bhpx + 10 : 0),
+            cx - aPx / 2 - 30 - (bs.BL ? bhpx + extra : 0),
             yTop + blPx / 2,
             `BL: ${bl}\"`,
             -90
           );
           mkRot(
-            cx + aPx / 2 + 26 + (bs.BR ? bhpx + 10 : 0),
+            cx + aPx / 2 + 30 + (bs.BR ? bhpx + extra : 0),
             yTop + brPx / 2,
             `BR: ${br}\"`,
             -90
@@ -663,9 +670,17 @@
           const h = Number(cur.len?.H ?? Math.max(0, Math.round((a - c) / 2)));
           // E/H bottom return labels
           const eMidX = cx - aPx / 2 + px(e) / 2;
-          mk(eMidX, yTop + blPx + 18 + (bs.E ? bhpx + 10 : 0), `E: ${e}\"`);
+          mk(
+            eMidX,
+            yTop + blPx + 22 + (bs.E ? bhpx + extra : 0),
+            `E: ${e}\"`
+          );
           const hMidX = cx + aPx / 2 - px(h) / 2;
-          mk(hMidX, yTop + brPx + 18 + (bs.H ? bhpx + 10 : 0), `H: ${h}\"`);
+          mk(
+            hMidX,
+            yTop + brPx + 22 + (bs.H ? bhpx + extra : 0),
+            `H: ${h}\"`
+          );
           return;
         }
       };
