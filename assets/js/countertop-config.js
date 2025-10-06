@@ -574,11 +574,7 @@
           const aPx = px(a),
             bPx = px(b);
           // A top
-          mk(
-            cx,
-            cy - bPx / 2 - 14 - (bs.A ? bhpx + extra : 0),
-            `A: ${a}\"`
-          );
+          mk(cx, cy - bPx / 2 - 14 - (bs.A ? bhpx + extra : 0), `A: ${a}\"`);
           // B left
           mkRot(
             cx - aPx / 2 - 30 - (bs.B ? bhpx + extra : 0),
@@ -670,17 +666,9 @@
           const h = Number(cur.len?.H ?? Math.max(0, Math.round((a - c) / 2)));
           // E/H bottom return labels
           const eMidX = cx - aPx / 2 + px(e) / 2;
-          mk(
-            eMidX,
-            yTop + blPx + 22 + (bs.E ? bhpx + extra : 0),
-            `E: ${e}\"`
-          );
+          mk(eMidX, yTop + blPx + 22 + (bs.E ? bhpx + extra : 0), `E: ${e}\"`);
           const hMidX = cx + aPx / 2 - px(h) / 2;
-          mk(
-            hMidX,
-            yTop + brPx + 22 + (bs.H ? bhpx + extra : 0),
-            `H: ${h}\"`
-          );
+          mk(hMidX, yTop + brPx + 22 + (bs.H ? bhpx + extra : 0), `H: ${h}\"`);
           return;
         }
       };
