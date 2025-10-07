@@ -1369,6 +1369,8 @@
             "transform",
             `rotate(${rotation} ${centerX} ${centerY})`
           );
+          // Draw countertop first so backsplash strips and labels render above it
+          rotG.appendChild(path);
 
           // overhang removed
 
@@ -1434,7 +1436,7 @@
                     centerY - b / 2,
                     centerX - a / 2 - bh,
                     centerY + b / 2,
-                    -labMag // B (left vertical) outward is left
+                    labMag // B (left vertical) outward is left
                   );
                 } else {
                   // Right full-height backsplash for B when flipped
@@ -1447,7 +1449,7 @@
                     centerY - b / 2,
                     centerX + a / 2 + bh,
                     centerY + b / 2,
-                    labMag // B (right vertical) outward is right
+                    -labMag // B (right vertical) outward is right
                   );
                 }
               }
@@ -1492,7 +1494,7 @@
                     centerY - b / 2,
                     centerX + a / 2 + bh,
                     centerY - b / 2 + d,
-                    labMag // D (right vertical) outward is right
+                    -labMag // D (right vertical) outward is right
                   );
                 } else {
                   // top segment on left edge, height=d
@@ -1505,7 +1507,7 @@
                     centerY - b / 2,
                     centerX - a / 2 - bh,
                     centerY - b / 2 + d,
-                    -labMag // D (left vertical) outward is left
+                    labMag // D (left vertical) outward is left
                   );
                 }
               }
@@ -1535,7 +1537,7 @@
             });
           }
 
-          rotG.appendChild(path);
+          // path already appended above to ensure correct z-order
           // wall sides (approx bounding box) — independent of backsplash
           const sideColor = "#000";
           const mkLine = (x1, y1, x2, y2) => {
